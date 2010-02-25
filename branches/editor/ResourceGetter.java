@@ -2,6 +2,7 @@ import java.util.*;
 import com.sun.opengl.util.texture.*;
 import java.awt.*;
 import java.io.*;
+import javax.imageio.*;
 
 /**
  * Fetches resources for a level. They can be from JARs, memory, or the file system. 
@@ -143,9 +144,7 @@ public abstract class ResourceGetter {
 	 * @return the image
 	 */
 	protected Image loadImage(String src) throws IOException {
-		Image img = Toolkit.getDefaultToolkit().createImage(getBinary("img/" + src));
-		Utils.loadFully(img);
-		return img;
+		return ImageIO.read(openResource("images/" + src));
 	}
 	/**
 	 * Loads the texture specified by src into the cache.
@@ -155,10 +154,6 @@ public abstract class ResourceGetter {
 	 * @return the texture
 	 */
 	protected Texture loadTexture(String src) throws IOException {
-		Image img = Toolkit.getDefaultToolkit().createImage(getBinary("textures/" + src));
-		Utils.loadFully(img);
-		Texture texture = TextureIO.newTexture(Utils.imageToBuffer(img), true);
-		img.flush();
-		return texture;
+		return TextureIO.newTexture(ImageIO.read(openResource("textures/" + src)), true);
 	}
 }
