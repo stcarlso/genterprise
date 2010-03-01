@@ -1,3 +1,4 @@
+import java.awt.Dimension;
 import java.nio.*;
 import com.sun.opengl.util.*;
 import com.sun.opengl.util.texture.*;
@@ -28,6 +29,14 @@ public class Element implements java.io.Serializable {
 	private transient FloatBuffer vertex;
 	private transient FloatBuffer color;
 	private transient FloatBuffer texCoords;
+	/**
+	 * The bounding box width in units.
+	 */
+	private transient int width;
+	/**
+	 * The bounding box height in units.
+	 */
+	private transient int height;
 
 	/**
 	 * Creates a blank element (serialization)
@@ -35,6 +44,7 @@ public class Element implements java.io.Serializable {
 	protected Element() {
 		textureSrc = null;
 		geometrySrc = null;
+		width = height = 0;
 	}
 	/**
 	 * Creates an element referencing data from data sources.
@@ -45,6 +55,31 @@ public class Element implements java.io.Serializable {
 	public Element(String texSrc, String geoSrc) {
 		textureSrc = texSrc;
 		geometrySrc = geoSrc;
+		width = height = 0;
+	}
+	/**
+	 * Gets the size as a dimension.
+	 * 
+	 * @return the height and width
+	 */
+	public Dimension getSize() {
+		return new Dimension(width, height);
+	}
+	/**
+	 * Gets the width in grid units.
+	 * 
+	 * @return the width (X)
+	 */
+	public int getWidth() {
+		return width;
+	}
+	/**
+	 * Gets the height in grid units.
+	 * 
+	 * @return the height (Y)
+	 */
+	public int getHeight() {
+		return height;
 	}
 	/**
 	 * Gets the geometry data file name.
@@ -93,19 +128,25 @@ public class Element implements java.io.Serializable {
 	 */
 	public void loadGeometry(ResourceGetter res) {
 		byte[] array = res.getBinary("models/" + geometrySrc);
-		if (array.length < 4)
-			throw new RuntimeException("Geometry file is invalid");
-		int size = Utils.createInt(array[0], array[1], array[2], array[3]);
-		if (size < 1 || array.length < 4 + 9 * size)
-			throw new RuntimeException("Geometry file size is invalid");
+		if (array.length < 12)
+			throw new RuntimeException("Geometry file is invalid, it lacks size information");
+		int width = Utils.createInt(array, 4);
+		int height = Utils.createInt(array, 8);
+		if (width < 0 || height < 0)
+			throw new RuntimeException("Geometry file is invalid, sizes are negative");
+		this.width = width;
+		this.height = height;
+		int size = Utils.createInt(array, 0);
+		if (size < 1 || array.length < 12 + 9 * size)
+			throw new RuntimeException("Geometry file size is invalid, there is not enough data");
 		ByteBuffer buf = BufferUtil.newByteBuffer(size);
-		buf.put(array, 4, 3 * size);
+		buf.put(array, 12, 3 * size);
 		vertex = buf.asFloatBuffer();
 		buf = BufferUtil.newByteBuffer(size);
-		buf.put(array, 3 * size + 4, 3 * size);
+		buf.put(array, 3 * size + 12, 3 * size);
 		color = buf.asFloatBuffer();
 		buf = BufferUtil.newByteBuffer(size);
-		buf.put(array, 6 * size + 4, 3 * size);
+		buf.put(array, 6 * size + 12, 3 * size);
 		texCoords = buf.asFloatBuffer();
 		array = null;
 	}
