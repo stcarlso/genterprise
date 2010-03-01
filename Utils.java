@@ -203,6 +203,16 @@ public final class Utils {
 			(int)(four & 0xff);
 	}
 	/**
+	 * Creates an integer from a byte array.
+	 * 
+	 * @param array the source array
+	 * @param start the starting coordinate
+	 * @return the integer
+	 */
+	public static final int createInt(byte[] array, int start) {
+		return createInt(array[start], array[start + 1], array[start + 2], array[start + 3]);
+	}
+	/**
 	 * Copies the contents of an array.
 	 * 
 	 * @param array the array to copy
