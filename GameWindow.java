@@ -1,11 +1,9 @@
 import java.awt.BorderLayout;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.Color;
 
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLCapabilities;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 
 import com.sun.opengl.util.Animator;
 
@@ -37,6 +35,9 @@ public class GameWindow extends JPanel {
 		private long dt;
 		private long time=0;
 		private long initiate=0;
+		private long effectStart=0;
+		private long effectEnd=0;
+		private long stop=0;
 		public PhysicsThread() {			
 			dt=1;
 		}
@@ -47,9 +48,18 @@ public class GameWindow extends JPanel {
 					//working with character moves
 					if(player.ability!=null && player.ability.started) {
 						initiate=time;
+						effectStart= time+player.ability.start;
+						effectEnd= time+player.ability.end;
+						stop= time+player.ability.duration;
 						player.ability.started=false;
 					}
-					if(player.ability!=null && time>=initiate+player.ability.duration) {
+					
+					//any move effect should be invoked here
+					if(player.ability!=null && time>=effectStart && time<=effectEnd) {
+						player.color= Color.yellow;
+					}
+					
+					if(player.ability!=null && time>=stop) {
 						player.ability=null;
 					}
 					//ground friction
@@ -60,11 +70,7 @@ public class GameWindow extends JPanel {
 						//player.ax= player.ax+muk*gravity;
 					}
 					//gravity and ground detection
-					if(player.y<=0 && player.vy<=0) {
-						player.ay=0;
-						player.vy=0;
-					} else
-						player.ay=-gravity;
+					player.ay+=-gravity;
 					player.vy+=player.ay*dt;
 					player.vx+=player.ax*dt;
 					if(player.y+player.vy*dt<0)

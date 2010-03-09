@@ -1,5 +1,6 @@
+import java.awt.Color;
 
-public class Player {
+public class Player implements Constants {
 	double x;
 	double y;
 	double vx;
@@ -8,9 +9,10 @@ public class Player {
 	double ay;
 	double m;
 	int jumps;
+	int position;
 	boolean facingRight;
-	String position;
 	Move ability;
+	Color color; //may be deprecated as soon as player models are available
 	public Player() {
 		x=0;
 		y=0;
@@ -20,8 +22,9 @@ public class Player {
 		ay=0;
 		m=40;
 		jumps=0;
-		position="standing";
+		position=STANDING;
 		boolean facingRight=true;
 		ability=new Move();
+		color= Color.white;
 	}
 }

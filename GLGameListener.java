@@ -7,7 +7,7 @@ import javax.media.opengl.GLEventListener;
 import javax.media.opengl.glu.GLU;
 
 
-public class GLGameListener implements GLEventListener, KeyListener  {
+public class GLGameListener implements GLEventListener, KeyListener, Constants {
 	Object sync;
 	Player player;
 	boolean up;
@@ -47,71 +47,94 @@ public class GLGameListener implements GLEventListener, KeyListener  {
 			gl.glColor3f(0f,1f,0f);
 		else if(player.ability instanceof Roll)
 			gl.glColor3f(.5f,1f,0f);
+		else if(player.ability instanceof Dive)
+			gl.glColor3f(0f,1f,.5f);
 		else
-			gl.glColor3f(1f,1f,1f);			
+			gl.glColor3f(1f,1f,1f);		
 		gl.glBegin(GL.GL_QUADS);
-			if(player.position.equals("ducking")) {
-				gl.glVertex3d(player.x-1,player.y-1,0);
-				gl.glVertex3d(player.x+1,player.y-1,0);
+			if(player.position==DUCKING) {
+				gl.glVertex3d(player.x,player.y,0);
 				gl.glVertex3d(player.x+1,player.y,0);
-				gl.glVertex3d(player.x-1,player.y,0);
-			} else {
-				gl.glVertex3d(player.x-1,player.y-1,0);
-				gl.glVertex3d(player.x+1,player.y-1,0);
 				gl.glVertex3d(player.x+1,player.y+1,0);
-				gl.glVertex3d(player.x-1,player.y+1,0);
+				gl.glVertex3d(player.x,player.y+1,0);
+			} else {
+				gl.glVertex3d(player.x,player.y,0);
+				gl.glVertex3d(player.x+1,player.y,0);
+				gl.glVertex3d(player.x+1,player.y+2,0);
+				gl.glVertex3d(player.x,player.y+2,0);
 			}
 		gl.glEnd();
+		gl.glColor3f(0f,0f,0f);	
+		gl.glBegin(GL.GL_LINES);
+			if(player.facingRight) {
+				gl.glVertex3d(player.x+.5,player.y+1.5,0);
+				gl.glVertex3d(player.x+1,player.y+1.5,0);
+			} else {
+				gl.glVertex3d(player.x,player.y+1.5,0);
+				gl.glVertex3d(player.x+.5,player.y+1.5,0);
+			}
+		gl.glEnd();
+			
 		//****************KEY RESPONSE*******************
 		//refresh when touching ground, tell the player where he is
 		if(player.y<=0) { //this condition will be obsolete after level editor
-			player.position="standing";
 			player.jumps=1;
 			if(down)
-				player.position="ducking";
+				player.position=DUCKING;
 			else
-				player.position="standing";
+				player.position=STANDING;
 		} else
-			player.position="airborne";
+			player.position=AIRBORNE;
 		
-		if(act) {
-			if(down && !player.position.equals("airborne")) {
-				player.ability=new Dodge();
-				player.ability.started=true;
-				player.vx=0;
-			}
-			if(left && !player.position.equals("airborne")) {
-				player.ability=new Roll();
-				player.ability.started=true;
-				player.vx=-.8;
-			}
-			if(right && !player.position.equals("airborne")) {
-				player.ability=new Roll();
-				player.ability.started=true;
-				player.vx=.8;
-			}
-			act=false;
-		} else if(player.ability==null){
-			
-			//basic movement
-			if(left) {
-				player.facingRight=false;
-				if(player.position.equals("ducking"))
-					player.ax=-.06;
-				else
-					player.ax=-.1;
-			}
-			if(right) {
-				player.facingRight=true;
-				if(player.position.equals("ducking"))
-					player.ax=.06;
-				else
-					player.ax=.1;
-			}
-			if(up && player.jumps>0) {
-				player.vy=1;
-				player.jumps--;
-				up=false;
+		if(player.ability==null){
+			if(act) {
+				if(down && player.position!=AIRBORNE) {
+					player.ability=new Dodge();
+					player.ability.started=true;
+					player.vx=0;
+				}
+				else if(up && player.position!=AIRBORNE) {
+					player.ability=new Dive();
+					player.ability.started=true;
+					if(player.facingRight)
+						player.vx=1.5;
+					else
+						player.vx=-1.5;
+					player.vy=.9;
+				}
+				else if(left && player.position!=AIRBORNE) {
+					player.ability=new Roll();
+					player.ability.started=true;
+					player.vx=-.8;
+				}
+				else if(right && player.position!=AIRBORNE) {
+					player.ability=new Roll();
+					player.ability.started=true;
+					player.vx=.8;
+				}
+				act=false;
+			} else {
+				
+				//basic movement
+				if(left) {
+					player.facingRight=false;
+					if(player.position==DUCKING)
+						player.ax=-.06;
+					else
+						player.ax=-.1;
+				}
+				if(right) {
+					player.facingRight=true;
+					if(player.position==DUCKING)
+						player.ax=.06;
+					else
+						player.ax=.1;
+				}
+				if(up && player.jumps>0) {
+					player.vy=1;
+					player.jumps--;
+					up=false;
+				}
 			}
 		}
 	}
