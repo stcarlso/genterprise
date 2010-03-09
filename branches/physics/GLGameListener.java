@@ -13,6 +13,9 @@ public class GLGameListener implements GLEventListener, KeyListener  {
 	boolean up;
 	boolean left;
 	boolean right;
+	boolean down;
+	boolean act;
+	char action='a';
 	public GLGameListener(Player you, Object synch) {
 		player=you;
 		sync=synch;
@@ -28,6 +31,7 @@ public class GLGameListener implements GLEventListener, KeyListener  {
 	 	glu.gluLookAt(0,0,50,0,0,0,0,1,0);
 	 	gl.glMatrixMode(GL.GL_MODELVIEW);
 	 	gl.glBegin(GL.GL_LINES);
+	 		gl.glColor3f(0f,0f,1f);
 	 		gl.glVertex3d(0,-50,0);
 	 		gl.glVertex3d(0,50,0);
 	 		gl.glColor3f(1f,0f,0f);
@@ -38,19 +42,78 @@ public class GLGameListener implements GLEventListener, KeyListener  {
 			gl.glVertex3d(0,0,-9001);
 			gl.glVertex3d(0,0,9001);	 			
 		gl.glEnd();
+		//drawing the player
+		if(player.ability instanceof Dodge)
+			gl.glColor3f(0f,1f,0f);
+		else if(player.ability instanceof Roll)
+			gl.glColor3f(.5f,1f,0f);
+		else
+			gl.glColor3f(1f,1f,1f);			
 		gl.glBegin(GL.GL_QUADS);
-			gl.glVertex3d(player.x-1,player.y-1,0);
-			gl.glVertex3d(player.x+1,player.y-1,0);
-			gl.glVertex3d(player.x+1,player.y+1,0);
-			gl.glVertex3d(player.x-1,player.y+1,0);
+			if(player.position.equals("ducking")) {
+				gl.glVertex3d(player.x-1,player.y-1,0);
+				gl.glVertex3d(player.x+1,player.y-1,0);
+				gl.glVertex3d(player.x+1,player.y,0);
+				gl.glVertex3d(player.x-1,player.y,0);
+			} else {
+				gl.glVertex3d(player.x-1,player.y-1,0);
+				gl.glVertex3d(player.x+1,player.y-1,0);
+				gl.glVertex3d(player.x+1,player.y+1,0);
+				gl.glVertex3d(player.x-1,player.y+1,0);
+			}
 		gl.glEnd();
 		//****************KEY RESPONSE*******************
-		if(left) 
-			player.vx=-.3;
-		if(right)
-			player.vx=.3;
-		if(up)
-			player.vy=1;
+		//refresh when touching ground, tell the player where he is
+		if(player.y<=0) { //this condition will be obsolete after level editor
+			player.position="standing";
+			player.jumps=1;
+			if(down)
+				player.position="ducking";
+			else
+				player.position="standing";
+		} else
+			player.position="airborne";
+		
+		if(act) {
+			if(down && !player.position.equals("airborne")) {
+				player.ability=new Dodge();
+				player.ability.started=true;
+				player.vx=0;
+			}
+			if(left && !player.position.equals("airborne")) {
+				player.ability=new Roll();
+				player.ability.started=true;
+				player.vx=-.8;
+			}
+			if(right && !player.position.equals("airborne")) {
+				player.ability=new Roll();
+				player.ability.started=true;
+				player.vx=.8;
+			}
+			act=false;
+		} else if(player.ability==null){
+			
+			//basic movement
+			if(left) {
+				player.facingRight=false;
+				if(player.position.equals("ducking"))
+					player.ax=-.06;
+				else
+					player.ax=-.1;
+			}
+			if(right) {
+				player.facingRight=true;
+				if(player.position.equals("ducking"))
+					player.ax=.06;
+				else
+					player.ax=.1;
+			}
+			if(up && player.jumps>0) {
+				player.vy=1;
+				player.jumps--;
+				up=false;
+			}
+		}
 	}
 
 	public void displayChanged(GLAutoDrawable arg0, boolean arg1, boolean arg2) {		
@@ -70,24 +133,29 @@ public class GLGameListener implements GLEventListener, KeyListener  {
 	}
 	
 	//**************KEY LISTENER********************
-	public void keyPressed(KeyEvent e) {
+	public void keyPressed(KeyEvent e) {		
 		if(e.getKeyCode()==KeyEvent.VK_LEFT)
 			left=true;
-		else if(e.getKeyCode()==KeyEvent.VK_RIGHT)
+		if(e.getKeyCode()==KeyEvent.VK_RIGHT)
 			right=true;
-		else if(e.getKeyCode()==KeyEvent.VK_UP)
+		if(e.getKeyCode()==KeyEvent.VK_UP)
 			up=true;
-				
+		if(e.getKeyCode()==KeyEvent.VK_DOWN)
+			down=true;
 	}
 	public void keyReleased(KeyEvent e) {
 		if(e.getKeyCode()==KeyEvent.VK_LEFT)
 			left=false;
-		else if(e.getKeyCode()==KeyEvent.VK_RIGHT)
+		if(e.getKeyCode()==KeyEvent.VK_RIGHT)
 			right=false;
-		else if(e.getKeyCode()==KeyEvent.VK_UP)
+		if(e.getKeyCode()==KeyEvent.VK_UP)
 			up=false;
+		if(e.getKeyCode()==KeyEvent.VK_DOWN)
+			down=false;
 	}
 	public void keyTyped(KeyEvent e) {
+		if(e.getKeyChar()==action)
+			act=true;
 	}
 	
 }
