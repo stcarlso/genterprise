@@ -18,11 +18,16 @@ public abstract class ResourceGetter {
 	 * Cache of JOGL images (textures).
 	 */
 	private transient Map<String, Texture> textureCache;
+	/**
+	 * The parent resource getter.
+	 */
+	protected transient ResourceGetter parent;
 
 	/**
 	 * Called by subclasses (implicitly) to initialize resource caches.
 	 */
-	protected ResourceGetter() {
+	protected ResourceGetter(ResourceGetter parent) {
+		this.parent = parent;
 		imageCache = new HashMap<String, Image>(256);
 		textureCache = new HashMap<String, Texture>(256);
 	}
