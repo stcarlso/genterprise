@@ -32,21 +32,31 @@ public class GameWindow extends JPanel {
 	}
 	//***************************PHYSICS THREAD***********************
 	public class PhysicsThread extends Thread {
-		private double muk=.1;
+		private double muk=.7;
 		private double gravity=9.8/100;
 		private long dt;
-		private long time;
+		private long time=0;
+		private long initiate=0;
 		public PhysicsThread() {			
 			dt=1;
 		}
 		public void run() {
 			while(true) {
 				synchronized (sync) {
+					time+=dt;
+					//working with character moves
+					if(player.ability!=null && player.ability.started) {
+						initiate=time;
+						player.ability.started=false;
+					}
+					if(player.ability!=null && time>=initiate+player.ability.duration) {
+						player.ability=null;
+					}
 					//ground friction
 					if(player.vx>0) {
-						player.ax= Math.max(-player.vx/dt,-muk*gravity);
+						player.ax+= Math.max(-player.vx/dt,-muk*gravity);
 					} else if(player.vx<0) {
-						player.ax= Math.min(-player.vx/dt,muk*gravity);
+						player.ax+= Math.min(-player.vx/dt,muk*gravity);
 						//player.ax= player.ax+muk*gravity;
 					}
 					//gravity and ground detection
@@ -61,7 +71,8 @@ public class GameWindow extends JPanel {
 						player.y=0;
 					else 
 						player.y+=player.vy*dt;
-					player.x+=player.vx*dt;
+					//move with velocity (speed limit of 1)
+					player.x+=Math.signum(player.vx)*Math.min(1,Math.abs(player.vx))*dt;
 					player.ax=0;
 					player.ay=0;
 				}
