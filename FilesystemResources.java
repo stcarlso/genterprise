@@ -14,13 +14,18 @@ public class FilesystemResources extends ResourceGetter {
 	/**
 	 * Creates a new file system resource.
 	 * 
+	 * @param parent the parent resources
 	 * @param base the base directory (including res/)
 	 */
-	public FilesystemResources(File base) {
-		super();
+	public FilesystemResources(ResourceGetter parent, File base) {
+		super(parent);
 		baseDir = base;
 	}
 	protected InputStream openResource(String src) throws IOException {
-		return new FileInputStream(new File(baseDir, src));
+		try {
+			return new FileInputStream(new File(baseDir, src));
+		} catch (IOException e) {
+			return parent.openResource(src);
+		}
 	}
 }

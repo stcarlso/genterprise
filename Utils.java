@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.image.*;
+import java.nio.*;
 import javax.swing.*;
 
 /**
@@ -11,7 +12,7 @@ public final class Utils {
 	/**
 	 * The image loader.
 	 */
-	private static final ImageIcon iconLoad = new ImageIcon();
+	private static ImageIcon iconLoad;
 
 	/**
 	 * Copies the image to a buffered image.
@@ -19,7 +20,7 @@ public final class Utils {
 	 * @param img the image to copy
 	 * @return the buffer image
 	 */
-	public static BufferedImage imageToBuffer(Image img) {
+	public static final BufferedImage imageToBuffer(Image img) {
 		if (img == null) return null;
 		loadFully(img);
 		int w = img.getWidth(null);
@@ -36,8 +37,9 @@ public final class Utils {
 	 * 
 	 * @param img the image to load
 	 */
-	public synchronized static void loadFully(Image img) {
+	public synchronized final static void loadFully(Image img) {
 		if (img == null) return;
+		if (iconLoad == null) iconLoad = new ImageIcon();
 		iconLoad.setImage(img);
 	}
 	/**
@@ -64,26 +66,6 @@ public final class Utils {
 	public static final String byteArrayToString(byte[] bytes) {
 		if (bytes == null) return null;
 		return new String(bytes);
-	}
-	/**
-	 * <i>Destroys</i> the specified array.
-	 * 
-	 * @param array the array to destroy
-	 */
-	public static final void destroy(int[] array) {
-		if (array == null) return;
-		for (int i = 0; i < array.length; i++)
-			array[i] = (byte)0;
-	}
-	/**
-	 * <i>Destroys</i> the specified array.
-	 * 
-	 * @param array the array to destroy
-	 */
-	public static final void destroy(byte[] array) {
-		if (array == null) return;
-		for (int i = 0; i < array.length; i++)
-			array[i] = (byte)0;
 	}
 	/**
 	 * Clones the specified byte array.
@@ -213,6 +195,18 @@ public final class Utils {
 		return createInt(array[start], array[start + 1], array[start + 2], array[start + 3]);
 	}
 	/**
+	 * Adds an integer to the buffer.
+	 * 
+	 * @param buf the byte buffer
+	 * @param value the value to add
+	 */
+	public static final void packInt(ByteBuffer buf, int value) {
+		buf.put((byte)(value >>> 24));
+		buf.put((byte)(value >>> 16));
+		buf.put((byte)(value >>> 8));
+		buf.put((byte)value);
+	}
+	/**
 	 * Copies the contents of an array.
 	 * 
 	 * @param array the array to copy
@@ -322,6 +316,37 @@ public final class Utils {
 			array.length);
 		System.arraycopy(array, 0, answer, 0, array.length);
 		return answer;
+	}
+	/**
+	 * Does all the static one-time init.
+	 */
+	public static final void staticInit() {
+		Errors.handleErrors();
+	}
+	/**
+	 * Shows an information message.
+	 * 
+	 * @param message the information message
+	 */
+	public static final void showMessage(String message) {
+		JOptionPane.showMessageDialog(null, message, "Gunther's Enterprise", JOptionPane.INFORMATION_MESSAGE);
+	}
+	/**
+	 * Shows a warning message.
+	 * 
+	 * @param message the warning message
+	 */
+	public static final void showWarning(String message) {
+		JOptionPane.showMessageDialog(null, message, "Gunther's Enterprise", JOptionPane.WARNING_MESSAGE);
+	}
+	/**
+	 * Shows a fatal error message. The program exits now!
+	 * 
+	 * @param message the fatal error message
+	 */
+	public static final void fatalError(String message) {
+		JOptionPane.showMessageDialog(null, message, "Gunther's Enterprise", JOptionPane.ERROR_MESSAGE);
+		System.exit(0);
 	}
 
 	/**
