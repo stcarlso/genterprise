@@ -20,7 +20,7 @@ public class Player implements Constants {
 		vy=0;
 		ax=0;
 		ay=0;
-		m=40;
+		m=4;
 		jumps=0;
 		position=STANDING;
 		boolean facingRight=true;

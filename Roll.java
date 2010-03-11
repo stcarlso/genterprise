@@ -3,8 +3,8 @@
  */
 public class Roll extends Move {
 	public Roll() {
-		start=4;
-		end=22;
-		duration=25;
+		start=2;
+		end=12;
+		duration=18;
 	}
 }
