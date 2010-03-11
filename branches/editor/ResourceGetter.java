@@ -1,6 +1,7 @@
 import java.util.*;
 import com.sun.opengl.util.texture.*;
 import java.awt.*;
+import javax.swing.*;
 import java.io.*;
 import javax.imageio.*;
 
@@ -104,6 +105,15 @@ public abstract class ResourceGetter {
 	 */
 	public synchronized String getString(String src) {
 		return new String(getBinary(src));
+	}
+	/**
+	 * Gets the specified resource as an AWT icon.
+	 * 
+	 * @param src the image source
+	 * @return the icon
+	 */
+	public synchronized Icon getIcon(String src) {
+		return new ImageIcon(getImage(src));
 	}
 	/**
 	 * Gets the specified resource as an AWT image.

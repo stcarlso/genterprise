@@ -20,6 +20,10 @@ public class Element implements java.io.Serializable {
 	 */
 	private String textureSrc;
 	/**
+	 * The element name.
+	 */
+	private String name;
+	/**
 	 * The cached texture object.
 	 */
 	private transient Texture texture;
@@ -44,6 +48,7 @@ public class Element implements java.io.Serializable {
 	protected Element() {
 		textureSrc = null;
 		geometrySrc = null;
+		name = null;
 		width = height = 0;
 	}
 	/**
@@ -53,8 +58,19 @@ public class Element implements java.io.Serializable {
 	 * @param geoSrc the geometry data source
 	 */
 	public Element(String texSrc, String geoSrc) {
+		this(texSrc, geoSrc, geoSrc);
+	}
+	/**
+	 * Creates an element referencing data from data sources.
+	 * 
+	 * @param texSrc the texture data source
+	 * @param geoSrc the geometry data source
+	 * @param name the element name
+	 */
+	public Element(String texSrc, String geoSrc, String name) {
 		textureSrc = texSrc;
 		geometrySrc = geoSrc;
+		this.name = name;
 		width = height = 0;
 	}
 	/**
@@ -64,6 +80,14 @@ public class Element implements java.io.Serializable {
 	 */
 	public Dimension getSize() {
 		return new Dimension(width, height);
+	}
+	/**
+	 * Gets the object name.
+	 * 
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
 	}
 	/**
 	 * Gets the width in grid units.
