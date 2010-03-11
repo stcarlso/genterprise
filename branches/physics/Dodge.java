@@ -3,8 +3,8 @@
  */
 public class Dodge extends Move {
 	public Dodge() {
-		start=4;
-		end=16;
-		duration=18;
+		start=2;
+		end=9;
+		duration=11;
 	}
 }
