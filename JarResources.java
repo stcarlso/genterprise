@@ -24,7 +24,7 @@ public class JarResources extends ResourceGetter {
 		try {
 			file = new JarFile(new File("resource.jar"));
 		} catch (Exception e) {
-			Utils.fatalError("Someone forgot to copy or include \"resource.jar\" in the program distribution.\n" +
+			Utils.fatalError("Someone forgot to copy or include \"resource.jar\" in the program distribution.<br>" +
 				"Please re-install the program or download again.");
 		}
 	}
@@ -42,6 +42,8 @@ public class JarResources extends ResourceGetter {
 		try {
 			return file.getInputStream(new JarEntry("res/" + src));
 		} catch (Exception e) {
+			if (parent == null)
+				return null;
 			return parent.openResource(src);
 		}
 	}

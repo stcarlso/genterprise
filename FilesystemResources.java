@@ -25,6 +25,8 @@ public class FilesystemResources extends ResourceGetter {
 		try {
 			return new FileInputStream(new File(baseDir, src));
 		} catch (IOException e) {
+			if (parent == null)
+				return null;
 			return parent.openResource(src);
 		}
 	}

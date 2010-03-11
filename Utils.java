@@ -345,8 +345,26 @@ public final class Utils {
 	 * @param message the fatal error message
 	 */
 	public static final void fatalError(String message) {
-		JOptionPane.showMessageDialog(null, message, "Gunther's Enterprise", JOptionPane.ERROR_MESSAGE);
-		System.exit(0);
+		Errors.userError(message);
+	}
+	/**
+	 * Puts the window in the center of the screen.
+	 * 
+	 * @param win the window to center
+	 */
+	public static void centerWindow(Window win) {
+		Dimension ss = win.getToolkit().getScreenSize();
+		win.setLocation((ss.width - win.getWidth()) / 2, (ss.height - win.getHeight()) / 2);
+	}
+	/**
+	 * Waits for the given number of milliseconds.
+	 * 
+	 * @param ms the time to wait for
+	 */
+	public static void sleep(long ms) {
+		try {
+			Thread.sleep(ms);
+		} catch (Exception e) { }
 	}
 
 	/**
