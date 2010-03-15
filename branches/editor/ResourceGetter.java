@@ -81,6 +81,7 @@ public abstract class ResourceGetter {
 	public synchronized byte[] getBinary(String src) {
 		try {
 			InputStream in = openResource(src);
+			if (in == null) return null;
 			// fast block copy copies 1024 bytes at a time to memory
 			ByteArrayOutputStream out = new ByteArrayOutputStream(32768);
 			byte[] buffer = new byte[1024];

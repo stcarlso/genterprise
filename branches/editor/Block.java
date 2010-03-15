@@ -21,14 +21,14 @@ public class Block implements java.io.Serializable {
 	/**
 	 * The list of elements in this block.
 	 */
-	private List<PlacedElement> elements;
+	private List<GameObject> elements;
 
 	/**
 	 * For serialization.
 	 */
 	public Block() {
 		bounds = new Rectangle(0, 0, 0, 0);
-		elements = new ArrayList<PlacedElement>(64);
+		elements = new ArrayList<GameObject>(64);
 		boundsDirty = true;
 	}
 	/**
@@ -36,7 +36,7 @@ public class Block implements java.io.Serializable {
 	 * 
 	 * @param elements the elements in this block
 	 */
-	public Block(List<PlacedElement> elements) {
+	public Block(List<GameObject> elements) {
 		this.elements = elements;
 		boundsDirty = true;
 		computeBounds();
@@ -49,7 +49,7 @@ public class Block implements java.io.Serializable {
 		int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
 		int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
 		int x, y;
-		for (PlacedElement el : elements) {
+		for (GameObject el : elements) {
 			x = el.getX();
 			y = el.getY();
 			if (minX > x) minX = x;
