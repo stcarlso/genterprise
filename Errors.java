@@ -60,6 +60,8 @@ public class Errors implements UncaughtExceptionHandler {
 	 */
 	public static void sorry(Throwable t) {
 		if (t == null) return;
+		while (t.getCause() != null)
+			t = t.getCause();
 		try {
 			System.runFinalization();
 			System.gc();

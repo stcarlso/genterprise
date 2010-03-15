@@ -1,5 +1,6 @@
-import java.awt.Dimension;
+import java.awt.*;
 import java.nio.*;
+import javax.media.opengl.*;
 import com.sun.opengl.util.*;
 import com.sun.opengl.util.texture.*;
 
@@ -41,6 +42,10 @@ public class Element implements java.io.Serializable {
 	 * The bounding box height in units.
 	 */
 	private transient int height;
+	/**
+	 * The number of vertices.
+	 */
+	private transient int size;
 
 	/**
 	 * Creates a blank element (serialization)
@@ -146,6 +151,14 @@ public class Element implements java.io.Serializable {
 		return texCoords;
 	}
 	/**
+	 * Gets whether textures have been loaded.
+	 * 
+	 * @return whether the texture was loaded
+	 */
+	public boolean hasTexture() {
+		return texture != null;
+	}
+	/**
 	 * Loads the geometry data.
 	 * 
 	 * @param res the resource source
@@ -161,18 +174,60 @@ public class Element implements java.io.Serializable {
 		this.width = width;
 		this.height = height;
 		int size = Utils.createInt(array, 0);
-		if (size < 1 || array.length < 12 + 9 * size)
+		System.out.println(size + " " + array.length);
+		if (size < 1 || array.length < 12 + 36 * size)
 			throw new RuntimeException("Geometry file size is invalid, there is not enough data");
-		ByteBuffer buf = BufferUtil.newByteBuffer(size);
-		buf.put(array, 12, 3 * size);
+		this.size = size;
+		ByteBuffer buf = BufferUtil.newByteBuffer(3 * 4 * size);
+		buf.put(array, 12, 3 * 4 * size);
+		buf.rewind();
 		vertex = buf.asFloatBuffer();
-		buf = BufferUtil.newByteBuffer(size);
-		buf.put(array, 3 * size + 12, 3 * size);
+		vertex.rewind();
+		buf = BufferUtil.newByteBuffer(3 * 4 * size);
+		buf.put(array, 3 * 4 * size + 12, 3 * 4 * size);
+		buf.rewind();
 		color = buf.asFloatBuffer();
-		buf = BufferUtil.newByteBuffer(size);
-		buf.put(array, 6 * size + 12, 3 * size);
+		color.rewind();
+		buf = BufferUtil.newByteBuffer(3 * 4 * size);
+		buf.put(array, 6 * 4 * size + 12, 3 * 4 * size);
+		buf.rewind();
 		texCoords = buf.asFloatBuffer();
+		texCoords.rewind();
 		array = null;
+	}
+	/**
+	 * Renders the object. For speed's sake, options are assumed to be unset.
+	 *  Use setOptions(GL) to set options.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	public void render(GL gl) {
+		if (vertex == null)
+			throw new RuntimeException("Cannot render before loading");
+		gl.glVertexPointer(3, GL.GL_FLOAT, 0, vertex);
+		gl.glColorPointer(3, GL.GL_FLOAT, 0, color);
+		gl.glTexCoordPointer(3, GL.GL_FLOAT, 0, texCoords);
+		gl.glDrawArrays(GL.GL_TRIANGLES, 0, size);
+	}
+	/**
+	 * Sets the rendering-specific options on the GL. Use before rendering a bunch of elements.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	public static void setOptions(GL gl) {
+		gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
+		gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+		gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+	}
+	/**
+	 * Clears the rendering-specific options on the GL. Use after rendering a bunch of elements.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	public static void clearOptions(GL gl) {
+		gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
+		gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+		gl.glDisableClientState(GL.GL_COLOR_ARRAY);
 	}
 	/**
 	 * Releases the loaded geometry.

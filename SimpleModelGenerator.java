@@ -19,9 +19,9 @@ public class SimpleModelGenerator {
 		ByteBuffer vv = ByteBuffer.allocate(3 * 4 * size);
 		ByteBuffer cc = ByteBuffer.allocate(3 * 4 * size);
 		ByteBuffer tt = ByteBuffer.allocate(2 * 4 * size);
-		vv.position(0);
-		cc.position(0);
-		tt.position(0);
+		vv.rewind();
+		cc.rewind();
+		tt.rewind();
 		FloatBuffer vertex = vv.asFloatBuffer();
 		FloatBuffer color = cc.asFloatBuffer();
 		FloatBuffer texCoord = tt.asFloatBuffer();
