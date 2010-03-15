@@ -12,4 +12,6 @@ public interface Constants {
 	public static final int STANDING=0;
 	public static final int DUCKING=1;
 	public static final int AIRBORNE=2;
+	public static final int WALLONLEFT=3;
+	public static final int WALLONRIGHT=4;
 }
