@@ -1,5 +1,6 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
@@ -12,6 +13,7 @@ import javax.media.opengl.glu.GLU;
 import javax.swing.JPanel;
 
 import com.sun.opengl.util.Animator;
+import com.sun.opengl.util.j2d.Overlay;
 
 public class GameWindow extends JPanel implements Constants {
 	boolean up;
@@ -20,6 +22,8 @@ public class GameWindow extends JPanel implements Constants {
 	boolean right;
 	boolean down;
 	boolean act;
+	int width=800;
+	int height=800;
 	long time=0;
 	char action='a';
 	Object sync= new Object();
@@ -59,25 +63,30 @@ public class GameWindow extends JPanel implements Constants {
 			while(true) {
 				time+=dt;
 				
-				//****************KEY RESPONSE*******************
-				//refresh when touching ground, tell the player where he is
-				
+				//player state determination
 				if(player.y<=0 && player.vy<=0) { //this condition will be obsolete after level editor
 					player.jumps=2;
+					player.wallJumps=1;
 					if(down)
 						player.position=DUCKING;
 					else
 						player.position=STANDING;
 					if(player.ability!=null && player.ability instanceof AirDodge)
 						player.ability=null;
+				} else if(player.x<=0){
+					player.position=WALLONLEFT;
 				} else
 					player.position=AIRBORNE;
+				
+				//****************KEY RESPONSE*******************
+				//refresh when touching ground, tell the player where he is
 				
 				if(player.ability==null){
 					if(act) {
 						if(player.position==AIRBORNE) {
 							player.ability=new AirDodge();
-						} else {
+							player.ability.started=true;
+						} else if(player.position==STANDING || player.position==DUCKING){
 							if(down) {
 								player.ability=new Dodge();
 								player.vx=0;
@@ -100,8 +109,9 @@ public class GameWindow extends JPanel implements Constants {
 							} else {
 								player.ability=new Activate();									
 							}
+							player.ability.started=true;
 						}
-						player.ability.started=true;
+
 						act=false;
 					} else {
 						
@@ -110,15 +120,27 @@ public class GameWindow extends JPanel implements Constants {
 							player.facingRight=false;
 							if(player.position==DUCKING)
 								player.ax=-.06;
-							else
+							else if(player.position==STANDING)
 								player.ax=-.1;
+							else if(player.position==WALLONRIGHT && player.wallJumps>0) {
+								player.wallJumps=0;
+								player.vy=1;
+								player.ax=-.3;
+							} else if(player.position==AIRBORNE)
+								player.ax=-.07;
 						}
 						if(right) {
 							player.facingRight=true;
 							if(player.position==DUCKING)
 								player.ax=.06;
-							else
+							else if(player.position==STANDING)
 								player.ax=.1;
+							else if(player.position==WALLONLEFT && player.wallJumps>0) {
+								player.wallJumps=0;
+								player.vy=1;
+								player.ax=.3;
+							} else if(player.position==AIRBORNE)
+								player.ax=.07;
 						}
 						if(up && !upDone && player.jumps>0) {
 							player.vy=1;
@@ -130,6 +152,7 @@ public class GameWindow extends JPanel implements Constants {
 				
 				//working with character moves
 				if(player.ability!=null && player.ability.started) {
+					player.suspicion+=10;
 					initiate=time;
 					effectStart= time+player.ability.start;
 					effectEnd= time+player.ability.end;
@@ -146,6 +169,7 @@ public class GameWindow extends JPanel implements Constants {
 					player.ability=null;
 				}
 				
+				//acceleration calculations
 				if(player.position==AIRBORNE) {		//air friction
 					if(player.vx>0) {
 						player.ax+= Math.max(-player.vx/dt,-kair*player.vx/player.m);
@@ -162,15 +186,19 @@ public class GameWindow extends JPanel implements Constants {
 				//gravity and ground detection
 				player.ay+=-gravity;
 				player.vy+=player.ay*dt;
-				player.vx+=player.ax*dt;
-				if(player.y+player.vy*dt<0)		//obsolete after block collision
+				player.vx+=player.ax*dt;				
+				player.y+=player.vy*dt;
+				if(player.y<0) //obsolete after block collision, stops you from falling into ground
 					player.y=0;
-				else 
-					player.y+=player.vy*dt;
 				//move with velocity (speed limit of 1)
 				player.x+=Math.signum(player.vx)*Math.min(1,Math.abs(player.vx))*dt;
+				if(player.x<0)	//obsolete after block collision, stops you from falling into walls
+					player.x=0;
 				player.ax=0;
 				player.ay=0;
+				
+				//recover suspicion
+				player.suspicion=Math.max(0,player.suspicion-.1);
 			
 				try {				
 					Thread.sleep(33L);
@@ -180,6 +208,8 @@ public class GameWindow extends JPanel implements Constants {
 	}
 	
 	public class GLGameListener implements GLEventListener, KeyListener {
+		Overlay overlay;
+		
 		public GLGameListener(Player you, Object synch) {
 			player=you;
 		}
@@ -193,6 +223,8 @@ public class GameWindow extends JPanel implements Constants {
 		 	gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 		 	glu.gluLookAt(0,10,30,0,10,0,0,1,0);
 		 	gl.glMatrixMode(GL.GL_MODELVIEW);
+		 	
+		 	//Draw the axes, which will not be visible in the final game
 		 	gl.glBegin(GL.GL_LINES);
 		 		gl.glColor3f(0f,0f,1f);
 		 		gl.glVertex3d(0,-50,0);
@@ -204,7 +236,15 @@ public class GameWindow extends JPanel implements Constants {
 				gl.glColor3f(0f,1f,0f);
 				gl.glVertex3d(0,0,-9001);
 				gl.glVertex3d(0,0,9001);	 			
-			gl.glEnd();
+			gl.glEnd();	
+			drawCharacter(gl);
+			drawOverlay();
+		}
+		/**
+		 * Draw the character onto the screen. This method needs to be completely changed for the real character model
+		 * @param gl
+		 */
+		public void drawCharacter(GL gl) {
 			//drawing the player
 			if(player.ability instanceof Dodge)
 				gl.glColor3f(0f,1f,0f);
@@ -240,8 +280,21 @@ public class GameWindow extends JPanel implements Constants {
 					gl.glVertex3d(player.x,player.y+1.5,0);
 					gl.glVertex3d(player.x+.5,player.y+1.5,0);
 				}
-			gl.glEnd();				
-			
+			gl.glEnd();	
+		}
+		
+		/**
+		 * Draws 2D elements as an overlay on the screen, including the suspicion meter
+		 */
+		public void drawOverlay() {
+			Graphics2D g2=overlay.createGraphics();
+			g2.setColor(Color.white);
+			g2.fillRect(width-100,100,40,40);
+			g2.setColor(Color.green);
+			g2.drawString(player.suspicion+"",100,100);
+			System.out.println(360-(int)player.suspicion);
+			g2.fillArc(width-100,100,40,40,90,360-(int)player.suspicion);
+			overlay.drawAll();
 		}
 
 		public void displayChanged(GLAutoDrawable arg0, boolean arg1, boolean arg2) {		
@@ -254,6 +307,7 @@ public class GameWindow extends JPanel implements Constants {
 			gl.glMatrixMode(GL.GL_PROJECTION);
 		 	gl.glLoadIdentity();		 			 	
 		 	glu.gluPerspective(60,1.0,1.0,100);
+		 	overlay = new Overlay(drawable);
 		}
 
 		public void reshape(GLAutoDrawable arg0, int arg1, int arg2, int arg3, int arg4) {
