@@ -174,24 +174,30 @@ public class Element implements java.io.Serializable {
 		this.width = width;
 		this.height = height;
 		int size = Utils.createInt(array, 0);
-		System.out.println(size + " " + array.length);
-		if (size < 1 || array.length < 12 + 36 * size)
+		if (size < 1 || array.length < 12 + 8 * 4 * size)
 			throw new RuntimeException("Geometry file size is invalid, there is not enough data");
 		this.size = size;
-		ByteBuffer buf = BufferUtil.newByteBuffer(3 * 4 * size);
-		buf.put(array, 12, 3 * 4 * size);
-		buf.rewind();
-		vertex = buf.asFloatBuffer();
+		ByteBuffer buf = ByteBuffer.wrap(array);
+		buf.position(12);
+		vertex = BufferUtil.newByteBuffer(3 * 4 * size).asFloatBuffer();
+		color = BufferUtil.newByteBuffer(3 * 4 * size).asFloatBuffer();
+		texCoords = BufferUtil.newByteBuffer(2 * 4 * size).asFloatBuffer();
+		for (int i = 0; i < size; i++) {
+			vertex.put(buf.getFloat());
+			vertex.put(buf.getFloat());
+			vertex.put(buf.getFloat());
+		}
+		for (int i = 0; i < size; i++) {
+			color.put(buf.getFloat());
+			color.put(buf.getFloat());
+			color.put(buf.getFloat());
+		}
+		for (int i = 0; i < size; i++) {
+			texCoords.put(buf.getFloat());
+			texCoords.put(buf.getFloat());
+		}
 		vertex.rewind();
-		buf = BufferUtil.newByteBuffer(3 * 4 * size);
-		buf.put(array, 3 * 4 * size + 12, 3 * 4 * size);
-		buf.rewind();
-		color = buf.asFloatBuffer();
 		color.rewind();
-		buf = BufferUtil.newByteBuffer(3 * 4 * size);
-		buf.put(array, 6 * 4 * size + 12, 3 * 4 * size);
-		buf.rewind();
-		texCoords = buf.asFloatBuffer();
 		texCoords.rewind();
 		array = null;
 	}
@@ -204,9 +210,10 @@ public class Element implements java.io.Serializable {
 	public void render(GL gl) {
 		if (vertex == null)
 			throw new RuntimeException("Cannot render before loading");
+		gl.glBindTexture(GL.GL_TEXTURE_2D, texture.getTextureObject());
 		gl.glVertexPointer(3, GL.GL_FLOAT, 0, vertex);
 		gl.glColorPointer(3, GL.GL_FLOAT, 0, color);
-		gl.glTexCoordPointer(3, GL.GL_FLOAT, 0, texCoords);
+		gl.glTexCoordPointer(2, GL.GL_FLOAT, 0, texCoords);
 		gl.glDrawArrays(GL.GL_TRIANGLES, 0, size);
 	}
 	/**
@@ -228,6 +235,7 @@ public class Element implements java.io.Serializable {
 		gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
 		gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
 		gl.glDisableClientState(GL.GL_COLOR_ARRAY);
+		gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
 	}
 	/**
 	 * Releases the loaded geometry.
