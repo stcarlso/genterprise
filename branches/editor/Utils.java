@@ -1,6 +1,5 @@
-import java.awt.*;
+import java.awt.*; 
 import java.awt.image.*;
-import java.nio.*;
 import javax.swing.*;
 
 /**
@@ -193,18 +192,6 @@ public final class Utils {
 	 */
 	public static final int createInt(byte[] array, int start) {
 		return createInt(array[start], array[start + 1], array[start + 2], array[start + 3]);
-	}
-	/**
-	 * Adds an integer to the buffer.
-	 * 
-	 * @param buf the byte buffer
-	 * @param value the value to add
-	 */
-	public static final void packInt(ByteBuffer buf, int value) {
-		buf.put((byte)(value >>> 24));
-		buf.put((byte)(value >>> 16));
-		buf.put((byte)(value >>> 8));
-		buf.put((byte)value);
 	}
 	/**
 	 * Copies the contents of an array.

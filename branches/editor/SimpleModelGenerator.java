@@ -58,10 +58,10 @@ public class SimpleModelGenerator {
 			texCoord.put(ty);
 		}
 		ByteBuffer info = ByteBuffer.allocate(12);
-		info.position(0);
-		Utils.packInt(info, size);
-		Utils.packInt(info, width);
-		Utils.packInt(info, height);
+		info.putInt(size);
+		info.putInt(width);
+		info.putInt(height);
+		info.rewind();
 		System.out.print("Write to file: ");
 		String name = br.readLine();
 		FileOutputStream out = new FileOutputStream(name);

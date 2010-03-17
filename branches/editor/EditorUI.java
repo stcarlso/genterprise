@@ -210,7 +210,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 	public void display(GLAutoDrawable drawable) {
 		GL gl = drawable.getGL();
 		gl.glClear(GL.GL_DEPTH_BUFFER_BIT | GL.GL_COLOR_BUFFER_BIT);
-		Element.setOptions(gl);
 		if (dropping != null && !dropping.hasTexture())
 			dropping.loadTexture(current);
 		switch (event) {
@@ -224,10 +223,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 		default:
 		}
 		event = 0;
+		Element.setOptions(gl);
 		if (dropping != null && coords != null) {
 			gl.glPushMatrix();
 			gl.glTranslated(coords.getX(), coords.getY(), coords.getZ());
-			System.out.println(dropping.getVertexArray().get(2));
 			dropping.render(gl);
 			gl.glPopMatrix();
 		}
@@ -248,16 +247,22 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX, modelview, 0);
 		gl.glEnable(GL.GL_DEPTH_TEST);
 		gl.glEnable(GL.GL_BLEND);
+		gl.glEnable(GL.GL_TEXTURE_2D);
+		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
+		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
+		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT);
+		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR);
 	}
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
 		double ratio = (double)width / height;
 		GL gl = drawable.getGL();
+		gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
 		gl.glMatrixMode(GL.GL_PROJECTION);
 		gl.glLoadIdentity();
 		gl.glOrtho(-20 * ratio, 20 * ratio, -20, 20, 0.1, 10);
 		gl.glGetDoublev(GL.GL_PROJECTION_MATRIX, projection, 0);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
-		gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
 	}
 	/**
 	 * Stops the updating stuff for better performance when hidden.
@@ -301,7 +306,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 				coords.setZ(pos[2]);
 			}
 			// TODO
-			coords.setZ(5);
+			coords.setZ(3);
 		}
 	}
 
