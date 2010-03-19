@@ -123,7 +123,7 @@ public class GameWindow extends JPanel implements Constants {
 							else if(player.position==STANDING)
 								player.ax=-.1;
 							else if(player.position==WALLONRIGHT && player.wallJumps>0) {
-								player.wallJumps=0;
+								//player.wallJumps=0;
 								player.vy=1;
 								player.ax=-.3;
 							} else if(player.position==AIRBORNE)
@@ -136,7 +136,7 @@ public class GameWindow extends JPanel implements Constants {
 							else if(player.position==STANDING)
 								player.ax=.1;
 							else if(player.position==WALLONLEFT && player.wallJumps>0) {
-								player.wallJumps=0;
+								//player.wallJumps=0;
 								player.vy=1;
 								player.ax=.3;
 							} else if(player.position==AIRBORNE)
@@ -152,7 +152,7 @@ public class GameWindow extends JPanel implements Constants {
 				
 				//working with character moves
 				if(player.ability!=null && player.ability.started) {
-					player.suspicion+=10;
+					player.suspicion+=player.ability.duration*2;
 					initiate=time;
 					effectStart= time+player.ability.start;
 					effectEnd= time+player.ability.end;
@@ -198,7 +198,7 @@ public class GameWindow extends JPanel implements Constants {
 				player.ay=0;
 				
 				//recover suspicion
-				player.suspicion=Math.max(0,player.suspicion-.1);
+				player.suspicion=Math.max(0,player.suspicion-1);
 			
 				try {				
 					Thread.sleep(33L);
