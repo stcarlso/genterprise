@@ -1,5 +1,4 @@
-import java.awt.Rectangle;
-import java.awt.Point;
+import java.awt.geom.*;
 import java.util.*;
 
 /**
@@ -13,7 +12,7 @@ public class Block implements java.io.Serializable {
 	/**
 	 * The bounding rectangle of this zone.
 	 */
-	private transient Rectangle bounds;
+	private transient Rectangle2D bounds;
 	/**
 	 * Whether bounds have been computed.
 	 */
@@ -27,7 +26,7 @@ public class Block implements java.io.Serializable {
 	 * For serialization.
 	 */
 	public Block() {
-		bounds = new Rectangle(0, 0, 0, 0);
+		bounds = new Rectangle2D.Float(0.f, 0.f, 0.f, 0.f);
 		elements = new ArrayList<GameObject>(64);
 		boundsDirty = true;
 	}
@@ -46,9 +45,9 @@ public class Block implements java.io.Serializable {
 	 */
 	public synchronized void computeBounds() {
 		if (!boundsDirty) return;
-		int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
-		int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-		int x, y;
+		double minX = -Double.MAX_VALUE, minY = Double.MAX_VALUE;
+		double maxX = -Double.MAX_VALUE, maxY = Double.MAX_VALUE;
+		double x, y;
 		for (GameObject el : elements) {
 			x = el.getX();
 			y = el.getY();
@@ -58,9 +57,9 @@ public class Block implements java.io.Serializable {
 			if (maxY < y) maxY = y;
 		}
 		if (elements.size() == 0)
-			bounds = new Rectangle(0, 0, 0, 0);
+			bounds = new Rectangle2D.Double(0., 0., 0., 0.);
 		else
-			bounds = new Rectangle(minX, minY, maxX - minX, maxY - minY);
+			bounds = new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
 		boundsDirty = false;
 	}
 	/**
@@ -68,7 +67,7 @@ public class Block implements java.io.Serializable {
 	 * 
 	 * @return the bounds
 	 */
-	public Rectangle getBounds() {
+	public Rectangle2D getBounds() {
 		return bounds;
 	}
 	/**
@@ -88,7 +87,7 @@ public class Block implements java.io.Serializable {
 	 * @param xy the location as a point
 	 * @return whether the location is inside this block
 	 */
-	public boolean inBounds(Point xy) {
+	public boolean inBounds(Point2D xy) {
 		computeBounds();
 		return bounds.contains(xy);
 	}
@@ -98,7 +97,7 @@ public class Block implements java.io.Serializable {
 	 * @param rect the bounding rectangle of the target
 	 * @return whether any part of the rectangle is inside this block
 	 */
-	public boolean inBounds(Rectangle rect) {
+	public boolean inBounds(Rectangle2D rect) {
 		computeBounds();
 		return bounds.intersects(rect);
 	}
@@ -107,44 +106,52 @@ public class Block implements java.io.Serializable {
 	 * 
 	 * @return the upper left coordinate
 	 */
-	public Point getUpperLeft() {
+	public Point2D getUpperLeft() {
 		computeBounds();
-		return new Point(bounds.x, bounds.y);
+		return new Point2D.Double(bounds.getX(), bounds.getY());
 	}
 	/**
 	 * Gets the minimum X extent.
 	 * 
 	 * @return the minimum X coordinate
 	 */
-	public int getMinX() {
+	public double getMinX() {
 		computeBounds();
-		return bounds.x;
+		return bounds.getMinX();
 	}
 	/**
 	 * Gets the minimum Y extent.
 	 * 
 	 * @return the minimum Y coordinate
 	 */
-	public int getMinY() {
+	public double getMinY() {
 		computeBounds();
-		return bounds.y;
+		return bounds.getMinY();
 	}
 	/**
 	 * Gets the maximum X extent.
 	 * 
 	 * @return the maximum X coordinate
 	 */
-	public int getMaxX() {
+	public double getMaxX() {
 		computeBounds();
-		return bounds.x + bounds.width;
+		return bounds.getMaxX();
 	}
 	/**
 	 * Gets the maximum Y extent.
 	 * 
 	 * @return the maximum Y coordinate
 	 */
-	public int getMaxY() {
+	public double getMaxY() {
 		computeBounds();
-		return bounds.y + bounds.height;
+		return bounds.getMaxY();
+	}
+	/**
+	 * Gets the elements contained by this block.
+	 * 
+	 * @return the elements
+	 */
+	public List<GameObject> getElements() {
+		return elements;
 	}
 }

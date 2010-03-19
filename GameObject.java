@@ -1,4 +1,4 @@
-import java.awt.Point;
+import java.awt.geom.*;
 import java.util.*;
 
 /**
@@ -12,11 +12,11 @@ public class GameObject implements java.io.Serializable {
 	/**
 	 * The X coordinate.
 	 */
-	private int x;
+	private double x;
 	/**
 	 * The Y coordinate.
 	 */
-	private int y;
+	private double y;
 	/**
 	 * The source element.
 	 */
@@ -39,7 +39,7 @@ public class GameObject implements java.io.Serializable {
 	 * @param y the y coordinate
 	 * @param src the source block
 	 */
-	public GameObject(int x, int y, Element src) {
+	public GameObject(double x, double y, Element src) {
 		this.x = x;
 		this.y = y;
 		this.src = src;
@@ -90,7 +90,7 @@ public class GameObject implements java.io.Serializable {
 	 * 
 	 * @return the x (first, width) coordinate.
 	 */
-	public int getX() {
+	public double getX() {
 		return x;
 	}
 	/**
@@ -98,7 +98,7 @@ public class GameObject implements java.io.Serializable {
 	 * 
 	 * @return the y (second, height) coordinate.
 	 */
-	public int getY() {
+	public double getY() {
 		return y;
 	}
 	/**
@@ -106,7 +106,7 @@ public class GameObject implements java.io.Serializable {
 	 * 
 	 * @return the X and Y coordinates
 	 */
-	public Point getLocation() {
-		return new Point(x, y);
+	public Point2D getLocation() {
+		return new Point2D.Double(x, y);
 	}
 }

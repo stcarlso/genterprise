@@ -90,9 +90,9 @@ public class Level implements java.io.Serializable {
 		}
 		public int compare(Block one, Block two) {
 			if (direction == 0)
-				return one.getMinX() - two.getMinX();
+				return (int)Math.signum(one.getMinX() - two.getMinX());
 			else if (direction == 1)
-				return one.getMinY() - two.getMinY();
+				return (int)Math.signum(one.getMinY() - two.getMinY());
 			return 0;
 		}
 	}
