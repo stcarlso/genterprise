@@ -11,7 +11,7 @@ public class Player implements Constants {
 	int jumps;
 	int wallJumps;
 	int position;
-	double suspicion;
+	int suspicion;
 	boolean facingRight;
 	Move ability;
 	Color color; //may be deprecated as soon as player models are available
@@ -23,8 +23,8 @@ public class Player implements Constants {
 		ax=0;
 		ay=0;
 		m=4;
-		jumps=0;
-		wallJumps=0;
+		jumps=2;
+		wallJumps=1;
 		position=STANDING;
 		suspicion=0;
 		boolean facingRight=true;
