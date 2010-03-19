@@ -17,9 +17,17 @@ public class EditorUI extends JFrame implements GLEventListener {
 	private static final long serialVersionUID = 0L;
 
 	/**
+	 * Z coordinate for blocks.
+	 */
+	public static final double Z = 1.0;
+	/**
 	 * Place the element.
 	 */
 	public static final int PLACE = 2;
+	/**
+	 * Place the element.
+	 */
+	public static final int PLACE_IFNOT = 3;
 	/**
 	 * Re-render the dropping element.
 	 */
@@ -79,6 +87,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private Object winSync;
 	/**
+	 * The synchronizer for GL events.
+	 */
+	private Object eventSync;
+	/**
 	 * The current resource list.
 	 */
 	private ResourceGetter current;
@@ -99,6 +111,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private Point3 coords;
 	/**
+	 * Last place location.
+	 */
+	private Point3 lastPlace;
+	/**
 	 * The mouse x.
 	 */
 	private int x;
@@ -111,10 +127,22 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private volatile int event;
 	/**
+	 * Whether snap to grid is on.
+	 */
+	private volatile boolean snapTo;
+	/**
+	 * Whether the grid is visible.
+	 */
+	private JCheckBox grid;
+	/**
 	 * Matrices for the modelview, projection, and positions. Also the viewport.
 	 */
 	private double[] modelview, pos, projection;
 	private int[] viewport;
+	/**
+	 * A block for testing.
+	 */
+	private Block block;
 
 	/**
 	 * Sets the window title.
@@ -122,7 +150,15 @@ public class EditorUI extends JFrame implements GLEventListener {
 	public EditorUI() {
 		super("Gunther's Enterprise Level Editor");
 		winSync = new Object();
+		eventSync = new Object();
 		elements = new TreeMap<String, Element>();
+		pos = new double[4];
+		modelview = new double[16];
+		projection = new double[16];
+		viewport = new int[4];
+		block = new Block(new LinkedList<GameObject>());
+		snapTo = true;
+		lastPlace = coords = null;
 	}
 	/**
 	 * Invoked to start the level editor.
@@ -188,6 +224,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 		getContentPane().add(pane, BorderLayout.NORTH);
 		canvas.addMouseListener(events);
 		canvas.addMouseMotionListener(events);
+		grid = new JCheckBox("Show Grid");
+		grid.setSelected(false);
+		grid.setFocusable(false);
+		JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
+		bottom.setOpaque(false);
+		bottom.add(grid);
+		getContentPane().add(bottom, BorderLayout.SOUTH);
 	}
 	/**
 	 * Loads the blocks.
@@ -207,22 +250,43 @@ public class EditorUI extends JFrame implements GLEventListener {
 		available.repaint();
 		available.scrollRectToVisible(ZEROZERO);
 	}
+	/**
+	 * Drops the block at the current location.
+	 */
+	private void drop() {
+		if (dropping == null || coords == null) return;
+		if (event == PLACE_IFNOT) {
+			if (lastPlace != null) {
+				if (Math.floor(lastPlace.x) == Math.floor(coords.x) &&
+					Math.floor(lastPlace.y) == Math.floor(coords.y)) return;
+			}
+		}
+		GameObject newObject = new GameObject(coords.x, coords.y, dropping);
+		synchronized (block) {
+			block.getElements().add(newObject);
+			if (event == PLACE_IFNOT) lastPlace = new Point3(coords.x, coords.y, coords.z);
+		}
+	}
 	public void display(GLAutoDrawable drawable) {
 		GL gl = drawable.getGL();
 		gl.glClear(GL.GL_DEPTH_BUFFER_BIT | GL.GL_COLOR_BUFFER_BIT);
 		if (dropping != null && !dropping.hasTexture())
 			dropping.loadTexture(current);
-		switch (event) {
-		case RENDER:
-			computeLocation(gl);
-			break;
-		case PLACE:
-			System.out.println("Drop!");
-			dropping = null;
-			break;
-		default:
+		synchronized (eventSync) {
+			switch (event) {
+			case RENDER:
+				computeLocation(gl);
+				break;
+			case PLACE_IFNOT:
+				computeLocation(gl);
+			case PLACE:
+				drop();
+				//dropping = null;
+				break;
+			default:
+			}
+			event = 0;
 		}
-		event = 0;
 		Element.setOptions(gl);
 		if (dropping != null && coords != null) {
 			gl.glPushMatrix();
@@ -230,15 +294,27 @@ public class EditorUI extends JFrame implements GLEventListener {
 			dropping.render(gl);
 			gl.glPopMatrix();
 		}
+		synchronized (block) {
+			Iterator<GameObject> it = block.getElements().iterator();
+			GameObject o;
+			while (it.hasNext()) {
+				gl.glPushMatrix();
+				o = it.next();
+				gl.glTranslated(o.getX(), o.getY(), Z);
+				o.getSource().render(gl);
+				gl.glPopMatrix();
+			}
+		}
 		Element.clearOptions(gl);
+		if (grid.isSelected()) {
+			gl.glColor3f(0.5f, 0.5f, 0.5f);
+			gl.glBegin(GL.GL_LINES);
+			gl.glEnd();
+		}
 		Utils.sleep(30L);
 	}
 	public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) { }
 	public void init(GLAutoDrawable drawable) {
-		pos = new double[4];
-		modelview = new double[16];
-		projection = new double[16];
-		viewport = new int[4];
 		GL gl = drawable.getGL();
 		glu = new GLU();
 		gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -253,6 +329,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT);
 		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
 		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR);
+		gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
+		gl.glDisable(GL.GL_LIGHTING);
 	}
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
 		double ratio = (double)width / height;
@@ -260,7 +338,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
 		gl.glMatrixMode(GL.GL_PROJECTION);
 		gl.glLoadIdentity();
-		gl.glOrtho(-20 * ratio, 20 * ratio, -20, 20, 0.1, 10);
+		gl.glOrtho(-10 * ratio, 10 * ratio, -10, 10, -10, 10);
 		gl.glGetDoublev(GL.GL_PROJECTION_MATRIX, projection, 0);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
 	}
@@ -298,6 +376,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glReadPixels(x, y, 1, 1, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT, buf);
 		// unproject
 		if (glu.gluUnProject(x, y, buf.get(0), modelview, 0, projection, 0, viewport, 0, pos, 0)) {
+			if (snapTo) {
+				pos[0] = Math.floor(pos[0]);
+				pos[1] = Math.floor(pos[1]);
+				pos[2] = Math.floor(pos[2]);
+			}
 			if (coords == null)
 				coords = new Point3(pos[0], pos[1], pos[2]);
 			else {
@@ -305,8 +388,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 				coords.setY(pos[1]);
 				coords.setZ(pos[2]);
 			}
-			// TODO
-			coords.setZ(3);
+			coords.setZ(Z);
 		}
 	}
 
@@ -353,15 +435,28 @@ public class EditorUI extends JFrame implements GLEventListener {
 		public void mouseMoved(MouseEvent e) {
 			x = e.getX();
 			y = e.getY();
-			event = RENDER;
+			synchronized (eventSync) {
+				snapTo = true;
+				if (e.isShiftDown()) snapTo = false;
+				event = RENDER;
+			}
 		}
 		public void mouseExited(MouseEvent e) {
 			coords = null;
 		}
 		public void mouseReleased(MouseEvent e) {
-			if (dropping != null && coords != null) event = PLACE;
+			synchronized (eventSync) {
+				if (dropping != null && coords != null) event = PLACE;
+			}
 		}
-		public void mouseDragged(MouseEvent e) { }
+		public void mouseDragged(MouseEvent e) {
+			x = e.getX();
+			y = e.getY();
+			if (!e.isShiftDown())
+				synchronized (eventSync) {
+					if (dropping != null && coords != null) event = PLACE_IFNOT;
+				}
+		}
 	}
 
 	/**
