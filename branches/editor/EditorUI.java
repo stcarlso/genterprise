@@ -17,6 +17,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 	private static final long serialVersionUID = 0L;
 
 	/**
+	 * The width in grid units (HALF of it!)
+	 */
+	public static final int GW = 10;
+	/**
+	 * The height in grid units (HALF of it!)
+	 */
+	public static final int GH = 10;
+	/**
 	 * Z coordinate for blocks.
 	 */
 	public static final double Z = 1.0;
@@ -143,6 +151,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * A block for testing.
 	 */
 	private Block block;
+	/**
+	 * The center of the screen.
+	 */
+	private Point3 center;
+	/**
+	 * The velocity with which the screen is moving.
+	 */
+	private Vector3 vel;
 
 	/**
 	 * Sets the window title.
@@ -159,6 +175,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 		block = new Block(new LinkedList<GameObject>());
 		snapTo = true;
 		lastPlace = coords = null;
+		center = new Point3(0.0, 0.0, 0.0);
+		vel = new Vector3(0.0, 0.0, 0.0);
 	}
 	/**
 	 * Invoked to start the level editor.
@@ -184,6 +202,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		Utils.centerWindow(this);
 		validate();
 		setVisible(true);
+		center();
 		startRun();
 	}
 	/**
@@ -287,6 +306,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			}
 			event = 0;
 		}
+		updatePosition(gl);
 		Element.setOptions(gl);
 		if (dropping != null && coords != null) {
 			gl.glPushMatrix();
@@ -306,12 +326,23 @@ public class EditorUI extends JFrame implements GLEventListener {
 			}
 		}
 		Element.clearOptions(gl);
+		grid(gl);
+		Utils.sleep(30L);
+	}
+	private void grid(GL gl) {
 		if (grid.isSelected()) {
 			gl.glColor3f(0.5f, 0.5f, 0.5f);
 			gl.glBegin(GL.GL_LINES);
+			for (int x = -GW; x < GW; x++) {
+				gl.glVertex3f((float)center.getX() + x, (float)center.getY() - GH, 0.1f);
+				gl.glVertex3f((float)center.getX() + x, (float)center.getY() + GH, 0.1f);
+			}
+			for (int y = -GH; y < GH; y++) {
+				gl.glVertex3f((float)center.getX() - GW, (float)center.getY() + y, 0.1f);
+				gl.glVertex3f((float)center.getX() + GW, (float)center.getY() + y, 0.1f);
+			}
 			gl.glEnd();
 		}
-		Utils.sleep(30L);
 	}
 	public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) { }
 	public void init(GLAutoDrawable drawable) {
@@ -338,7 +369,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
 		gl.glMatrixMode(GL.GL_PROJECTION);
 		gl.glLoadIdentity();
-		gl.glOrtho(-10 * ratio, 10 * ratio, -10, 10, -10, 10);
+		gl.glOrtho(-GW * ratio, GW * ratio, -GH, GH, -10, 10);
 		gl.glGetDoublev(GL.GL_PROJECTION_MATRIX, projection, 0);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
 	}
@@ -390,6 +421,71 @@ public class EditorUI extends JFrame implements GLEventListener {
 			}
 			coords.setZ(Z);
 		}
+	}
+	/**
+	 * Updates the screen position.
+	 * 
+	 * @param gl the GL context
+	 */
+	private void updatePosition(GL gl) {
+		if (vel.getX() != 0.0 || vel.getY() != 0.0) {
+			moveRelativePosition(vel.getX() / 2, vel.getY() / 2, 0);
+			gl.glLoadIdentity();
+			gl.glTranslated(center.getX(), center.getY(), center.getZ());
+			gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX, modelview, 0);
+			synchronized (eventSync) {
+				computeLocation(gl);
+			}
+		}
+		if (x < 60) {
+			vel.setX(Math.min(0.5, vel.getX() + 0.1));
+			if (y > canvas.getHeight() - 60)
+				vel.setY(Math.min(0.5, vel.getY() + 0.1));
+			else if (y < 60)
+				vel.setY(Math.max(-0.5, vel.getY() - 0.1));
+		} else if (x > canvas.getWidth() - 60) {
+			vel.setX(Math.max(-0.5, vel.getX() - 0.1));
+			if (y > canvas.getHeight() - 60)
+				vel.setY(Math.min(0.5, vel.getY() + 0.1));
+			else if (y < 60)
+				vel.setY(Math.max(-0.5, vel.getY() - 0.1));
+		} else if (y < 60)
+			vel.setY(Math.max(-0.5, vel.getY() - 0.1));
+		else if (y > canvas.getHeight() - 60)
+			vel.setY(Math.min(0.5, vel.getY() + 0.1));
+		vel.setY(vel.getY() - 0.05 * Math.signum(vel.getY()));
+		vel.setX(vel.getX() - 0.05 * Math.signum(vel.getX()));
+		if (Math.abs(vel.getX()) < 0.001) vel.setX(0);
+		if (Math.abs(vel.getY()) < 0.001) vel.setY(0);
+	}
+	/**
+	 * Moves the view to the given new location.
+	 * 
+	 * @param nx the new X coordinate
+	 * @param ny the new Y coordinate
+	 * @param nz the new Z coordinate
+	 */
+	private void moveToPosition(double nx, double ny, double nz) {
+		center.setX(nx);
+		center.setY(ny);
+		center.setZ(nz);
+	}
+	/**
+	 * Moves the view by the given amounts.
+	 * 
+	 * @param dx the delta X coordinate
+	 * @param dy the delta Y coordinate
+	 * @param dz the delta Z coordinate
+	 */
+	private void moveRelativePosition(double dx, double dy, double dz) {
+		moveToPosition(center.getX() + dx, center.getY() + dy, center.getZ() + dz);
+	}
+	/**
+	 * Centers the mouse.
+	 */
+	private void center() {
+		x = canvas.getWidth() / 2;
+		y = canvas.getHeight() / 2;
 	}
 
 	/**
@@ -443,6 +539,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		}
 		public void mouseExited(MouseEvent e) {
 			coords = null;
+			center();
 		}
 		public void mouseReleased(MouseEvent e) {
 			synchronized (eventSync) {
