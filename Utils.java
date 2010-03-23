@@ -14,6 +14,24 @@ public final class Utils {
 	private static ImageIcon iconLoad;
 
 	/**
+	 * Rounds the decimal to 1 decimal place.
+	 * 
+	 * @param num the number to round
+	 * @return the answer
+	 */
+	public static final double round1(double num) {
+		return Math.round(num * 10.0) / 10.0;
+	}
+	/**
+	 * Rounds the decimal to 3 decimal places.
+	 * 
+	 * @param num the number to round
+	 * @return the answer
+	 */
+	public static final double round3(double num) {
+		return Math.round(num * 1e3) / 1e3;
+	}
+	/**
 	 * Copies the image to a buffered image.
 	 * 
 	 * @param img the image to copy
@@ -339,7 +357,7 @@ public final class Utils {
 	 * 
 	 * @param win the window to center
 	 */
-	public static void centerWindow(Window win) {
+	public static final void centerWindow(Window win) {
 		Dimension ss = win.getToolkit().getScreenSize();
 		win.setLocation((ss.width - win.getWidth()) / 2, (ss.height - win.getHeight()) / 2);
 	}
@@ -348,7 +366,7 @@ public final class Utils {
 	 * 
 	 * @param ms the time to wait for
 	 */
-	public static void sleep(long ms) {
+	public static final void sleep(long ms) {
 		try {
 			Thread.sleep(ms);
 		} catch (Exception e) { }

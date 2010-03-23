@@ -19,11 +19,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 	/**
 	 * The width in grid units (HALF of it!)
 	 */
-	public static final int GW = 10;
+	public static final int GW = 7;
 	/**
 	 * The height in grid units (HALF of it!)
 	 */
-	public static final int GH = 10;
+	public static final int GH = 7;
 	/**
 	 * Z coordinate for blocks.
 	 */
@@ -36,6 +36,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Place the element.
 	 */
 	public static final int PLACE_IFNOT = 3;
+	/**
+	 * Place the element.
+	 */
+	public static final int HIT_TEST = 4;
 	/**
 	 * Re-render the dropping element.
 	 */
@@ -159,6 +163,30 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * The velocity with which the screen is moving.
 	 */
 	private Vector3 vel;
+	/**
+	 * A suspicion meter (TESTING).
+	 */
+	private FloatBuffer suspicion;
+	/**
+	 * The current zoom level.
+	 */
+	private Dimension zoom;
+	/**
+	 * The aspect ratio.
+	 */
+	private double ratio;
+	/**
+	 * Where you are.
+	 */
+	private JLabel location;
+	/**
+	 * The rendering mode.
+	 */
+	private int mode;
+	/**
+	 * The hit test buffer.
+	 */
+	private IntBuffer hitBuffer;
 
 	/**
 	 * Sets the window title.
@@ -177,6 +205,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 		lastPlace = coords = null;
 		center = new Point3(0.0, 0.0, 0.0);
 		vel = new Vector3(0.0, 0.0, 0.0);
+		zoom = new Dimension(GW, GH);
+		mode = GL.GL_RENDER;
 	}
 	/**
 	 * Invoked to start the level editor.
@@ -189,6 +219,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		// TODO temp
 		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard"));
 		addElement(new Element("grass.png", "1x1square.dat", "grass"));
+		addElement(new Element("AngleBlock.png", "1x1square.dat", "ramp"));
+		addElement(new Element("BottomBlock.png", "1x1square.dat", "bottom"));
+		addElement(new Element("Ceiling.png", "1x1square.dat", "ceiling"));
+		addElement(new Element("Ladder.png", "1x1square.dat", "ladder"));
+		addElement(new Element("Wall.png", "1x1square.dat", "wall"));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
@@ -240,15 +275,25 @@ public class EditorUI extends JFrame implements GLEventListener {
 		pane.getViewport().setOpaque(false);
 		pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
 		pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
-		getContentPane().add(pane, BorderLayout.NORTH);
+		JButton cancel = new JButton("Done");
+		cancel.setFocusable(false);
+		cancel.setActionCommand("done");
+		cancel.addActionListener(events);
+		JComponent horiz = new Box(BoxLayout.X_AXIS);
+		horiz.add(cancel);
+		horiz.add(pane);
+		getContentPane().add(horiz, BorderLayout.NORTH);
 		canvas.addMouseListener(events);
 		canvas.addMouseMotionListener(events);
 		grid = new JCheckBox("Show Grid");
-		grid.setSelected(false);
+		grid.setSelected(true);
 		grid.setFocusable(false);
+		location = new JLabel("At ");
+		location.setFont(location.getFont().deriveFont(10.f));
 		JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
 		bottom.setOpaque(false);
 		bottom.add(grid);
+		bottom.add(location);
 		getContentPane().add(bottom, BorderLayout.SOUTH);
 	}
 	/**
@@ -261,6 +306,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		while (it.hasNext()) {
 			element = it.next();
 			element.loadGeometry(current);
+			System.out.println("Loading " + element + "...");
 			available.add(new PlacableBlock(element));
 		}
 		if (elements.size() % 2 > 0)
@@ -300,20 +346,34 @@ public class EditorUI extends JFrame implements GLEventListener {
 				computeLocation(gl);
 			case PLACE:
 				drop();
-				//dropping = null;
+				break;
+			case HIT_TEST:
+				System.out.println(doHitTest(gl));
 				break;
 			default:
 			}
 			event = 0;
 		}
 		updatePosition(gl);
-		Element.setOptions(gl);
 		if (dropping != null && coords != null) {
 			gl.glPushMatrix();
 			gl.glTranslated(coords.getX(), coords.getY(), coords.getZ());
 			dropping.render(gl);
 			gl.glPopMatrix();
 		}
+		renderScene(gl);
+		drawSuspicion(gl, 240);
+		grid(gl);
+		gl.glFlush();
+		Utils.sleep(30L);
+	}
+	/**
+	 * Draws the entire level.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	private void renderScene(GL gl) {
+		int objectCount = 1;
 		synchronized (block) {
 			Iterator<GameObject> it = block.getElements().iterator();
 			GameObject o;
@@ -321,39 +381,88 @@ public class EditorUI extends JFrame implements GLEventListener {
 				gl.glPushMatrix();
 				o = it.next();
 				gl.glTranslated(o.getX(), o.getY(), Z);
+				if (mode == GL.GL_SELECT)
+					gl.glPushName(objectCount);
 				o.getSource().render(gl);
 				gl.glPopMatrix();
+				objectCount++;
 			}
 		}
-		Element.clearOptions(gl);
-		grid(gl);
-		Utils.sleep(30L);
 	}
 	private void grid(GL gl) {
 		if (grid.isSelected()) {
+			int gw = zoom.width, gh = zoom.height;
+			int xc = -(int)Math.round(center.x), yc = -(int)Math.round(center.y);
 			gl.glColor3f(0.5f, 0.5f, 0.5f);
 			gl.glBegin(GL.GL_LINES);
-			for (int x = -GW; x < GW; x++) {
-				gl.glVertex3f((float)center.getX() + x, (float)center.getY() - GH, 0.1f);
-				gl.glVertex3f((float)center.getX() + x, (float)center.getY() + GH, 0.1f);
+			for (int x = -gw - 1; x < gw + 1; x++) {
+				gl.glVertex3f(xc + x, yc - gh - 1, 9.f);
+				gl.glVertex3f(xc + x, yc + gh + 1, 9.f);
 			}
-			for (int y = -GH; y < GH; y++) {
-				gl.glVertex3f((float)center.getX() - GW, (float)center.getY() + y, 0.1f);
-				gl.glVertex3f((float)center.getX() + GW, (float)center.getY() + y, 0.1f);
+			for (int y = -gh - 1; y < gh + 1; y++) {
+				gl.glVertex3f(xc - gw - 1, yc + y, 9.f);
+				gl.glVertex3f(xc + gw + 1, yc + y, 9.f);
 			}
 			gl.glEnd();
 		}
 	}
+	private void drawSuspicion(GL gl, int suspicion) {
+		int w = canvas.getWidth(), h = canvas.getHeight();
+		gl.glViewport(w - 200, h - 200, 200, 200);
+		gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
+		gl.glPushMatrix();
+		gl.glLoadIdentity();
+		gl.glMatrixMode(GL.GL_PROJECTION);
+		gl.glPushMatrix();
+		gl.glLoadIdentity();
+		gl.glDisable(GL.GL_DEPTH_TEST);
+		gl.glOrtho(-1, 1, -1, 1, -1, 1);
+		gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+		gl.glDisableClientState(GL.GL_COLOR_ARRAY);
+		gl.glColor4f(0.7f, 0f, 0f, 0.3f);
+		gl.glVertexPointer(3, GL.GL_FLOAT, 0, this.suspicion);
+		gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 2 * suspicion / 5 + 3);
+		gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+		gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+		gl.glEnable(GL.GL_DEPTH_TEST);
+		gl.glPopMatrix();
+		gl.glMatrixMode(GL.GL_MODELVIEW);
+		gl.glPopMatrix();
+		gl.glViewport(0, 0, w, h);
+	}
+	private void suspicion() {
+		suspicion = BufferUtil.newFloatBuffer(147 * 3);
+		float x, y, x2, y2, ct, st;
+		suspicion.put(0.f);
+		suspicion.put(0.6f);
+		suspicion.put(0.f);
+		for (int theta = 0; theta <= 360; theta += 5) {
+			x = 0.6f * (ct = (float)Math.sin(Math.toRadians(theta)));
+			y = 0.6f * (st = (float)Math.cos(Math.toRadians(theta)));
+			x2 = 0.45f * ct;
+			y2 = 0.45f * st;
+			suspicion.put(x2);
+			suspicion.put(y2);
+			suspicion.put(0.f);
+			suspicion.put(x);
+			suspicion.put(y);
+			suspicion.put(0.f);
+		}
+		suspicion.rewind();
+	}
 	public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) { }
 	public void init(GLAutoDrawable drawable) {
 		GL gl = drawable.getGL();
+		suspicion();
+		hitBuffer = BufferUtil.newIntBuffer(48);
 		glu = new GLU();
-		gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
 		gl.glLoadIdentity();
 		gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX, modelview, 0);
 		gl.glEnable(GL.GL_DEPTH_TEST);
 		gl.glEnable(GL.GL_BLEND);
+		gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 		gl.glEnable(GL.GL_TEXTURE_2D);
 		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
 		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
@@ -362,16 +471,22 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR);
 		gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
 		gl.glDisable(GL.GL_LIGHTING);
+		Element.setOptions(gl);
 	}
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
-		double ratio = (double)width / height;
+		ratio = (double)width / height;
 		GL gl = drawable.getGL();
 		gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
 		gl.glMatrixMode(GL.GL_PROJECTION);
 		gl.glLoadIdentity();
-		gl.glOrtho(-GW * ratio, GW * ratio, -GH, GH, -10, 10);
+		zoom.width = (int)(ratio * (double)zoom.height) + 1;
+		view(gl);
 		gl.glGetDoublev(GL.GL_PROJECTION_MATRIX, projection, 0);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
+	}
+	private void view(GL gl) {
+		double gh = (double)zoom.height;
+		gl.glOrtho(-gh * ratio, gh * ratio, -gh, gh, -10, 10);
 	}
 	/**
 	 * Stops the updating stuff for better performance when hidden.
@@ -420,7 +535,69 @@ public class EditorUI extends JFrame implements GLEventListener {
 				coords.setZ(pos[2]);
 			}
 			coords.setZ(Z);
+			location.setText("At " + coords.toRoundedString());
 		}
+	}
+	/**
+	 * Changes the render mode.
+	 * 
+	 * @param gl the OpenGL context
+	 * @param newMode either GL.GL_RENDER or GL.GL_SELECT
+	 * @return some critical hit test stuff
+	 */
+	private int setMode(GL gl, int newMode) {
+		mode = newMode;
+		return gl.glRenderMode(newMode);
+	}
+	/**
+	 * Looks for the block at the given location.
+	 * 
+	 * @param gl the OpenGL context
+	 * @return the block hit
+	 */
+	private GameObject doHitTest(GL gl) {
+		// save the matrix
+		gl.glMatrixMode(GL.GL_PROJECTION);
+		gl.glPushMatrix();
+		// pick matrix mode
+		gl.glLoadIdentity();
+		glu.gluPickMatrix(x, canvas.getHeight() - y, 1, 1, viewport, 0);
+		view(gl);
+		// selection mode
+		gl.glMatrixMode(GL.GL_MODELVIEW);
+		setMode(gl, GL.GL_SELECT);
+		// render
+		renderScene(gl);
+		// get hit count
+		int num = setMode(gl, GL.GL_RENDER);
+		int records, depthF, name;
+		hitBuffer.rewind();
+		int sel = -1; int frontZ = Integer.MAX_VALUE;
+		for (int i = 0; i < num; i++) {
+			// get hit depth
+			records = hitBuffer.get();
+			depthF = hitBuffer.get();
+			hitBuffer.get();
+			if (records > 0) {
+				// retrieve name
+				name = hitBuffer.get();
+				hitBuffer.position(hitBuffer.position() + (records - 1));
+				if (depthF < frontZ && name >= 0) {
+					// select this one
+					frontZ = depthF;
+					sel = name;
+				}
+			}
+		}
+		hitBuffer.rewind();
+		GameObject selected;
+		if (sel == -1) selected = null;
+		else selected = block.getElements().get(sel);
+		// restore matrix
+		gl.glMatrixMode(GL.GL_PROJECTION);
+		gl.glPopMatrix();
+		gl.glMatrixMode(GL.GL_MODELVIEW);
+		return selected;
 	}
 	/**
 	 * Updates the screen position.
@@ -524,6 +701,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 			if (cmd == null) return;
 			else if (cmd.startsWith("place") && cmd.length() > 5)
 				dropping = elements.get(cmd.substring(5));
+			else if (cmd.equals("done"))
+				dropping = null;
 		}
 		public void mouseEntered(MouseEvent e) {
 			mouseMoved(e);
@@ -544,6 +723,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		public void mouseReleased(MouseEvent e) {
 			synchronized (eventSync) {
 				if (dropping != null && coords != null) event = PLACE;
+				else if (dropping == null) event = HIT_TEST;
 			}
 		}
 		public void mouseDragged(MouseEvent e) {

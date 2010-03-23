@@ -262,4 +262,7 @@ public class Element implements java.io.Serializable {
 		texture.dispose();
 		texture = null;
 	}
+	public String toString() {
+		return name;
+	}
 }

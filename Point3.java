@@ -129,4 +129,7 @@ public class Point3 {
 	public String toString() {
 		return "(" + x + ", " + y + ", " + z + ")";
 	}
+	public String toRoundedString() {
+		return "(" + Utils.round1(x) + ", " + Utils.round1(y) + ", " + Utils.round1(z) + ")";
+	}
 }
