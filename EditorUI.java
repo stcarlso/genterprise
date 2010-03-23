@@ -187,6 +187,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * The hit test buffer.
 	 */
 	private IntBuffer hitBuffer;
+	/**
+	 * The selected object.
+	 */
+	private GameObject selected;
 
 	/**
 	 * Sets the window title.
@@ -207,6 +211,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		vel = new Vector3(0.0, 0.0, 0.0);
 		zoom = new Dimension(GW, GH);
 		mode = GL.GL_RENDER;
+		selected = null;
 	}
 	/**
 	 * Invoked to start the level editor.
@@ -285,6 +290,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		getContentPane().add(horiz, BorderLayout.NORTH);
 		canvas.addMouseListener(events);
 		canvas.addMouseMotionListener(events);
+		canvas.addKeyListener(events);
 		grid = new JCheckBox("Show Grid");
 		grid.setSelected(true);
 		grid.setFocusable(false);
@@ -306,7 +312,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 		while (it.hasNext()) {
 			element = it.next();
 			element.loadGeometry(current);
-			System.out.println("Loading " + element + "...");
 			available.add(new PlacableBlock(element));
 		}
 		if (elements.size() % 2 > 0)
@@ -348,7 +353,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 				drop();
 				break;
 			case HIT_TEST:
-				System.out.println(doHitTest(gl));
+				selected = doHitTest(gl);
 				break;
 			default:
 			}
@@ -382,8 +387,20 @@ public class EditorUI extends JFrame implements GLEventListener {
 				o = it.next();
 				gl.glTranslated(o.getX(), o.getY(), Z);
 				if (mode == GL.GL_SELECT)
-					gl.glPushName(objectCount);
+					gl.glLoadName(objectCount);
 				o.getSource().render(gl);
+				if (mode == GL.GL_RENDER && selected == o) {
+					float w = (float)o.getSource().getWidth(), h = (float)o.getSource().getHeight();
+					Element.clearOptions(gl);
+					gl.glColor4f(0.0f, 0.0f, 0.0f, 0.3f);
+					gl.glBegin(GL.GL_QUADS);
+					gl.glVertex3f(0.0f, 0.0f, 9.f);
+					gl.glVertex3f(0.0f, w, 9.f);
+					gl.glVertex3f(h, w, 9.f);
+					gl.glVertex3f(h, 0.0f, 9.f);
+					gl.glEnd();
+					Element.setOptions(gl);
+				}
 				gl.glPopMatrix();
 				objectCount++;
 			}
@@ -455,6 +472,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		GL gl = drawable.getGL();
 		suspicion();
 		hitBuffer = BufferUtil.newIntBuffer(48);
+		gl.glSelectBuffer(12, hitBuffer);
 		glu = new GLU();
 		gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
@@ -471,6 +489,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR);
 		gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
 		gl.glDisable(GL.GL_LIGHTING);
+		gl.glInitNames();
 		Element.setOptions(gl);
 	}
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
@@ -567,6 +586,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glMatrixMode(GL.GL_MODELVIEW);
 		setMode(gl, GL.GL_SELECT);
 		// render
+		gl.glPushName(-1);
 		renderScene(gl);
 		// get hit count
 		int num = setMode(gl, GL.GL_RENDER);
@@ -591,8 +611,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 		}
 		hitBuffer.rewind();
 		GameObject selected;
-		if (sel == -1) selected = null;
-		else selected = block.getElements().get(sel);
+		if (sel < 1) selected = null;
+		else selected = block.getElements().get(sel - 1);
 		// restore matrix
 		gl.glMatrixMode(GL.GL_PROJECTION);
 		gl.glPopMatrix();
@@ -669,7 +689,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Listens for events. All your events are belong to me.
 	 */
 	private class EventListener extends MouseAdapter implements WindowListener, WindowFocusListener,
-			ActionListener, MouseMotionListener {
+			ActionListener, MouseMotionListener, KeyListener {
 		public void windowActivated(WindowEvent e) {
 			startRun();
 		}
@@ -699,10 +719,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 		public void actionPerformed(ActionEvent e) {
 			String cmd = e.getActionCommand();
 			if (cmd == null) return;
-			else if (cmd.startsWith("place") && cmd.length() > 5)
+			else if (cmd.startsWith("place") && cmd.length() > 5) {
 				dropping = elements.get(cmd.substring(5));
-			else if (cmd.equals("done"))
+				selected = null;
+			} else if (cmd.equals("done")) {
 				dropping = null;
+				selected = null;
+			}
 		}
 		public void mouseEntered(MouseEvent e) {
 			mouseMoved(e);
@@ -734,6 +757,17 @@ public class EditorUI extends JFrame implements GLEventListener {
 					if (dropping != null && coords != null) event = PLACE_IFNOT;
 				}
 		}
+		public void keyPressed(KeyEvent e) { }
+		public void keyReleased(KeyEvent e) {
+			if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+				if (selected == null) return;
+				synchronized (block) {
+					block.getElements().remove(selected);
+				}
+				selected = null;
+			}
+		}
+		public void keyTyped(KeyEvent e) { }
 	}
 
 	/**
