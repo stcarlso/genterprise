@@ -22,14 +22,21 @@ public class GameWindow extends JPanel implements Constants {
 	boolean right;
 	boolean down;
 	boolean act;
+	boolean move;
+	
 	int width=800;
 	int height=800;
+	
 	long time=0;
+	
 	char action='a';
+	char movement='d';
+	
 	Object sync= new Object();
 	Player player;	
 	private PhysicsThread physics;
 	Animator anim;
+	
 	public GameWindow() {
 		super(new BorderLayout());	
 		//setSize(width,height);
@@ -64,7 +71,7 @@ public class GameWindow extends JPanel implements Constants {
 				time+=dt;
 				
 				//player state determination
-				if(player.y<=0 && player.vy<=0) { //this condition will be obsolete after level editor
+				if(player.y<=0 && player.vy<=0) { //this condition will be obsolete after level editor, tells whether player is grounded
 					player.jumps=2;
 					player.wallJumps=1;
 					if(down)
@@ -73,6 +80,9 @@ public class GameWindow extends JPanel implements Constants {
 						player.position=STANDING;
 					if(player.ability!=null && player.ability instanceof AirDodge)
 						player.ability=null;
+					
+					if(player.status==HELPLESS)
+						player.status=NORMAL;
 				} else if(player.x<=0){
 					player.position=WALLONLEFT;
 				} else
@@ -81,18 +91,18 @@ public class GameWindow extends JPanel implements Constants {
 				//****************KEY RESPONSE*******************
 				//refresh when touching ground, tell the player where he is
 				
-				if(player.ability==null){
+				if(player.ability==null && player.status!=HELPLESS){
 					if(act) {
 						if(player.position==AIRBORNE) {
-							player.ability=new AirDodge();
+							player.ability=new AirDodge(player);
 							player.ability.started=true;
 						} else if(player.position==STANDING || player.position==DUCKING){
 							if(down) {
-								player.ability=new Dodge();
+								player.ability=new Dodge(player);
 								player.vx=0;
 							}
 							else if(up) {
-								player.ability=new Dive();
+								player.ability=new Dive(player);
 								if(player.facingRight)
 									player.vx=1.5;
 								else
@@ -100,19 +110,27 @@ public class GameWindow extends JPanel implements Constants {
 								player.vy=.9;
 							}
 							else if(left) {
-								player.ability=new Roll();
+								player.ability=new Roll(player);
 								player.vx=-.8;
 							}
 							else if(right) {
-								player.ability=new Roll();
+								player.ability=new Roll(player);
 								player.vx=.8;
 							} else {
-								player.ability=new Activate();									
+								player.ability=new Activate(player);									
 							}
 							player.ability.started=true;
 						}
 
 						act=false;
+					} else if(move) {
+						if(up) {
+							player.ability=new ThirdJump(player);
+							player.vy=1;
+							player.ability.started=true;
+						}
+						
+						move=false;
 					} else {
 						
 						//basic movement
@@ -151,22 +169,30 @@ public class GameWindow extends JPanel implements Constants {
 				}
 				
 				//working with character moves
-				if(player.ability!=null && player.ability.started) {
-					player.suspicion+=player.ability.duration*2;
-					initiate=time;
-					effectStart= time+player.ability.start;
-					effectEnd= time+player.ability.end;
-					stop= time+player.ability.duration;
-					player.ability.started=false;
-				}
-				
-				//any move effect should be invoked here
-				if(player.ability!=null && time>=effectStart && time<=effectEnd) {
-					player.color= Color.yellow;
-				}
-				
-				if(player.ability!=null && time>=stop) {
-					player.ability=null;
+				if(player.ability!=null) {
+					if(player.ability.started) {
+						player.suspicion+=player.ability.duration*2;
+						initiate=time;
+						effectStart= time+player.ability.start;
+						effectEnd= time+player.ability.end;
+						stop= time+player.ability.duration;
+						player.ability.started=false;
+					}
+					
+					//any move effect should be invoked here
+					if(time==effectStart) {
+						player.ability.startEffect();
+					}
+					
+					//end move effect at its end frame
+					if(time==effectEnd) {
+						player.ability.endEffect();
+					}
+					
+					if(time==stop) {
+						player.ability.linger();
+						player.ability=null;
+					}
 				}
 				
 				//acceleration calculations
@@ -246,7 +272,12 @@ public class GameWindow extends JPanel implements Constants {
 		 */
 		public void drawCharacter(GL gl) {
 			//drawing the player
-			if(player.ability instanceof Dodge)
+			//colors will be obsolete when rendering improves
+			if(player.status==HELPLESS)
+				gl.glColor3f(.5f,.5f,.5f);	
+			else if(player.status==INVINCIBLE)
+				gl.glColor3f(1f,1f,0f);
+			else if(player.ability instanceof Dodge)
 				gl.glColor3f(0f,1f,0f);
 			else if(player.ability instanceof Roll)
 				gl.glColor3f(.5f,1f,0f);
@@ -256,6 +287,8 @@ public class GameWindow extends JPanel implements Constants {
 				gl.glColor3f(0f,.5f,1f);
 			else if(player.ability instanceof Activate)
 				gl.glColor3f(0f,0f,1f);
+			else if(player.ability instanceof ThirdJump)
+				gl.glColor3f(1f,0f,0f);	
 			else
 				gl.glColor3f(1f,1f,1f);		
 			gl.glBegin(GL.GL_QUADS);
@@ -292,7 +325,7 @@ public class GameWindow extends JPanel implements Constants {
 			g2.fillRect(width-100,100,40,40);
 			g2.setColor(Color.green);
 			g2.drawString(player.suspicion+"",100,100);
-			System.out.println(360-(int)player.suspicion);
+			//System.out.println(360-(int)player.suspicion);
 			g2.fillArc(width-100,100,40,40,90,360-(int)player.suspicion);
 			overlay.drawAll();
 		}
@@ -339,6 +372,8 @@ public class GameWindow extends JPanel implements Constants {
 		public void keyTyped(KeyEvent e) {
 			if(e.getKeyChar()==action)
 				act=true;
+			if(e.getKeyChar()==movement)
+				move=true;
 		}
 		
 	}
