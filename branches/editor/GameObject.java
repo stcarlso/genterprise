@@ -6,17 +6,17 @@ import java.util.*;
  * 
  * @author Stephen
  */
-public class GameObject implements java.io.Serializable {
+public class GameObject implements java.io.Serializable, Comparable<GameObject> {
 	private static final long serialVersionUID = 238146789346781281L;
 
 	/**
-	 * The X coordinate.
+	 * The coordinates.
 	 */
-	private double x;
+	private Point3 coords;
 	/**
-	 * The Y coordinate.
+	 * The rotation in degrees.
 	 */
-	private double y;
+	private int rotation;
 	/**
 	 * The source element.
 	 */
@@ -30,20 +30,32 @@ public class GameObject implements java.io.Serializable {
 	 * For serialization.
 	 */
 	public GameObject() {
-		this(0, 0, null);
+		this(0., 0., 0., 0, null);
 	}
 	/**
 	 * Places an instance of src at x, y.
 	 * 
 	 * @param x the x coordinate
 	 * @param y the y coordinate
+	 * @param z the z coordinate
+	 * @param rotation the rotation in degrees
 	 * @param src the source block
 	 */
-	public GameObject(double x, double y, Element src) {
-		this.x = x;
-		this.y = y;
+	public GameObject(double x, double y, double z, int rotation, Element src) {
+		coords = new Point3(x, y, z);
 		this.src = src;
+		this.rotation = rotation;
 		attributes = null;
+	}
+	/**
+	 * Compares this game object on depth. <b>Assumes the models are flat at z=0.</b>
+	 */
+	public int compareTo(GameObject o) {
+		return (int)Math.round(Math.signum(o.coords.getZ() - coords.getZ()));
+	}
+	public boolean equals(Object o) {
+		GameObject other = (GameObject)o;
+		return src.equals(other.getSource()) && coords.equals(other.coords);
 	}
 	/**
 	 * Gets the attribute specified by name.
@@ -86,12 +98,20 @@ public class GameObject implements java.io.Serializable {
 		return src;
 	}
 	/**
+	 * Gets the amount of rotation.
+	 * 
+	 * @return the rotation in degrees
+	 */
+	public int getRotation() {
+		return rotation;
+	}
+	/**
 	 * Gets the X coordinate.
 	 * 
 	 * @return the x (first, width) coordinate.
 	 */
 	public double getX() {
-		return x;
+		return coords.getX();
 	}
 	/**
 	 * Gets the Y coordinate.
@@ -99,7 +119,15 @@ public class GameObject implements java.io.Serializable {
 	 * @return the y (second, height) coordinate.
 	 */
 	public double getY() {
-		return y;
+		return coords.getY();
+	}
+	/**
+	 * Gets the Z coordinate.
+	 * 
+	 * @return the z (third, depth) coordinate.
+	 */
+	public double getZ() {
+		return coords.getZ();
 	}
 	/**
 	 * Gets the location.
@@ -107,6 +135,9 @@ public class GameObject implements java.io.Serializable {
 	 * @return the X and Y coordinates
 	 */
 	public Point2D getLocation() {
-		return new Point2D.Double(x, y);
+		return coords.getXY();
+	}
+	public String toString() {
+		return src.toString() + "@" + coords.toString();
 	}
 }

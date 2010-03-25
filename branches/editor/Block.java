@@ -27,18 +27,30 @@ public class Block implements java.io.Serializable {
 	 */
 	public Block() {
 		bounds = new Rectangle2D.Float(0.f, 0.f, 0.f, 0.f);
-		elements = new ArrayList<GameObject>(64);
+		elements = new LinkedList<GameObject>();
 		boundsDirty = true;
 	}
-	/**
-	 * Creates a new level block.
-	 * 
-	 * @param elements the elements in this block
-	 */
-	public Block(List<GameObject> elements) {
-		this.elements = elements;
+	public void addObject(GameObject o) {
+		ListIterator<GameObject> it = elements.listIterator();
+		GameObject el; double depth = o.getZ();
 		boundsDirty = true;
-		computeBounds();
+		while (it.hasNext()) {
+			el = it.next();
+			if (el.getZ() >= depth) {
+				it.previous();
+				it.add(o);
+				return;
+			}
+		}
+		elements.add(o);
+	}
+	public void updateObject(GameObject o) {
+		elements.remove(o);
+		elements.add(o);
+	}
+	public void removeObject(GameObject o) {
+		elements.remove(o);
+		boundsDirty = true;
 	}
 	/**
 	 * Computes the bounds of this block.
@@ -47,8 +59,10 @@ public class Block implements java.io.Serializable {
 		if (!boundsDirty) return;
 		double minX = -Double.MAX_VALUE, minY = Double.MAX_VALUE;
 		double maxX = -Double.MAX_VALUE, maxY = Double.MAX_VALUE;
-		double x, y;
-		for (GameObject el : elements) {
+		double x, y; GameObject el;
+		Iterator<GameObject> it = elements.iterator();
+		while (it.hasNext()) {
+			el = it.next();
 			x = el.getX();
 			y = el.getY();
 			if (minX > x) minX = x;
@@ -151,7 +165,7 @@ public class Block implements java.io.Serializable {
 	 * 
 	 * @return the elements
 	 */
-	public List<GameObject> getElements() {
+	public Collection<GameObject> getElements() {
 		return elements;
 	}
 }

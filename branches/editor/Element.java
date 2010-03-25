@@ -25,6 +25,10 @@ public class Element implements java.io.Serializable {
 	 */
 	private String name;
 	/**
+	 * The default Z buffer value.
+	 */
+	private double defaultZ;
+	/**
 	 * The cached texture object.
 	 */
 	private transient Texture texture;
@@ -63,7 +67,7 @@ public class Element implements java.io.Serializable {
 	 * @param geoSrc the geometry data source
 	 */
 	public Element(String texSrc, String geoSrc) {
-		this(texSrc, geoSrc, geoSrc);
+		this(texSrc, geoSrc, geoSrc, 0);
 	}
 	/**
 	 * Creates an element referencing data from data sources.
@@ -73,10 +77,34 @@ public class Element implements java.io.Serializable {
 	 * @param name the element name
 	 */
 	public Element(String texSrc, String geoSrc, String name) {
+		this(texSrc, geoSrc, name, 0);
+	}
+	/**
+	 * Creates an element referencing data from data sources.
+	 * 
+	 * @param texSrc the texture data source
+	 * @param geoSrc the geometry data source
+	 * @param name the element name
+	 * @param z the default z buffer coordinate
+	 */
+	public Element(String texSrc, String geoSrc, String name, double z) {
 		textureSrc = texSrc;
 		geometrySrc = geoSrc;
 		this.name = name;
+		defaultZ = z;
 		width = height = 0;
+	}
+	public boolean equals(Object o) {
+		Element other = (Element)o;
+		return name.equals(other.getName());
+	}
+	/**
+	 * Gets the default Z buffer coordinate.
+	 * 
+	 * @return the default Z
+	 */
+	public double getDefaultZ() {
+		return defaultZ;
 	}
 	/**
 	 * Gets the size as a dimension.

@@ -25,10 +25,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	public static final int GH = 7;
 	/**
-	 * Z coordinate for blocks.
-	 */
-	public static final double Z = 1.0;
-	/**
 	 * Place the element.
 	 */
 	public static final int PLACE = 2;
@@ -204,7 +200,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		modelview = new double[16];
 		projection = new double[16];
 		viewport = new int[4];
-		block = new Block(new LinkedList<GameObject>());
+		block = new Block();
 		snapTo = true;
 		lastPlace = coords = null;
 		center = new Point3(0.0, 0.0, 0.0);
@@ -222,13 +218,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 		dropping = null;
 		coords = null;
 		// TODO temp
-		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard"));
-		addElement(new Element("grass.png", "1x1square.dat", "grass"));
-		addElement(new Element("AngleBlock.png", "1x1square.dat", "ramp"));
-		addElement(new Element("BottomBlock.png", "1x1square.dat", "bottom"));
-		addElement(new Element("Ceiling.png", "1x1square.dat", "ceiling"));
-		addElement(new Element("Ladder.png", "1x1square.dat", "ladder"));
-		addElement(new Element("Wall.png", "1x1square.dat", "wall"));
+		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard", -1));
+		addElement(new Element("grass.png", "1x1square.dat", "grass", -1));
+		addElement(new Element("angleblock.png", "1x1square.dat", "ramp", 0));
+		addElement(new Element("bottomblock.png", "1x1square.dat", "bottom", 0));
+		addElement(new Element("ceiling.png", "1x1square.dat", "ceiling", 0));
+		addElement(new Element("ladder.png", "1x1square.dat", "ladder", 0));
+		addElement(new Element("wall.png", "1x1square.dat", "wall", 0));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
@@ -331,10 +327,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 					Math.floor(lastPlace.y) == Math.floor(coords.y)) return;
 			}
 		}
-		GameObject newObject = new GameObject(coords.x, coords.y, dropping);
+		GameObject newObject = new GameObject(coords.x, coords.y, dropping.getDefaultZ(), 0, dropping);
 		synchronized (block) {
-			block.getElements().add(newObject);
-			if (event == PLACE_IFNOT) lastPlace = new Point3(coords.x, coords.y, coords.z);
+			block.addObject(newObject);
+			if (event == PLACE_IFNOT)
+				lastPlace = new Point3(coords.x, coords.y, dropping.getDefaultZ());
 		}
 	}
 	public void display(GLAutoDrawable drawable) {
@@ -360,14 +357,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			event = 0;
 		}
 		updatePosition(gl);
-		if (dropping != null && coords != null) {
-			gl.glPushMatrix();
-			gl.glTranslated(coords.getX(), coords.getY(), coords.getZ());
-			dropping.render(gl);
-			gl.glPopMatrix();
-		}
 		renderScene(gl);
-		drawSuspicion(gl, 240);
 		grid(gl);
 		gl.glFlush();
 		Utils.sleep(30L);
@@ -378,38 +368,57 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * @param gl the OpenGL context
 	 */
 	private void renderScene(GL gl) {
-		int objectCount = 1;
+		int objectCount = 1; boolean dropped = false;
 		synchronized (block) {
 			Iterator<GameObject> it = block.getElements().iterator();
 			GameObject o;
 			while (it.hasNext()) {
 				gl.glPushMatrix();
 				o = it.next();
-				gl.glTranslated(o.getX(), o.getY(), Z);
+				gl.glTranslated(o.getX(), o.getY(), o.getZ());
+				if (o.getRotation() != 0)
+					gl.glRotatef(o.getRotation(), 0, 0, 1);
 				if (mode == GL.GL_SELECT)
 					gl.glLoadName(objectCount);
 				o.getSource().render(gl);
 				if (mode == GL.GL_RENDER && selected == o) {
 					float w = (float)o.getSource().getWidth(), h = (float)o.getSource().getHeight();
 					Element.clearOptions(gl);
+					gl.glDisable(GL.GL_DEPTH_TEST);
 					gl.glColor4f(0.0f, 0.0f, 0.0f, 0.3f);
 					gl.glBegin(GL.GL_QUADS);
-					gl.glVertex3f(0.0f, 0.0f, 9.f);
-					gl.glVertex3f(0.0f, w, 9.f);
-					gl.glVertex3f(h, w, 9.f);
-					gl.glVertex3f(h, 0.0f, 9.f);
+					gl.glVertex3f(0.0f, 0.0f, (float)o.getZ());
+					gl.glVertex3f(0.0f, w, (float)o.getZ());
+					gl.glVertex3f(h, w, (float)o.getZ());
+					gl.glVertex3f(h, 0.0f, (float)o.getZ());
 					gl.glEnd();
+					gl.glEnable(GL.GL_DEPTH_TEST);
 					Element.setOptions(gl);
 				}
 				gl.glPopMatrix();
+				if (mode == GL.GL_RENDER && dropping != null && coords != null && !dropped &&
+						dropping.getDefaultZ() < o.getZ()) {
+					dropped = true;
+					gl.glPushMatrix();
+					gl.glTranslated(coords.getX(), coords.getY(), dropping.getDefaultZ());
+					dropping.render(gl);
+					gl.glPopMatrix();
+				}
 				objectCount++;
 			}
+		}
+		if (mode == GL.GL_RENDER && dropping != null && coords != null && !dropped) {
+			gl.glPushMatrix();
+			gl.glTranslated(coords.getX(), coords.getY(), dropping.getDefaultZ());
+			dropping.render(gl);
+			gl.glPopMatrix();
 		}
 	}
 	private void grid(GL gl) {
 		if (grid.isSelected()) {
 			int gw = zoom.width, gh = zoom.height;
 			int xc = -(int)Math.round(center.x), yc = -(int)Math.round(center.y);
+			gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
 			gl.glColor3f(0.5f, 0.5f, 0.5f);
 			gl.glBegin(GL.GL_LINES);
 			for (int x = -gw - 1; x < gw + 1; x++) {
@@ -553,7 +562,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 				coords.setY(pos[1]);
 				coords.setZ(pos[2]);
 			}
-			coords.setZ(Z);
 			location.setText("At " + coords.toRoundedString());
 		}
 	}
@@ -587,12 +595,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 		setMode(gl, GL.GL_SELECT);
 		// render
 		gl.glPushName(-1);
+		hitBuffer.rewind();
 		renderScene(gl);
 		// get hit count
 		int num = setMode(gl, GL.GL_RENDER);
 		int records, depthF, name;
 		hitBuffer.rewind();
-		int sel = -1; int frontZ = Integer.MAX_VALUE;
+		int sel = -1; int frontZ = Integer.MIN_VALUE;
 		for (int i = 0; i < num; i++) {
 			// get hit depth
 			records = hitBuffer.get();
@@ -602,7 +611,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 				// retrieve name
 				name = hitBuffer.get();
 				hitBuffer.position(hitBuffer.position() + (records - 1));
-				if (depthF < frontZ && name >= 0) {
+				if (depthF >= frontZ && name >= 0) {
 					// select this one
 					frontZ = depthF;
 					sel = name;
@@ -612,7 +621,19 @@ public class EditorUI extends JFrame implements GLEventListener {
 		hitBuffer.rewind();
 		GameObject selected;
 		if (sel < 1) selected = null;
-		else selected = block.getElements().get(sel - 1);
+		else synchronized (block) {
+			Iterator<GameObject> it = block.getElements().iterator();
+			GameObject o; int objectCount = 1;
+			selected = null;
+			while (it.hasNext()) {
+				o = it.next();
+				if (objectCount == sel) {
+					selected = o;
+					break;
+				}
+				objectCount++;
+			}
+		}
 		// restore matrix
 		gl.glMatrixMode(GL.GL_PROJECTION);
 		gl.glPopMatrix();
@@ -736,7 +757,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			synchronized (eventSync) {
 				snapTo = true;
 				if (e.isShiftDown()) snapTo = false;
-				event = RENDER;
+				if (event == 0) event = RENDER;
 			}
 		}
 		public void mouseExited(MouseEvent e) {
@@ -745,7 +766,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		}
 		public void mouseReleased(MouseEvent e) {
 			synchronized (eventSync) {
-				if (dropping != null && coords != null) event = PLACE;
+				if (dropping != null && coords != null) event = PLACE_IFNOT;
 				else if (dropping == null) event = HIT_TEST;
 			}
 		}
@@ -762,7 +783,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
 				if (selected == null) return;
 				synchronized (block) {
-					block.getElements().remove(selected);
+					block.removeObject(selected);
 				}
 				selected = null;
 			}
