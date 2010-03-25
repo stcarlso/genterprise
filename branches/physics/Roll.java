@@ -8,6 +8,7 @@ public class Roll extends Move {
 		end=12;
 		duration=18;
 	}
+	public 
 	
 	public void startEffect() {
 		player.status = INVINCIBLE;
