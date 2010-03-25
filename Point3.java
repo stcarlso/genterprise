@@ -8,7 +8,9 @@ import java.awt.geom.*;
  * 
  * A class that represents a point in 3D coordinate space.
  */
-public class Point3 {
+public class Point3 implements java.io.Serializable {
+	private static final long serialVersionUID = 238146789346781283L;
+
 	/**
 	 * The x coordinate.
 	 */
