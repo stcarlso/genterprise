@@ -18,4 +18,6 @@ public class Dodge extends Move {
 	public void endEffect() {
 		player.status = NORMAL;
 	}
+	
+	public void linger() {}
 }
