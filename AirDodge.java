@@ -8,4 +8,13 @@ public class AirDodge extends Move {
 		end=11;
 		duration=18;
 	}
+
+	public void endEffect() {
+		player.status=NORMAL;
+	}
+	public void initiate() {}
+	public void linger() {}
+	public void startEffect() {
+		player.status=INVINCIBLE;
+	}
 }

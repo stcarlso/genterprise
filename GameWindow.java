@@ -3,6 +3,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.nio.FloatBuffer;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
@@ -13,6 +14,7 @@ import javax.media.opengl.glu.GLU;
 import javax.swing.JPanel;
 
 import com.sun.opengl.util.Animator;
+import com.sun.opengl.util.BufferUtil;
 import com.sun.opengl.util.j2d.Overlay;
 
 public class GameWindow extends JPanel implements Constants {
@@ -23,6 +25,7 @@ public class GameWindow extends JPanel implements Constants {
 	boolean down;
 	boolean act;
 	boolean move;
+	boolean paused;
 	
 	int width=800;
 	int height=800;
@@ -31,6 +34,7 @@ public class GameWindow extends JPanel implements Constants {
 	
 	char action='a';
 	char movement='d';
+	char pause='f';
 	
 	Object sync= new Object();
 	Player player;	
@@ -78,9 +82,10 @@ public class GameWindow extends JPanel implements Constants {
 						player.position=DUCKING;
 					else
 						player.position=STANDING;
-					if(player.ability!=null && player.ability instanceof AirDodge)
+					if(player.ability!=null && player.ability instanceof AirDodge) {
+						player.status=NORMAL;
 						player.ability=null;
-					
+					}
 					if(player.status==HELPLESS)
 						player.status=NORMAL;
 				} else if(player.x<=0){
@@ -95,39 +100,24 @@ public class GameWindow extends JPanel implements Constants {
 					if(act) {
 						if(player.position==AIRBORNE) {
 							player.ability=new AirDodge(player);
-							player.ability.started=true;
 						} else if(player.position==STANDING || player.position==DUCKING){
 							if(down) {
 								player.ability=new Dodge(player);
-								player.vx=0;
-							}
-							else if(up) {
+							} else if(up) {
 								player.ability=new Dive(player);
-								if(player.facingRight)
-									player.vx=1.5;
-								else
-									player.vx=-1.5;
-								player.vy=.9;
-							}
-							else if(left) {
-								player.ability=new Roll(player);
-								player.vx=-.8;
-							}
-							else if(right) {
-								player.ability=new Roll(player);
-								player.vx=.8;
+							} else if(left) {
+								player.ability=new Roll(player,-1);
+							} else if(right) {
+								player.ability=new Roll(player,1);
 							} else {
 								player.ability=new Activate(player);									
 							}
-							player.ability.started=true;
 						}
 
 						act=false;
 					} else if(move) {
 						if(up) {
 							player.ability=new ThirdJump(player);
-							player.vy=1;
-							player.ability.started=true;
 						}
 						
 						move=false;
@@ -171,12 +161,13 @@ public class GameWindow extends JPanel implements Constants {
 				//working with character moves
 				if(player.ability!=null) {
 					if(player.ability.started) {
-						player.suspicion+=player.ability.duration*2;
+						player.suspicion+=player.ability.duration*4;
 						initiate=time;
 						effectStart= time+player.ability.start;
 						effectEnd= time+player.ability.end;
 						stop= time+player.ability.duration;
 						player.ability.started=false;
+						player.ability.initiate();
 					}
 					
 					//any move effect should be invoked here
@@ -234,7 +225,7 @@ public class GameWindow extends JPanel implements Constants {
 	}
 	
 	public class GLGameListener implements GLEventListener, KeyListener {
-		Overlay overlay;
+		private FloatBuffer suspicion;
 		
 		public GLGameListener(Player you, Object synch) {
 			player=you;
@@ -264,7 +255,6 @@ public class GameWindow extends JPanel implements Constants {
 				gl.glVertex3d(0,0,9001);	 			
 			gl.glEnd();	
 			drawCharacter(gl);
-			drawOverlay();
 		}
 		/**
 		 * Draw the character onto the screen. This method needs to be completely changed for the real character model
@@ -307,28 +297,57 @@ public class GameWindow extends JPanel implements Constants {
 			gl.glColor3f(0f,0f,0f);	
 			gl.glBegin(GL.GL_LINES);
 				if(player.facingRight) {
-					gl.glVertex3d(player.x+.5,player.y+1.5,0);
-					gl.glVertex3d(player.x+1,player.y+1.5,0);
+					gl.glVertex3d(player.x+.5,player.y+1.5,.1);
+					gl.glVertex3d(player.x+1,player.y+1.5,.1);
 				} else {
-					gl.glVertex3d(player.x,player.y+1.5,0);
-					gl.glVertex3d(player.x+.5,player.y+1.5,0);
+					gl.glVertex3d(player.x,player.y+1.5,.1);
+					gl.glVertex3d(player.x+.5,player.y+1.5,.1);
 				}
 			gl.glEnd();	
+			drawSuspicion(gl,player.suspicion);
 		}
-		
+		/**
+		 * Displays a suspicion meter on the screen
+		 * @param gl
+		 * @param suspicion
+		 */
+		private void drawSuspicion(GL gl, int suspicion) {
+			int w = width, h = height;
+			gl.glViewport(w - 200, h - 200, 200, 200);
+			gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
+			gl.glPushMatrix();
+			gl.glLoadIdentity();
+			gl.glMatrixMode(GL.GL_PROJECTION);
+			gl.glPushMatrix();
+			gl.glLoadIdentity();
+			gl.glDisable(GL.GL_DEPTH_TEST);
+			gl.glOrtho(-1, 1, -1, 1, -1, 1);
+			gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+			gl.glDisableClientState(GL.GL_COLOR_ARRAY);
+			gl.glColor4f(0.7f, 0f, 0f, 0.3f);
+			gl.glVertexPointer(3, GL.GL_FLOAT, 0, this.suspicion);
+			gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 2 * ((2 * suspicion / 5) / 2) + 3);
+			gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+			gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+			gl.glEnable(GL.GL_DEPTH_TEST);
+			gl.glPopMatrix();
+			gl.glMatrixMode(GL.GL_MODELVIEW);
+			gl.glPopMatrix();
+			gl.glViewport(0, 0, w, h);
+		}
+		/* marked for destruction
 		/**
 		 * Draws 2D elements as an overlay on the screen, including the suspicion meter
-		 */
+		 
 		public void drawOverlay() {
-			Graphics2D g2=overlay.createGraphics();
 			g2.setColor(Color.white);
 			g2.fillRect(width-100,100,40,40);
 			g2.setColor(Color.green);
 			g2.drawString(player.suspicion+"",100,100);
 			//System.out.println(360-(int)player.suspicion);
 			g2.fillArc(width-100,100,40,40,90,360-(int)player.suspicion);
-			overlay.drawAll();
 		}
+		*/
 
 		public void displayChanged(GLAutoDrawable arg0, boolean arg1, boolean arg2) {		
 		}
@@ -338,13 +357,53 @@ public class GameWindow extends JPanel implements Constants {
 			GLU glu = new GLU(); 	
 			gl.glClearColor(0.0f,0.0f,0.0f,0.0f);
 			gl.glMatrixMode(GL.GL_PROJECTION);
-		 	gl.glLoadIdentity();		 			 	
+		 	gl.glLoadIdentity();	
 		 	glu.gluPerspective(60,1.0,1.0,100);
-		 	overlay = new Overlay(drawable);
+		 	
+		 	//enables
+		 	gl.glEnable(GL.GL_DEPTH_TEST);
+			gl.glEnable(GL.GL_BLEND);
+			gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+			gl.glEnable(GL.GL_TEXTURE_2D);
+			gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
+			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
+			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT);
+			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR);
+			gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
+			
+		 	gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
+			gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+			gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+		 	suspicion();
+		}
+		/**
+		 * Creates a vertex array for the supicion meter
+		 */
+		private void suspicion() {
+			suspicion = BufferUtil.newFloatBuffer(147 * 3);
+			float x, y, x2, y2, ct, st;
+			suspicion.put(0.f);
+			suspicion.put(0.6f);
+			suspicion.put(0.f);
+			for (int theta = 0; theta <= 360; theta += 5) {
+				x = 0.6f * (ct = (float)Math.sin(Math.toRadians(theta)));
+				y = 0.6f * (st = (float)Math.cos(Math.toRadians(theta)));
+				x2 = 0.45f * ct;
+				y2 = 0.45f * st;
+				suspicion.put(x2);
+				suspicion.put(y2);
+				suspicion.put(0.f);
+				suspicion.put(x);
+				suspicion.put(y);
+				suspicion.put(0.f);
+			}
+			suspicion.rewind();
 		}
 
 		public void reshape(GLAutoDrawable arg0, int arg1, int arg2, int arg3, int arg4) {
-			
+			width=arg3;
+			height=arg4;
 		}
 		
 		//**************KEY LISTENER********************
@@ -374,6 +433,8 @@ public class GameWindow extends JPanel implements Constants {
 				act=true;
 			if(e.getKeyChar()==movement)
 				move=true;
+			if(e.getKeyChar()==pause)
+				paused^=true;
 		}
 		
 	}

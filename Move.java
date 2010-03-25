@@ -1,18 +1,25 @@
 /**
  * All abilities fit under this superclass.
  */
-public class Move implements Constants{
+public abstract class Move implements Constants{
 	Player player;
 	boolean started = false;
 	long duration;
 	long start;
 	long end;
-	Move(Player player) {
+	int dir;
+	public Move(Player player) {
 		this.player = player;
+		started=true;
+	}
+	public Move(Player player,int dir) {
+		this.player = player;
+		this.dir=dir;
+		started=true;
 	}
 	
-	public void initiate() {}
-	public void startEffect() {}
-	public void endEffect() {}
-	public void linger() {}
+	public abstract void initiate();
+	public abstract void startEffect();
+	public abstract void endEffect();
+	public abstract void linger();
 }

@@ -2,13 +2,12 @@
  * A quick roll that moves you forward or backward
  */
 public class Roll extends Move {
-	public Roll(Player player) {
-		super(player);
+	public Roll(Player player, int dir) {
+		super(player,dir);
 		start=2;
 		end=12;
 		duration=18;
 	}
-	public 
 	
 	public void startEffect() {
 		player.status = INVINCIBLE;
@@ -16,4 +15,8 @@ public class Roll extends Move {
 	public void endEffect() {
 		player.status = NORMAL;
 	}
+	public void initiate() {
+		player.vx=dir*.8;
+	}
+	public void linger() {}
 }

@@ -16,4 +16,8 @@ public class Dive extends Move {
 			player.vx=-1.5;
 		player.vy=.9;
 	}
+
+	public void endEffect() {}
+	public void linger() {}
+	public void startEffect() {}
 }
