@@ -165,7 +165,7 @@ public class Block implements java.io.Serializable {
 	 * 
 	 * @return the elements
 	 */
-	public Collection<GameObject> getElements() {
+	public List<GameObject> getElements() {
 		return elements;
 	}
 }

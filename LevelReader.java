@@ -19,12 +19,21 @@ public class LevelReader {
 	 * Reads the level from the given resource location.
 	 * 
 	 * @param res the location of level resources
-	 * @throws RuntimeException if something goes wrong
 	 */
 	public LevelReader(ResourceGetter res) {
+		this(res, "level.dat");
+	}
+	/**
+	 * Reads the level from the given resource location.
+	 * 
+	 * @param res the location of level resources
+	 * @param level the level file name
+	 * @throws RuntimeException if something goes wrong
+	 */
+	public LevelReader(ResourceGetter res, String level) {
 		resources = res;
 		try {
-			readLevel();
+			readLevel(level);
 		} catch (Exception e) {
 			throw new RuntimeException("Could not read level.", e);
 		}
@@ -32,11 +41,12 @@ public class LevelReader {
 	/**
 	 * Reads the level from disk.
 	 * 
+	 * @param level the file name
 	 * @throws Exception if the level cannot be read
 	 */
-	private void readLevel() throws Exception {
-		ObjectInputStream ois = new ObjectInputStream(resources.getResource("level.dat"));
-		level = (Level) ois.readObject();
+	private void readLevel(String level) throws Exception {
+		ObjectInputStream ois = new ObjectInputStream(resources.getResource(level));
+		this.level = (Level) ois.readObject();
 		ois.close();
 	}
 	/**
@@ -46,5 +56,13 @@ public class LevelReader {
 	 */
 	public Level getLevel() {
 		return level;
+	}
+	/**
+	 * Gets the resources for this level.
+	 * 
+	 * @return the level resources
+	 */
+	public ResourceGetter getResources() {
+		return resources;
 	}
 }

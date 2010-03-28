@@ -38,6 +38,15 @@ public class Level implements java.io.Serializable {
 		blocksByY = new ArrayList<Block>(128);
 	}
 	/**
+	 * Creates a level with the specified blocks.
+	 */
+	public Level(List<Block> blocks) {
+		this.blocks = new ArrayList<Block>(blocks);
+		blocksByX = new ArrayList<Block>(blocks.size());
+		blocksByY = new ArrayList<Block>(blocks.size());
+		unroll();
+	}
+	/**
 	 * Iterates over level blocks.
 	 * 
 	 * @return the iterator over the blocks
@@ -49,7 +58,7 @@ public class Level implements java.io.Serializable {
 	 * Unrolls the flat array into plane swept blocks.
 	 */
 	private synchronized void unroll() {
-		if (blocksByX.isEmpty() && !blocks.isEmpty()) return;
+		if (!blocksByX.isEmpty()) return;
 		blocksByX.clear();
 		blocksByY.clear();
 		blocksByX.addAll(blocks);
