@@ -30,4 +30,10 @@ public class LevelWriter {
 		oos.writeObject(level);
 		oos.flush();
 	}
+	/**
+	 * Closes the level writer.
+	 */
+	public void close() throws IOException {
+		oos.close();
+	}
 }

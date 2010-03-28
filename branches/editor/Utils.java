@@ -327,6 +327,9 @@ public final class Utils {
 	 */
 	public static final void staticInit() {
 		Errors.handleErrors();
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (Exception e) { }
 	}
 	/**
 	 * Shows an information message.

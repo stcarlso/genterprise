@@ -1,11 +1,12 @@
 import java.awt.*;
 import java.awt.event.*;
-
 import javax.swing.*;
 import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
 import com.sun.opengl.util.*;
 import java.util.*;
+import java.util.List;
+import java.io.*;
 import java.nio.*;
 
 /**
@@ -24,22 +25,27 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * The height in grid units (HALF of it!)
 	 */
 	public static final int GH = 7;
+
 	/**
 	 * Place the element.
 	 */
 	public static final int PLACE = 2;
 	/**
-	 * Place the element.
+	 * Place the element, if it's not there already.
 	 */
 	public static final int PLACE_IFNOT = 3;
 	/**
-	 * Place the element.
+	 * Select an element (hit test).
 	 */
 	public static final int HIT_TEST = 4;
 	/**
 	 * Re-render the dropping element.
 	 */
 	public static final int RENDER = 1;
+	/**
+	 * Load all textures in use.
+	 */
+	public static final int LOADALL = 5;
 	/**
 	 * The size of placable block buttons.
 	 */
@@ -160,10 +166,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private Vector3 vel;
 	/**
-	 * A suspicion meter (TESTING).
-	 */
-	private FloatBuffer suspicion;
-	/**
 	 * The current zoom level.
 	 */
 	private Dimension zoom;
@@ -187,6 +189,22 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * The selected object.
 	 */
 	private GameObject selected;
+	/**
+	 * How much this object is rotated.
+	 */
+	private int rotation;
+	/**
+	 * When the most recent object was rendered.
+	 */
+	private long lastRender;
+	/**
+	 * The selected button.
+	 */
+	private JButton deselect;
+	/**
+	 * Open/Save dialog.
+	 */
+	private JFileChooser chooser;
 
 	/**
 	 * Sets the window title.
@@ -208,12 +226,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 		zoom = new Dimension(GW, GH);
 		mode = GL.GL_RENDER;
 		selected = null;
+		deselect = null;
+		lastRender = 0;
 	}
 	/**
 	 * Invoked to start the level editor.
 	 */
 	public void start() {
-		current = new FilesystemResources(null, new java.io.File("res/"));
+		current = new FilesystemResources(null, new File("res/"));
 		icons = new IconBuilder(current);
 		dropping = null;
 		coords = null;
@@ -221,10 +241,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard", -1));
 		addElement(new Element("grass.png", "1x1square.dat", "grass", -1));
 		addElement(new Element("angleblock.png", "1x1square.dat", "ramp", 0));
+		addElement(new Element("angletransition.png", "1x1square.dat", "ramp2", 0));
 		addElement(new Element("bottomblock.png", "1x1square.dat", "bottom", 0));
 		addElement(new Element("ceiling.png", "1x1square.dat", "ceiling", 0));
 		addElement(new Element("ladder.png", "1x1square.dat", "ladder", 0));
 		addElement(new Element("wall.png", "1x1square.dat", "wall", 0));
+		addElement(new Element("laserbase.png", "1x1square.dat", "laser-base", 1));
+		addElement(new Element("lasermid.png", "1x1square.dat", "laser-mid", 1));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
@@ -281,8 +304,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		cancel.setActionCommand("done");
 		cancel.addActionListener(events);
 		JComponent horiz = new Box(BoxLayout.X_AXIS);
+		horiz.add(Box.createHorizontalStrut(5));
 		horiz.add(cancel);
+		horiz.add(Box.createHorizontalStrut(5));
 		horiz.add(pane);
+		horiz.add(Box.createHorizontalStrut(5));
 		getContentPane().add(horiz, BorderLayout.NORTH);
 		canvas.addMouseListener(events);
 		canvas.addMouseMotionListener(events);
@@ -297,6 +323,42 @@ public class EditorUI extends JFrame implements GLEventListener {
 		bottom.add(grid);
 		bottom.add(location);
 		getContentPane().add(bottom, BorderLayout.SOUTH);
+		menus();
+		chooser = new JFileChooser();
+		chooser.setCurrentDirectory(new File(".").getAbsoluteFile().getParentFile());
+	}
+	/**
+	 * Creates the menus.
+	 */
+	private void menus() {
+		JMenuBar across = new JMenuBar();
+		JMenu file = new JMenu("File");
+		file.add(createMenuItem("New", "new", KeyEvent.VK_N));
+		file.add(createMenuItem("Open...", "open", KeyEvent.VK_O));
+		file.addSeparator();
+		file.add(createMenuItem("Save", "save", KeyEvent.VK_S));
+		file.add(createMenuItem("Save As...", "saveas", 0));
+		file.add(createMenuItem("Pack...", "pack", KeyEvent.VK_P));
+		file.add(createMenuItem("Revert", "revert", 0));
+		file.addSeparator();
+		file.add(createMenuItem("Exit", "exit", KeyEvent.VK_Q));
+		across.add(file);
+		setJMenuBar(across);
+	}
+	/**
+	 * Creates a menu item for the menus.
+	 * 
+	 * @param title the text to display
+	 * @param action the command to send
+	 * @param key the key mnemonic
+	 */
+	private JMenuItem createMenuItem(String title, String action, int key) {
+		JMenuItem item = new JMenuItem(title);
+		item.setActionCommand(action);
+		item.addActionListener(events);
+		if (key > 0)
+			item.setAccelerator(KeyStroke.getKeyStroke(key, KeyEvent.CTRL_MASK));
+		return item;
 	}
 	/**
 	 * Loads the blocks.
@@ -317,17 +379,26 @@ public class EditorUI extends JFrame implements GLEventListener {
 		available.scrollRectToVisible(ZEROZERO);
 	}
 	/**
+	 * Rotates the current block.
+	 */
+	private void rotate(int amount) {
+		if (dropping == null) return;
+		rotation = (rotation + amount + 360) % 360;
+		synchronized (eventSync) {
+			event = RENDER;
+		}
+	}
+	/**
 	 * Drops the block at the current location.
 	 */
 	private void drop() {
 		if (dropping == null || coords == null) return;
 		if (event == PLACE_IFNOT) {
-			if (lastPlace != null) {
-				if (Math.floor(lastPlace.x) == Math.floor(coords.x) &&
-					Math.floor(lastPlace.y) == Math.floor(coords.y)) return;
-			}
+			if (lastPlace != null && Math.floor(lastPlace.x) == Math.floor(coords.x) &&
+				Math.floor(lastPlace.y) == Math.floor(coords.y)) return;
 		}
-		GameObject newObject = new GameObject(coords.x, coords.y, dropping.getDefaultZ(), 0, dropping);
+		GameObject newObject = new GameObject(coords.x, coords.y, dropping.getDefaultZ(),
+			rotation, dropping);
 		synchronized (block) {
 			block.addObject(newObject);
 			if (event == PLACE_IFNOT)
@@ -336,11 +407,23 @@ public class EditorUI extends JFrame implements GLEventListener {
 	}
 	public void display(GLAutoDrawable drawable) {
 		GL gl = drawable.getGL();
-		gl.glClear(GL.GL_DEPTH_BUFFER_BIT | GL.GL_COLOR_BUFFER_BIT);
+		long t = System.currentTimeMillis();
 		if (dropping != null && !dropping.hasTexture())
 			dropping.loadTexture(current);
 		synchronized (eventSync) {
 			switch (event) {
+			case LOADALL:
+				synchronized (block) {
+					Element el;
+					for (GameObject o : block.getElements()) {
+						el = o.getSource();
+						if (el.getVertexArray() == null)
+							el.loadGeometry(current);
+						if (!el.hasTexture())
+							el.loadTexture(current);
+					}
+				}
+				break;
 			case RENDER:
 				computeLocation(gl);
 				break;
@@ -356,11 +439,64 @@ public class EditorUI extends JFrame implements GLEventListener {
 			}
 			event = 0;
 		}
-		updatePosition(gl);
-		renderScene(gl);
-		grid(gl);
-		gl.glFlush();
-		Utils.sleep(30L);
+		if (t - lastRender > 30L) {
+			lastRender = t;
+			gl.glClear(GL.GL_DEPTH_BUFFER_BIT | GL.GL_COLOR_BUFFER_BIT);
+			updatePosition(gl);
+			renderScene(gl);
+			grid(gl);
+			gl.glFlush();
+		}
+		Utils.sleep(3L);
+	}
+	/**
+	 * Correctly rotates the element.
+	 * 
+	 * @param gl the OpenGL context
+	 * @param toRotate the object to rotate
+	 * @param amount the amount to rotate
+	 */
+	private void doRotate(GL gl, Element toRotate, int amount) {
+		float x = (float)toRotate.getWidth() / 2.f, y = (float)toRotate.getHeight() / 2.f;
+		gl.glTranslatef(x, y, 0);
+		gl.glRotatef(amount, 0, 0, 1);
+		gl.glTranslatef(-x, -y, 0);
+	}
+	/**
+	 * Renders the currently dropping object.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	private void renderDropping(GL gl) {
+		gl.glDisable(GL.GL_DEPTH_TEST);
+		gl.glPushMatrix();
+		gl.glTranslated(coords.getX(), coords.getY(), dropping.getDefaultZ());
+		if (rotation != 0)
+			doRotate(gl, dropping, rotation);
+		dropping.render(gl);
+		gl.glPopMatrix();
+		gl.glEnable(GL.GL_DEPTH_TEST);
+	}
+	/**
+	 * Renders the selection indicator.
+	 * 
+	 * @param gl the OpenGL context
+	 * @param o the selected object
+	 */
+	private void renderSelection(GL gl, GameObject o) {
+		float w = (float)o.getSource().getWidth(), h = (float)o.getSource().getHeight(),
+			z = (float)o.getZ();
+		Element.clearOptions(gl);
+		gl.glDisable(GL.GL_DEPTH_TEST);
+		gl.glColor4f(0.0f, 0.0f, 0.0f, 0.3f);
+		gl.glBegin(GL.GL_QUADS);
+		gl.glVertex3f(0.0f, 0.0f, z);
+		gl.glVertex3f(0.0f, w, z);
+		gl.glVertex3f(h, w, z);
+		gl.glVertex3f(h, 0.0f, z);
+		gl.glEnd();
+		gl.glEnable(GL.GL_DEPTH_TEST);
+		Element.setOptions(gl);
 	}
 	/**
 	 * Draws the entire level.
@@ -368,52 +504,34 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * @param gl the OpenGL context
 	 */
 	private void renderScene(GL gl) {
-		int objectCount = 1; boolean dropped = false;
+		int objectCount = 1;
 		synchronized (block) {
-			Iterator<GameObject> it = block.getElements().iterator();
+			List<GameObject> list = block.getElements();
+			Iterator<GameObject> it = list.iterator();
 			GameObject o;
 			while (it.hasNext()) {
 				gl.glPushMatrix();
 				o = it.next();
 				gl.glTranslated(o.getX(), o.getY(), o.getZ());
 				if (o.getRotation() != 0)
-					gl.glRotatef(o.getRotation(), 0, 0, 1);
+					doRotate(gl, o.getSource(), o.getRotation());
 				if (mode == GL.GL_SELECT)
 					gl.glLoadName(objectCount);
 				o.getSource().render(gl);
-				if (mode == GL.GL_RENDER && selected == o) {
-					float w = (float)o.getSource().getWidth(), h = (float)o.getSource().getHeight();
-					Element.clearOptions(gl);
-					gl.glDisable(GL.GL_DEPTH_TEST);
-					gl.glColor4f(0.0f, 0.0f, 0.0f, 0.3f);
-					gl.glBegin(GL.GL_QUADS);
-					gl.glVertex3f(0.0f, 0.0f, (float)o.getZ());
-					gl.glVertex3f(0.0f, w, (float)o.getZ());
-					gl.glVertex3f(h, w, (float)o.getZ());
-					gl.glVertex3f(h, 0.0f, (float)o.getZ());
-					gl.glEnd();
-					gl.glEnable(GL.GL_DEPTH_TEST);
-					Element.setOptions(gl);
-				}
+				if (mode == GL.GL_RENDER && selected == o)
+					renderSelection(gl, o);
 				gl.glPopMatrix();
-				if (mode == GL.GL_RENDER && dropping != null && coords != null && !dropped &&
-						dropping.getDefaultZ() < o.getZ()) {
-					dropped = true;
-					gl.glPushMatrix();
-					gl.glTranslated(coords.getX(), coords.getY(), dropping.getDefaultZ());
-					dropping.render(gl);
-					gl.glPopMatrix();
-				}
 				objectCount++;
 			}
-		}
-		if (mode == GL.GL_RENDER && dropping != null && coords != null && !dropped) {
-			gl.glPushMatrix();
-			gl.glTranslated(coords.getX(), coords.getY(), dropping.getDefaultZ());
-			dropping.render(gl);
-			gl.glPopMatrix();
+			if (mode == GL.GL_RENDER && dropping != null && coords != null)
+				renderDropping(gl);
 		}
 	}
+	/**
+	 * Renders the grid on the screen.
+	 * 
+	 * @param gl the OpenGL context
+	 */
 	private void grid(GL gl) {
 		if (grid.isSelected()) {
 			int gw = zoom.width, gh = zoom.height;
@@ -432,54 +550,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 			gl.glEnd();
 		}
 	}
-	private void drawSuspicion(GL gl, int suspicion) {
-		int w = canvas.getWidth(), h = canvas.getHeight();
-		gl.glViewport(w - 200, h - 200, 200, 200);
-		gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
-		gl.glPushMatrix();
-		gl.glLoadIdentity();
-		gl.glMatrixMode(GL.GL_PROJECTION);
-		gl.glPushMatrix();
-		gl.glLoadIdentity();
-		gl.glDisable(GL.GL_DEPTH_TEST);
-		gl.glOrtho(-1, 1, -1, 1, -1, 1);
-		gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
-		gl.glDisableClientState(GL.GL_COLOR_ARRAY);
-		gl.glColor4f(0.7f, 0f, 0f, 0.3f);
-		gl.glVertexPointer(3, GL.GL_FLOAT, 0, this.suspicion);
-		gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 2 * suspicion / 5 + 3);
-		gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
-		gl.glEnableClientState(GL.GL_COLOR_ARRAY);
-		gl.glEnable(GL.GL_DEPTH_TEST);
-		gl.glPopMatrix();
-		gl.glMatrixMode(GL.GL_MODELVIEW);
-		gl.glPopMatrix();
-		gl.glViewport(0, 0, w, h);
-	}
-	private void suspicion() {
-		suspicion = BufferUtil.newFloatBuffer(147 * 3);
-		float x, y, x2, y2, ct, st;
-		suspicion.put(0.f);
-		suspicion.put(0.6f);
-		suspicion.put(0.f);
-		for (int theta = 0; theta <= 360; theta += 5) {
-			x = 0.6f * (ct = (float)Math.sin(Math.toRadians(theta)));
-			y = 0.6f * (st = (float)Math.cos(Math.toRadians(theta)));
-			x2 = 0.45f * ct;
-			y2 = 0.45f * st;
-			suspicion.put(x2);
-			suspicion.put(y2);
-			suspicion.put(0.f);
-			suspicion.put(x);
-			suspicion.put(y);
-			suspicion.put(0.f);
-		}
-		suspicion.rewind();
-	}
 	public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) { }
 	public void init(GLAutoDrawable drawable) {
 		GL gl = drawable.getGL();
-		suspicion();
 		hitBuffer = BufferUtil.newIntBuffer(48);
 		gl.glSelectBuffer(12, hitBuffer);
 		glu = new GLU();
@@ -556,11 +629,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 				pos[2] = Math.floor(pos[2]);
 			}
 			if (coords == null)
-				coords = new Point3(pos[0], pos[1], pos[2]);
+				coords = new Point3(pos[0], pos[1], 0);
 			else {
 				coords.setX(pos[0]);
 				coords.setY(pos[1]);
-				coords.setZ(pos[2]);
+				//coords.setZ(pos[2]);
 			}
 			location.setText("At " + coords.toRoundedString());
 		}
@@ -705,6 +778,42 @@ public class EditorUI extends JFrame implements GLEventListener {
 		x = canvas.getWidth() / 2;
 		y = canvas.getHeight() / 2;
 	}
+	/**
+	 * Saves the level with a dialog.
+	 */
+	private void save() {
+		chooser.setDialogType(JFileChooser.SAVE_DIALOG);
+		chooser.setDialogTitle("Save Level");
+		if (chooser.showDialog(this, "Save") == JFileChooser.APPROVE_OPTION) try {
+			LevelWriter out = new LevelWriter(new FileOutputStream(chooser.getSelectedFile()));
+			out.writeLevel(new Level(Collections.nCopies(1, block)));
+			out.close();
+		} catch (IOException e) {
+			Errors.userError("Can't save level!");
+		}
+	}
+	/**
+	 * Opens a level.
+	 */
+	private void open() {
+		chooser.setDialogType(JFileChooser.OPEN_DIALOG);
+		chooser.setDialogTitle("Open Level");
+		if (chooser.showDialog(this, "Open") == JFileChooser.APPROVE_OPTION) try {
+			File file = chooser.getSelectedFile();
+			current = new FilesystemResources(current, file.getAbsoluteFile().getParentFile());
+			LevelReader in = new LevelReader(current, file.getName());
+			Level level = in.getLevel();
+			selected = null;
+			dropping = null;
+			if (deselect != null) deselect.setSelected(false);
+			synchronized (eventSync) {
+				block = level.blockIterator().next();
+				event = LOADALL;
+			}
+		} catch (Exception e) {
+			Errors.userError("Can't open level!");
+		}
+	}
 
 	/**
 	 * Listens for events. All your events are belong to me.
@@ -740,13 +849,15 @@ public class EditorUI extends JFrame implements GLEventListener {
 		public void actionPerformed(ActionEvent e) {
 			String cmd = e.getActionCommand();
 			if (cmd == null) return;
-			else if (cmd.startsWith("place") && cmd.length() > 5) {
-				dropping = elements.get(cmd.substring(5));
-				selected = null;
-			} else if (cmd.equals("done")) {
+			else if (cmd.equals("done")) {
 				dropping = null;
 				selected = null;
-			}
+				if (deselect != null) deselect.setSelected(false);
+			} else if (cmd.equals("exit"))
+				System.exit(0);
+			else if (cmd.equals("saveas")) save();
+			else if (cmd.equals("save")) save();
+			else if (cmd.equals("open")) open();
 		}
 		public void mouseEntered(MouseEvent e) {
 			mouseMoved(e);
@@ -765,10 +876,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 			center();
 		}
 		public void mouseReleased(MouseEvent e) {
-			synchronized (eventSync) {
-				if (dropping != null && coords != null) event = PLACE_IFNOT;
-				else if (dropping == null) event = HIT_TEST;
-			}
+			if (e.getButton() == MouseEvent.BUTTON1 && !e.isControlDown())
+				synchronized (eventSync) {
+					if (dropping != null && coords != null) event = PLACE_IFNOT;
+					else if (dropping == null) event = HIT_TEST;
+				}
+			else if (e.getButton() != MouseEvent.BUTTON1 || e.isControlDown())
+				rotate(e.isShiftDown() ? 15 : 90);
 		}
 		public void mouseDragged(MouseEvent e) {
 			x = e.getX();
@@ -780,13 +894,15 @@ public class EditorUI extends JFrame implements GLEventListener {
 		}
 		public void keyPressed(KeyEvent e) { }
 		public void keyReleased(KeyEvent e) {
-			if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+			int code = e.getKeyCode();
+			if (code == KeyEvent.VK_DELETE || code == KeyEvent.VK_BACK_SPACE) {
 				if (selected == null) return;
 				synchronized (block) {
 					block.removeObject(selected);
 				}
 				selected = null;
-			}
+			} else if (code == KeyEvent.VK_R)
+				rotate(e.isShiftDown() ? 15 : 90);
 		}
 		public void keyTyped(KeyEvent e) { }
 	}
@@ -794,8 +910,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 	/**
 	 * A block that can be placed on screen.
 	 */
-	private class PlacableBlock extends JButton {
+	private class PlacableBlock extends JButton implements ActionListener {
 		private static final long serialVersionUID = 0L;
+
+		/**
+		 * The element for this block.
+		 */
+		private Element element;
 
 		/**
 		 * Sets up all the parameters.
@@ -803,19 +924,28 @@ public class EditorUI extends JFrame implements GLEventListener {
 		 * @param element the element to represent
 		 */
 		public PlacableBlock(Element element) {
-			super(element.getName());
+			super(element.getName(), icons.getPreviewIcon(element.getTextureLocation()));
+			this.element = element;
 			setHorizontalTextPosition(SwingConstants.CENTER);
 			setVerticalTextPosition(SwingConstants.BOTTOM);
 			setHorizontalAlignment(SwingConstants.CENTER);
 			setVerticalAlignment(SwingConstants.TOP);
-			setContentAreaFilled(false);
-			setBorder(BORDER);
+			//setContentAreaFilled(false);
+			//setBorder(BORDER);
+			setSelected(false);
 			setFocusable(false);
-			setIcon(icons.getPreviewIcon(element.getTextureLocation()));
-			setActionCommand("place" + element.getName());
+			setActionCommand("place");
 			setFont(getFont().deriveFont(10.0f));
 			setPreferredSize(BLOCK_SIZE);
-			addActionListener(events);
+			addActionListener(this);
+		}
+		public void actionPerformed(ActionEvent e) {
+			if (deselect != null) deselect.setSelected(false);
+			selected = null;
+			dropping = element;
+			rotation = 0;
+			setSelected(true);
+			deselect = this;
 		}
 	}
 }
