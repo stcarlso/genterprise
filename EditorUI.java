@@ -47,6 +47,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	public static final int LOADALL = 5;
 	/**
+	 * Resize the screen.
+	 */
+	public static final int RESIZE = 6;
+	/**
 	 * The size of placable block buttons.
 	 */
 	public static final Dimension BLOCK_SIZE = new Dimension(84, 56);
@@ -313,6 +317,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		canvas.addMouseListener(events);
 		canvas.addMouseMotionListener(events);
 		canvas.addKeyListener(events);
+		canvas.addMouseWheelListener(events);
 		grid = new JCheckBox("Show Grid");
 		grid.setSelected(true);
 		grid.setFocusable(false);
@@ -423,6 +428,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 							el.loadTexture(current);
 					}
 				}
+				break;
+			case RESIZE:
+				reproject(gl);
 				break;
 			case RENDER:
 				computeLocation(gl);
@@ -578,6 +586,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 		ratio = (double)width / height;
 		GL gl = drawable.getGL();
 		gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
+		reproject(gl);
+	}
+	/**
+	 * Remakes the projection matrix.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	private void reproject(GL gl) {
 		gl.glMatrixMode(GL.GL_PROJECTION);
 		gl.glLoadIdentity();
 		zoom.width = (int)(ratio * (double)zoom.height) + 1;
@@ -585,6 +601,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glGetDoublev(GL.GL_PROJECTION_MATRIX, projection, 0);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
 	}
+	/**
+	 * Does only the viewing transform.
+	 * 
+	 * @param gl the OpenGL context
+	 */
 	private void view(GL gl) {
 		double gh = (double)zoom.height;
 		gl.glOrtho(-gh * ratio, gh * ratio, -gh, gh, -10, 10);
@@ -819,7 +840,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Listens for events. All your events are belong to me.
 	 */
 	private class EventListener extends MouseAdapter implements WindowListener, WindowFocusListener,
-			ActionListener, MouseMotionListener, KeyListener {
+			ActionListener, MouseMotionListener, KeyListener, MouseWheelListener {
 		public void windowActivated(WindowEvent e) {
 			startRun();
 		}
@@ -905,6 +926,16 @@ public class EditorUI extends JFrame implements GLEventListener {
 				rotate(e.isShiftDown() ? 15 : 90);
 		}
 		public void keyTyped(KeyEvent e) { }
+		public void mouseWheelMoved(MouseWheelEvent e) {
+			if (e.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL) {
+				zoom.height += e.getUnitsToScroll() / 2;
+				if (zoom.height < 2) zoom.height = 2;
+				if (zoom.height > 20) zoom.height = 20;
+				synchronized (eventSync) {
+					event = RESIZE;
+				}
+			}
+		}
 	}
 
 	/**
