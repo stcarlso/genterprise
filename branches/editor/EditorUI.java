@@ -520,18 +520,29 @@ public class EditorUI extends JFrame implements GLEventListener {
 		synchronized (block) {
 			List<GameObject> list = block.getElements();
 			Iterator<GameObject> it = list.iterator();
-			GameObject o;
+			Element element; GameObject o; String lastTexture = "", lastModel = "";
 			while (it.hasNext()) {
 				gl.glPushMatrix();
 				o = it.next();
+				element = o.getSource();
 				gl.glTranslated(o.getX(), o.getY(), o.getZ());
 				if (o.getRotation() != 0)
-					doRotate(gl, o.getSource(), o.getRotation());
+					doRotate(gl, element, o.getRotation());
 				if (mode == GL.GL_SELECT)
 					gl.glLoadName(objectCount);
-				o.getSource().render(gl);
-				if (mode == GL.GL_RENDER && selected == o)
+				if (!lastTexture.equals(element.getTextureLocation())) {
+					element.setTexture(gl);
+					lastTexture = element.getTextureLocation();
+				}
+				if (!lastModel.equals(element.getGeometryLocation())) {
+					element.renderModel(gl);
+					lastModel = element.getGeometryLocation();
+				}
+				element.draw(gl);
+				if (mode == GL.GL_RENDER && selected == o) {
 					renderSelection(gl, o);
+					lastTexture = lastModel = "";
+				}
 				gl.glPopMatrix();
 				objectCount++;
 			}

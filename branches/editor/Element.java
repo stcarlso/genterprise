@@ -238,11 +238,35 @@ public class Element implements java.io.Serializable {
 	public void render(GL gl) {
 		if (vertex == null)
 			throw new RuntimeException("Cannot render before loading");
+		setTexture(gl);
+		renderModel(gl);
+		draw(gl);
+	}
+	/**
+	 * Sets the texture to this texture.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	public void setTexture(GL gl) {
 		gl.glBindTexture(GL.GL_TEXTURE_2D, texture.getTextureObject());
+	}
+	/**
+	 * Draws the array on the screen.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	public void draw(GL gl) {
+		gl.glDrawArrays(GL.GL_TRIANGLES, 0, size);
+	}
+	/**
+	 * Only loads the model into memory; good for repeatedly drawing the same model.
+	 * 
+	 * @param gl the OpenGL context
+	 */
+	public void renderModel(GL gl) {
 		gl.glVertexPointer(3, GL.GL_FLOAT, 0, vertex);
 		gl.glColorPointer(3, GL.GL_FLOAT, 0, color);
 		gl.glTexCoordPointer(2, GL.GL_FLOAT, 0, texCoords);
-		gl.glDrawArrays(GL.GL_TRIANGLES, 0, size);
 	}
 	/**
 	 * Sets the rendering-specific options on the GL. Use before rendering a bunch of elements.
