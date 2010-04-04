@@ -51,6 +51,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	public static final int RESIZE = 6;
 	/**
+	 * Move the selected object.
+	 */
+	public static final int MOVE = 7;
+	/**
 	 * The size of placable block buttons.
 	 */
 	public static final Dimension BLOCK_SIZE = new Dimension(84, 56);
@@ -209,6 +213,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Open/Save dialog.
 	 */
 	private JFileChooser chooser;
+	/**
+	 * Drag activated?
+	 */
+	private boolean drag;
+	/**
+	 * The destination file for saving.
+	 */
+	private File fileName;
 
 	/**
 	 * Sets the window title.
@@ -232,6 +244,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		selected = null;
 		deselect = null;
 		lastRender = 0;
+		newFile();
 	}
 	/**
 	 * Invoked to start the level editor.
@@ -243,6 +256,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		coords = null;
 		// TODO temp
 		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard", -1));
+		addElement(new Element("checkerboard.png", "1x1dark.dat", "darkcheck", -1));
 		addElement(new Element("grass.png", "1x1square.dat", "grass", -1));
 		addElement(new Element("angleblock.png", "1x1square.dat", "ramp", 0));
 		addElement(new Element("angletransition.png", "1x1square.dat", "ramp2", 0));
@@ -252,10 +266,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("wall.png", "1x1square.dat", "wall", 0));
 		addElement(new Element("laserbase.png", "1x1square.dat", "laser-base", 1));
 		addElement(new Element("lasermid.png", "1x1square.dat", "laser-mid", 1));
-		addElement(new Element("savepointtop.png", "1x1square.dat", "savepoint1", 1));
-		addElement(new Element("savepointbot.png", "1x1square.dat", "savepoint2", 1));
-		addElement(new Element("doortop.png", "1x1square.dat", "door1", 1));
-		addElement(new Element("doorbot.png", "1x1square.dat", "door2", 1));
+		//addElement(new Element("savepointtop.png", "1x1square.dat", "savepoint1", 1));
+		//addElement(new Element("savepointbot.png", "1x1square.dat", "savepoint2", 1));
+		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 1));
+		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot", 1));
+		// Peter where are these files???
+		//addElement(new Element("doortop.png", "1x1square.dat", "door1", 0));
+		//addElement(new Element("doorbot.png", "1x1square.dat", "door2", 0));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
@@ -335,6 +352,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		menus();
 		chooser = new JFileChooser();
 		chooser.setCurrentDirectory(new File(".").getAbsoluteFile().getParentFile());
+		chooser.setMultiSelectionEnabled(false);
 	}
 	/**
 	 * Creates the menus.
@@ -348,7 +366,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 		file.add(createMenuItem("Save", "save", KeyEvent.VK_S));
 		file.add(createMenuItem("Save As...", "saveas", 0));
 		file.add(createMenuItem("Pack...", "pack", KeyEvent.VK_P));
-		file.add(createMenuItem("Revert", "revert", 0));
 		file.addSeparator();
 		file.add(createMenuItem("Exit", "exit", KeyEvent.VK_Q));
 		across.add(file);
@@ -433,6 +450,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 					}
 				}
 				break;
+			case MOVE:
+				computeLocation(gl);
+				if (selected != null) {
+					selected.getLocation().setX(coords.getX());
+					selected.getLocation().setY(coords.getY());
+				}
+				break;
 			case RESIZE:
 				reproject(gl);
 				break;
@@ -503,9 +527,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glColor4f(0.0f, 0.0f, 0.0f, 0.3f);
 		gl.glBegin(GL.GL_QUADS);
 		gl.glVertex3f(0.0f, 0.0f, z);
-		gl.glVertex3f(0.0f, w, z);
-		gl.glVertex3f(h, w, z);
-		gl.glVertex3f(h, 0.0f, z);
+		gl.glVertex3f(0.0f, h, z);
+		gl.glVertex3f(w, h, z);
+		gl.glVertex3f(w, 0.0f, z);
 		gl.glEnd();
 		gl.glEnable(GL.GL_DEPTH_TEST);
 		Element.setOptions(gl);
@@ -585,7 +609,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX, modelview, 0);
 		gl.glEnable(GL.GL_DEPTH_TEST);
 		gl.glEnable(GL.GL_BLEND);
-		gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+		gl.glBlendFunc(GL.GL_ONE, GL.GL_ONE_MINUS_SRC_ALPHA);
 		gl.glEnable(GL.GL_TEXTURE_2D);
 		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
 		gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
@@ -816,17 +840,34 @@ public class EditorUI extends JFrame implements GLEventListener {
 	}
 	/**
 	 * Saves the level with a dialog.
+	 * 
+	 * @param forceDialog whether the dialog must be shown
 	 */
-	private void save() {
+	private void save(boolean forceDialog) {
 		chooser.setDialogType(JFileChooser.SAVE_DIALOG);
 		chooser.setDialogTitle("Save Level");
-		if (chooser.showDialog(this, "Save") == JFileChooser.APPROVE_OPTION) try {
-			LevelWriter out = new LevelWriter(new FileOutputStream(chooser.getSelectedFile()));
+		if (forceDialog || fileName == null) {
+			if (chooser.showDialog(this, "Save") != JFileChooser.APPROVE_OPTION) return;
+			fileName = chooser.getSelectedFile();
+		}
+		if (fileName != null) try {
+			LevelWriter out = new LevelWriter(new FileOutputStream(fileName));
 			out.writeLevel(new Level(Collections.nCopies(1, block)));
 			out.close();
 		} catch (IOException e) {
-			Errors.userError("Can't save level!");
+			Utils.showWarning("Can't save level!");
 		}
+	}
+	/**
+	 * Erases everything and makes a new file.
+	 */
+	private void newFile() {
+		fileName = null;
+		block = new Block();
+		selected = null;
+		dropping = null;
+		if (deselect != null) deselect.setSelected(false);
+		deselect = null;
 	}
 	/**
 	 * Opens a level.
@@ -838,16 +879,18 @@ public class EditorUI extends JFrame implements GLEventListener {
 			File file = chooser.getSelectedFile();
 			current = new FilesystemResources(current, file.getAbsoluteFile().getParentFile());
 			LevelReader in = new LevelReader(current, file.getName());
+			fileName = file;
 			Level level = in.getLevel();
 			selected = null;
 			dropping = null;
 			if (deselect != null) deselect.setSelected(false);
+			deselect = null;
 			synchronized (eventSync) {
 				block = level.blockIterator().next();
 				event = LOADALL;
 			}
 		} catch (Exception e) {
-			Errors.userError("Can't open level!");
+			Utils.showWarning("Can't open level!");
 		}
 	}
 
@@ -888,12 +931,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 			else if (cmd.equals("done")) {
 				dropping = null;
 				selected = null;
+				lastPlace = null;
 				if (deselect != null) deselect.setSelected(false);
 			} else if (cmd.equals("exit"))
 				System.exit(0);
-			else if (cmd.equals("saveas")) save();
-			else if (cmd.equals("save")) save();
+			else if (cmd.equals("saveas")) save(true);
+			else if (cmd.equals("save")) save(false);
 			else if (cmd.equals("open")) open();
+			else if (cmd.equals("new")) newFile();
 		}
 		public void mouseEntered(MouseEvent e) {
 			mouseMoved(e);
@@ -902,8 +947,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			x = e.getX();
 			y = e.getY();
 			synchronized (eventSync) {
-				snapTo = true;
-				if (e.isShiftDown()) snapTo = false;
+				snapTo = !e.isShiftDown();
 				if (event == 0) event = RENDER;
 			}
 		}
@@ -914,6 +958,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		public void mouseReleased(MouseEvent e) {
 			if (e.getButton() == MouseEvent.BUTTON1 && !e.isControlDown())
 				synchronized (eventSync) {
+					if (drag)
+						event = MOVE;
+					drag = false;
 					if (dropping != null && coords != null) event = PLACE_IFNOT;
 					else if (dropping == null) event = HIT_TEST;
 				}
@@ -926,6 +973,12 @@ public class EditorUI extends JFrame implements GLEventListener {
 			if (!e.isShiftDown())
 				synchronized (eventSync) {
 					if (dropping != null && coords != null) event = PLACE_IFNOT;
+				}
+			if (dropping == null && selected != null)
+				synchronized (eventSync) {
+					drag = true;
+					event = MOVE;
+					snapTo = !e.isShiftDown();
 				}
 		}
 		public void keyPressed(KeyEvent e) { }

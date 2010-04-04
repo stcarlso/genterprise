@@ -132,10 +132,10 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	/**
 	 * Gets the location.
 	 * 
-	 * @return the X and Y coordinates
+	 * @return the 3D location
 	 */
-	public Point2D getLocation() {
-		return coords.getXY();
+	public Point3 getLocation() {
+		return coords;
 	}
 	public String toString() {
 		return src.toString() + "@" + coords.toString();
