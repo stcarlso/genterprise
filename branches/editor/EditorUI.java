@@ -270,9 +270,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		//addElement(new Element("savepointbot.png", "1x1square.dat", "savepoint2", 1));
 		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 1));
 		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot", 1));
-		// Peter where are these files???
-		//addElement(new Element("doortop.png", "1x1square.dat", "door1", 0));
-		//addElement(new Element("doorbot.png", "1x1square.dat", "door2", 0));
+		addElement(new Element("door.png", "2x1square.dat", "door", 1));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
