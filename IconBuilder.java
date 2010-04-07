@@ -27,6 +27,15 @@ public class IconBuilder {
 		res = get;
 	}
 	/**
+	 * Gets a preview icon for a given element.
+	 * 
+	 * @param src the icon source
+	 * @return a 32x32 icon of this object. <i>The 32x32 icon is not cached, unlike the source which is.</i>
+	 */
+	public Icon getPreviewIcon(Element src) {
+		return getPreviewIcon(src.getName() + ".png");
+	}
+	/**
 	 * Gets a preview icon.
 	 * 
 	 * @param src the icon source
