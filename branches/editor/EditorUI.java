@@ -25,7 +25,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * The height in grid units (HALF of it!)
 	 */
 	public static final int GH = 7;
-
 	/**
 	 * Place the element.
 	 */
@@ -55,6 +54,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	public static final int MOVE = 7;
 	/**
+	 * Renders a disk preview of the current element (dropping).
+	 */
+	public static final int PREVIEW = 8;
+	/**
 	 * The size of placable block buttons.
 	 */
 	public static final Dimension BLOCK_SIZE = new Dimension(84, 56);
@@ -76,6 +79,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 		new EditorUI().start();
 	}
 
+	/**
+	 * Size of the GL canvas.
+	 */
+	private Rectangle size;
 	/**
 	 * The GL canvas to display the level.
 	 */
@@ -116,6 +123,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * The current resource list.
 	 */
 	private ResourceGetter current;
+	/**
+	 * The root resource list.
+	 */
+	private ResourceGetter root;
 	/**
 	 * The elements that are placable.
 	 */
@@ -161,6 +172,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private double[] modelview, pos, projection;
 	private int[] viewport;
+	/**
+	 * Depth buffer for hit testing.
+	 */
+	private FloatBuffer depthBuffer;
 	/**
 	 * A block for testing.
 	 */
@@ -244,32 +259,35 @@ public class EditorUI extends JFrame implements GLEventListener {
 		selected = null;
 		deselect = null;
 		lastRender = 0;
-		newFile();
+		fileName = null;
 	}
 	/**
 	 * Invoked to start the level editor.
 	 */
 	public void start() {
-		current = new FilesystemResources(null, new File("res/"));
+		// FIXME replace with the jar one
+		root = new FilesystemResources(null, new File("res/"));
+		current = new FilesystemResources(root, new File("res/"));
+		depthBuffer = BufferUtil.newFloatBuffer(1);
 		icons = new IconBuilder(current);
 		dropping = null;
 		coords = null;
+		size = new Rectangle(ZEROZERO);
 		// TODO temp
 		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard", -1));
 		addElement(new Element("checkerboard.png", "1x1dark.dat", "darkcheck", -1));
 		addElement(new Element("grass.png", "1x1square.dat", "grass", -1));
 		addElement(new Element("angleblock.png", "1x1square.dat", "ramp", 0));
-		addElement(new Element("angletransition.png", "1x1square.dat", "ramp2", 0));
+		addElement(new Element("angletransition.png", "1x1square.dat", "ramp-t", 0));
 		addElement(new Element("bottomblock.png", "1x1square.dat", "bottom", 0));
 		addElement(new Element("ceiling.png", "1x1square.dat", "ceiling", 0));
 		addElement(new Element("ladder.png", "1x1square.dat", "ladder", 0));
 		addElement(new Element("wall.png", "1x1square.dat", "wall", 0));
-		addElement(new Element("laserbase.png", "1x1square.dat", "laser-base", 1));
-		addElement(new Element("lasermid.png", "1x1square.dat", "laser-mid", 1));
-		//addElement(new Element("savepointtop.png", "1x1square.dat", "savepoint1", 1));
-		//addElement(new Element("savepointbot.png", "1x1square.dat", "savepoint2", 1));
+		addElement(new Element(null, "1x1black.dat", "filler", 0));
+		addElement(new Element("laserbase.png", "1x1square.dat", "laserbase", 1));
+		addElement(new Element("lasermid.png", "1x1square.dat", "lasermid", 1));
 		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 1));
-		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot", 1));
+		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot", 2));
 		addElement(new Element("door.png", "2x1square.dat", "door", 1));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
@@ -284,6 +302,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		Utils.centerWindow(this);
 		validate();
 		setVisible(true);
+		canvas.requestFocus();
 		center();
 		startRun();
 	}
@@ -300,7 +319,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private void setupGL() {
 		GLCapabilities glcaps = new GLCapabilities();
-		glcaps.setSampleBuffers(false);
 		canvas = new GLCanvas(glcaps);
 		canvas.addGLEventListener(this);
 		getContentPane().add(canvas, BorderLayout.CENTER);
@@ -358,6 +376,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 	private void menus() {
 		JMenuBar across = new JMenuBar();
 		JMenu file = new JMenu("File");
+		file.setMnemonic(KeyEvent.VK_F);
 		file.add(createMenuItem("New", "new", KeyEvent.VK_N));
 		file.add(createMenuItem("Open...", "open", KeyEvent.VK_O));
 		file.addSeparator();
@@ -367,6 +386,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 		file.addSeparator();
 		file.add(createMenuItem("Exit", "exit", KeyEvent.VK_Q));
 		across.add(file);
+		JMenu edit = new JMenu("Edit");
+		edit.setMnemonic(KeyEvent.VK_E);
+		edit.add(createMenuItem("Code", "code", KeyEvent.VK_1));
+		across.add(edit);
 		setJMenuBar(across);
 	}
 	/**
@@ -380,6 +403,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		JMenuItem item = new JMenuItem(title);
 		item.setActionCommand(action);
 		item.addActionListener(events);
+		item.setMnemonic(key);
 		if (key > 0)
 			item.setAccelerator(KeyStroke.getKeyStroke(key, KeyEvent.CTRL_MASK));
 		return item;
@@ -393,7 +417,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		Element element;
 		while (it.hasNext()) {
 			element = it.next();
-			element.loadGeometry(current);
+			try {
+				element.loadGeometry(current);
+			} catch (Exception e) {
+				Utils.showWarning("Unable to load geometry for " + element + ".");
+			}
 			available.add(new PlacableBlock(element));
 		}
 		if (elements.size() % 2 > 0)
@@ -429,6 +457,36 @@ public class EditorUI extends JFrame implements GLEventListener {
 				lastPlace = new Point3(coords.x, coords.y, dropping.getDefaultZ());
 		}
 	}
+	/**
+	 * Saves a preview icon for the element.
+	 * 
+	 * @param gl the OpenGL context
+	 * @param e the element to draw
+	 */
+	private void savePreview(GL gl, Element e) {
+		int width = e.getWidth(), height = e.getHeight();
+		OffscreenRenderer render = new OffscreenRenderer(gl, width * 32, height * 32);
+		render.setRender(gl);
+		// set up rendering matrices
+		gl.glMatrixMode(GL.GL_PROJECTION);
+		gl.glPushMatrix();
+		gl.glLoadIdentity();
+		gl.glOrtho(0, width, 0, height, -10, 10);
+		gl.glMatrixMode(GL.GL_MODELVIEW);
+		gl.glPushMatrix();
+		gl.glLoadIdentity();
+		// render!
+		if (!e.hasTexture()) e.loadTexture(current);
+		e.render(gl);
+		gl.glMatrixMode(GL.GL_PROJECTION);
+		gl.glPopMatrix();
+		gl.glMatrixMode(GL.GL_MODELVIEW);
+		gl.glPopMatrix();
+		// write and finalize
+		render.clearRender(gl);
+		render.writeTexture(new File("res/images/" + e.getName() + ".png"));
+		render.dispose();
+	}
 	public void display(GLAutoDrawable drawable) {
 		GL gl = drawable.getGL();
 		long t = System.currentTimeMillis();
@@ -436,6 +494,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 			dropping.loadTexture(current);
 		synchronized (eventSync) {
 			switch (event) {
+			case PREVIEW:
+				if (dropping != null)
+					savePreview(gl, dropping);
+				break;
 			case LOADALL:
 				synchronized (block) {
 					Element el;
@@ -479,9 +541,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 			updatePosition(gl);
 			renderScene(gl);
 			grid(gl);
-			gl.glFlush();
 		}
-		Utils.sleep(3L);
+		Utils.sleep(15L);
 	}
 	/**
 	 * Correctly rotates the element.
@@ -542,7 +603,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		synchronized (block) {
 			List<GameObject> list = block.getElements();
 			Iterator<GameObject> it = list.iterator();
-			Element element; GameObject o; String lastTexture = "", lastModel = "";
+			Element element; GameObject o; String lastTexture = null, lastModel = "";
 			while (it.hasNext()) {
 				gl.glPushMatrix();
 				o = it.next();
@@ -552,7 +613,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 					doRotate(gl, element, o.getRotation());
 				if (mode == GL.GL_SELECT)
 					gl.glLoadName(objectCount);
-				if (!lastTexture.equals(element.getTextureLocation())) {
+				if (!Utils.properCompare(lastTexture, element.getTextureLocation())) {
 					element.setTexture(gl);
 					lastTexture = element.getTextureLocation();
 				}
@@ -607,6 +668,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX, modelview, 0);
 		gl.glEnable(GL.GL_DEPTH_TEST);
 		gl.glEnable(GL.GL_BLEND);
+		gl.glDepthFunc(GL.GL_LEQUAL);
 		gl.glBlendFunc(GL.GL_ONE, GL.GL_ONE_MINUS_SRC_ALPHA);
 		gl.glEnable(GL.GL_TEXTURE_2D);
 		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
@@ -620,10 +682,16 @@ public class EditorUI extends JFrame implements GLEventListener {
 		Element.setOptions(gl);
 	}
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
-		ratio = (double)width / height;
 		GL gl = drawable.getGL();
-		gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
-		reproject(gl);
+		if (x != size.x || y != size.y || width != size.width || height != size.height) {
+			size.x = x;
+			size.y = y;
+			size.width = width;
+			size.height = height;
+			ratio = (double)width / height;
+			gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
+			reproject(gl);
+		}
 	}
 	/**
 	 * Remakes the projection matrix.
@@ -673,14 +741,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * @param gl the OpenGL context
 	 */
 	private void computeLocation(GL gl) {
-		FloatBuffer buf = BufferUtil.newFloatBuffer(1);
-		buf.rewind();
+		depthBuffer.rewind();
 		// translate to opengl
 		int y = canvas.getHeight() - this.y, x = this.x;
 		// get depth
-		gl.glReadPixels(x, y, 1, 1, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT, buf);
+		gl.glReadPixels(x, y, 1, 1, GL.GL_DEPTH_COMPONENT, GL.GL_FLOAT, depthBuffer);
 		// unproject
-		if (glu.gluUnProject(x, y, buf.get(0), modelview, 0, projection, 0, viewport, 0, pos, 0)) {
+		if (glu.gluUnProject(x, y, depthBuffer.get(0), modelview, 0, projection, 0, viewport, 0, pos, 0)) {
 			if (snapTo) {
 				pos[0] = Math.floor(pos[0]);
 				pos[1] = Math.floor(pos[1]);
@@ -753,6 +820,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		GameObject selected;
 		if (sel < 1) selected = null;
 		else synchronized (block) {
+			// search for the element that matches this one
 			Iterator<GameObject> it = block.getElements().iterator();
 			GameObject o; int objectCount = 1;
 			selected = null;
@@ -840,26 +908,43 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Saves the level with a dialog.
 	 * 
 	 * @param forceDialog whether the dialog must be shown
+	 * @return true if saved, false if not saved
 	 */
-	private void save(boolean forceDialog) {
+	private boolean save(boolean forceDialog) {
 		chooser.setDialogType(JFileChooser.SAVE_DIALOG);
 		chooser.setDialogTitle("Save Level");
 		if (forceDialog || fileName == null) {
-			if (chooser.showDialog(this, "Save") != JFileChooser.APPROVE_OPTION) return;
+			if (chooser.showDialog(this, "Save") != JFileChooser.APPROVE_OPTION)
+				return false;
 			fileName = chooser.getSelectedFile();
 		}
 		if (fileName != null) try {
 			LevelWriter out = new LevelWriter(new FileOutputStream(fileName));
 			out.writeLevel(new Level(Collections.nCopies(1, block)));
 			out.close();
+			return true;
 		} catch (IOException e) {
 			Utils.showWarning("Can't save level!");
 		}
+		return false;
+	}
+	/**
+	 * Asks to save changes from the current dialog.
+	 * 
+	 * @return true to continue, false to abort close
+	 */
+	private boolean saveDialog() {
+		int choice = JOptionPane.showConfirmDialog(this, "Save changes to level?",
+			"Save", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+		if (choice == JOptionPane.YES_OPTION && save(false)) return true;
+		if (choice == JOptionPane.NO_OPTION) return true;
+		return false;
 	}
 	/**
 	 * Erases everything and makes a new file.
 	 */
 	private void newFile() {
+		if (!saveDialog()) return;
 		fileName = null;
 		block = new Block();
 		selected = null;
@@ -871,17 +956,19 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Opens a level.
 	 */
 	private void open() {
+		if (!saveDialog()) return;
 		chooser.setDialogType(JFileChooser.OPEN_DIALOG);
 		chooser.setDialogTitle("Open Level");
 		if (chooser.showDialog(this, "Open") == JFileChooser.APPROVE_OPTION) try {
 			File file = chooser.getSelectedFile();
-			current = new FilesystemResources(current, file.getAbsoluteFile().getParentFile());
+			current = new FilesystemResources(root, file.getAbsoluteFile().getParentFile());
 			LevelReader in = new LevelReader(current, file.getName());
 			fileName = file;
 			Level level = in.getLevel();
 			selected = null;
 			dropping = null;
 			if (deselect != null) deselect.setSelected(false);
+			icons = new IconBuilder(current);
 			deselect = null;
 			synchronized (eventSync) {
 				block = level.blockIterator().next();
@@ -904,8 +991,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 			dispose();
 		}
 		public void windowClosing(WindowEvent e) {
-			windowClosed(e);
-			System.exit(0);
+			if (saveDialog()) {
+				windowClosed(e);
+				System.exit(0);
+			}
 		}
 		public void windowDeactivated(WindowEvent e) {
 			stopRun();
@@ -931,7 +1020,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 				selected = null;
 				lastPlace = null;
 				if (deselect != null) deselect.setSelected(false);
-			} else if (cmd.equals("exit"))
+			} else if (cmd.equals("exit") && saveDialog())
 				System.exit(0);
 			else if (cmd.equals("saveas")) save(true);
 			else if (cmd.equals("save")) save(false);
@@ -988,8 +1077,18 @@ public class EditorUI extends JFrame implements GLEventListener {
 					block.removeObject(selected);
 				}
 				selected = null;
+			} else if (code == KeyEvent.VK_ESCAPE) {
+				selected = null;
+				dropping = null;
+				synchronized (eventSync) {
+					event = RENDER;
+				}
 			} else if (code == KeyEvent.VK_R)
 				rotate(e.isShiftDown() ? 15 : 90);
+			else if (code == KeyEvent.VK_P && dropping != null)
+				synchronized (eventSync) {
+					event = PREVIEW;
+				}
 		}
 		public void keyTyped(KeyEvent e) { }
 		public void mouseWheelMoved(MouseWheelEvent e) {
@@ -1021,7 +1120,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		 * @param element the element to represent
 		 */
 		public PlacableBlock(Element element) {
-			super(element.getName(), icons.getPreviewIcon(element.getTextureLocation()));
+			super(element.getName(), icons.getPreviewIcon(element));
 			this.element = element;
 			setHorizontalTextPosition(SwingConstants.CENTER);
 			setVerticalTextPosition(SwingConstants.BOTTOM);

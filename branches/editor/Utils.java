@@ -32,6 +32,18 @@ public final class Utils {
 		return Math.round(num * 1e3) / 1e3;
 	}
 	/**
+	 * Compares, checking null.
+	 * 
+	 * @param one the first object
+	 * @param two the second object
+	 * @return whether they are equal
+	 */
+	public static final boolean properCompare(Object one, Object two) {
+		if (one == null && two == null) return true;
+		if (one == null || two == null) return false;
+		return one.equals(two);
+	}
+	/**
 	 * Copies the image to a buffered image.
 	 * 
 	 * @param img the image to copy

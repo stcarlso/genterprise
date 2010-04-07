@@ -248,7 +248,10 @@ public class Element implements java.io.Serializable {
 	 * @param gl the OpenGL context
 	 */
 	public void setTexture(GL gl) {
-		gl.glBindTexture(GL.GL_TEXTURE_2D, texture.getTextureObject());
+		if (texture != null)
+			gl.glBindTexture(GL.GL_TEXTURE_2D, texture.getTextureObject());
+		else
+			gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
 	}
 	/**
 	 * Draws the array on the screen.
@@ -303,16 +306,21 @@ public class Element implements java.io.Serializable {
 	 * @param res the resource source
 	 */
 	public int loadTexture(ResourceGetter res) {
-		texture = res.getTexture(textureSrc);
-		texture.bind();
-		return texture.getTextureObject();
+		if (textureSrc != null) {
+			texture = res.getTexture(textureSrc);
+			texture.bind();
+			return texture.getTextureObject();
+		} else
+			return 0;
 	}
 	/**
 	 * Releases the loaded texture.
 	 */
 	public void releaseTexture() {
-		texture.dispose();
-		texture = null;
+		if (texture != null) {
+			texture.dispose();
+			texture = null;
+		}
 	}
 	public String toString() {
 		return name;
