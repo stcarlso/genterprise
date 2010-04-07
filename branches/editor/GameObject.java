@@ -15,7 +15,7 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	/**
 	 * The rotation in degrees.
 	 */
-	private int rotation;
+	private Vector3 rotation;
 	/**
 	 * The source element.
 	 */
@@ -29,7 +29,7 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	 * For serialization.
 	 */
 	public GameObject() {
-		this(0., 0., 0., 0, null);
+		this(0., 0., 0., new Vector3(), null);
 	}
 	/**
 	 * Places an instance of src at x, y.
@@ -40,7 +40,7 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	 * @param rotation the rotation in degrees
 	 * @param src the source block
 	 */
-	public GameObject(double x, double y, double z, int rotation, Element src) {
+	public GameObject(double x, double y, double z, Vector3 rotation, Element src) {
 		coords = new Point3(x, y, z);
 		this.src = src;
 		this.rotation = rotation;
@@ -102,6 +102,14 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	 * @return the rotation in degrees
 	 */
 	public int getRotation() {
+		return (int)Math.round(rotation.getZ());
+	}
+	/**
+	 * Gets the rotation quaternion.
+	 * 
+	 * @return the rotation in all axes
+	 */
+	public Vector3 getRotFlip() {
 		return rotation;
 	}
 	/**

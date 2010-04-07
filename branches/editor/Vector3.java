@@ -6,7 +6,9 @@
  * 
  * A class that represents a 3D vector.
  */
-public class Vector3 {
+public class Vector3 implements java.io.Serializable {
+	private static final long serialVersionUID = 238146789346781284L;
+
 	/**
 	 * The x component.
 	 */
