@@ -1051,6 +1051,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 				lastPlace = null;
 				flipX = flipY = false;
 				if (deselect != null) deselect.setSelected(false);
+				deselect = null;
 			} else if (cmd.equals("exit") && saveDialog())
 				System.exit(0);
 			else if (cmd.equals("flipx") && dropping != null)
@@ -1127,6 +1128,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 				synchronized (eventSync) {
 					event = RENDER;
 				}
+				if (deselect != null) deselect.setSelected(false);
+				deselect = null;
 			} else if (code == KeyEvent.VK_R)
 				rotate(e.isShiftDown() ? 15 : 90);
 			else if (code == KeyEvent.VK_P && dropping != null)
