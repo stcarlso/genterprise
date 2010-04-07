@@ -1,8 +1,7 @@
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
 import java.nio.FloatBuffer;
 
 import javax.media.opengl.GL;
@@ -15,9 +14,12 @@ import javax.swing.JPanel;
 
 import com.sun.opengl.util.Animator;
 import com.sun.opengl.util.BufferUtil;
-import com.sun.opengl.util.j2d.Overlay;
 
 public class GameWindow extends JPanel implements Constants {
+	ResourceGetter res;
+	Level level;
+	Block block;
+	
 	boolean up;
 	boolean upDone;
 	boolean left;
@@ -43,7 +45,11 @@ public class GameWindow extends JPanel implements Constants {
 	
 	public GameWindow() {
 		super(new BorderLayout());	
-		//setSize(width,height);
+		res = new FilesystemResources(null, new File("res/"));
+		LevelReader lreader = new LevelReader(res, "test-level.dat");
+		level = lreader.getLevel();
+		block = level.blockIterator().next();
+		
 		player= new Player();
 		GLCapabilities glcaps = new GLCapabilities(); 
 		GLCanvas glCanvas = new GLCanvas(glcaps);
@@ -67,6 +73,7 @@ public class GameWindow extends JPanel implements Constants {
 		private long effectStart=0;
 		private long effectEnd=0;
 		private long stop=0;
+		
 		public PhysicsThread() {			
 			dt=1;
 		}
@@ -131,7 +138,7 @@ public class GameWindow extends JPanel implements Constants {
 							else if(player.position==STANDING)
 								player.ax=-.1;
 							else if(player.position==WALLONRIGHT && player.wallJumps>0) {
-								//player.wallJumps=0;
+								player.wallJumps=0;
 								player.vy=1;
 								player.ax=-.3;
 							} else if(player.position==AIRBORNE)
@@ -144,7 +151,7 @@ public class GameWindow extends JPanel implements Constants {
 							else if(player.position==STANDING)
 								player.ax=.1;
 							else if(player.position==WALLONLEFT && player.wallJumps>0) {
-								//player.wallJumps=0;
+								player.wallJumps=0;
 								player.vy=1;
 								player.ax=.3;
 							} else if(player.position==AIRBORNE)
@@ -230,6 +237,7 @@ public class GameWindow extends JPanel implements Constants {
 		public GLGameListener(Player you, Object synch) {
 			player=you;
 		}
+		
 		public void display(GLAutoDrawable drawable) {
 			GL gl = drawable.getGL();   		
 			GLU glu = new GLU(); 	
