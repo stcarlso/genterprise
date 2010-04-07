@@ -217,6 +217,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private int rotation;
 	/**
+	 * Flipped in either direction?
+	 */
+	private boolean flipX, flipY;
+	/**
+	 * Flip vector.
+	 */
+	private Vector3 flipVec;
+	/**
 	 * When the most recent object was rendered.
 	 */
 	private long lastRender;
@@ -259,6 +267,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 		selected = null;
 		deselect = null;
 		lastRender = 0;
+		flipX = flipY = false;
+		flipVec = new Vector3();
 		fileName = null;
 	}
 	/**
@@ -388,6 +398,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 		across.add(file);
 		JMenu edit = new JMenu("Edit");
 		edit.setMnemonic(KeyEvent.VK_E);
+		edit.add(createMenuItem("Rotate (R)", "rotate", 0));
+		edit.add(createMenuItem("Flip X (X)", "flipx", 0));
+		edit.add(createMenuItem("Flip Y (Y)", "flipy", 0));
+		edit.addSeparator();
 		edit.add(createMenuItem("Code", "code", KeyEvent.VK_1));
 		across.add(edit);
 		setJMenuBar(across);
@@ -449,8 +463,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 			if (lastPlace != null && Math.floor(lastPlace.x) == Math.floor(coords.x) &&
 				Math.floor(lastPlace.y) == Math.floor(coords.y)) return;
 		}
+		Vector3 rotVec = new Vector3(flipX ? 180 : 0, flipY ? 180 : 0, rotation);
 		GameObject newObject = new GameObject(coords.x, coords.y, dropping.getDefaultZ(),
-			rotation, dropping);
+			rotVec, dropping);
 		synchronized (block) {
 			block.addObject(newObject);
 			if (event == PLACE_IFNOT)
@@ -551,11 +566,28 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * @param toRotate the object to rotate
 	 * @param amount the amount to rotate
 	 */
-	private void doRotate(GL gl, Element toRotate, int amount) {
-		float x = (float)toRotate.getWidth() / 2.f, y = (float)toRotate.getHeight() / 2.f;
-		gl.glTranslatef(x, y, 0);
-		gl.glRotatef(amount, 0, 0, 1);
-		gl.glTranslatef(-x, -y, 0);
+	private void doRotate(GL gl, Element toRotate, Vector3 amount) {
+		if (amount.getX() != 0. || amount.getY() != 0. || amount.getZ() != 0.) {
+			float x = (float)toRotate.getWidth() / 2.f, y = (float)toRotate.getHeight() / 2.f;
+			gl.glTranslatef(x, y, 0);
+			gl.glRotatef((float)amount.getZ(), 0, 0, 1);
+			gl.glRotatef((float)amount.getY(), 0, 1, 0);
+			gl.glRotatef((float)amount.getX(), 1, 0, 0);
+			gl.glTranslatef(-x, -y, 0);
+		}
+	}
+	/**
+	 * Correctly rotates the element.
+	 * 
+	 * @param gl the OpenGL context
+	 * @param toRotate the object to rotate
+	 * @param amount the amount to rotate
+	 */
+	private void doRotate(GL gl, Element toRotate) {
+		flipVec.setZ(rotation);
+		flipVec.setY(flipY ? 180 : 0);
+		flipVec.setX(flipX ? 180 : 0);
+		doRotate(gl, toRotate, flipVec);
 	}
 	/**
 	 * Renders the currently dropping object.
@@ -566,8 +598,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		gl.glDisable(GL.GL_DEPTH_TEST);
 		gl.glPushMatrix();
 		gl.glTranslated(coords.getX(), coords.getY(), dropping.getDefaultZ());
-		if (rotation != 0)
-			doRotate(gl, dropping, rotation);
+		doRotate(gl, dropping);
 		dropping.render(gl);
 		gl.glPopMatrix();
 		gl.glEnable(GL.GL_DEPTH_TEST);
@@ -609,8 +640,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 				o = it.next();
 				element = o.getSource();
 				gl.glTranslated(o.getX(), o.getY(), o.getZ());
-				if (o.getRotation() != 0)
-					doRotate(gl, element, o.getRotation());
+				doRotate(gl, element, o.getRotFlip());
 				if (mode == GL.GL_SELECT)
 					gl.glLoadName(objectCount);
 				if (!Utils.properCompare(lastTexture, element.getTextureLocation())) {
@@ -1019,9 +1049,22 @@ public class EditorUI extends JFrame implements GLEventListener {
 				dropping = null;
 				selected = null;
 				lastPlace = null;
+				flipX = flipY = false;
 				if (deselect != null) deselect.setSelected(false);
 			} else if (cmd.equals("exit") && saveDialog())
 				System.exit(0);
+			else if (cmd.equals("flipx") && dropping != null)
+				synchronized (eventSync) {
+					flipX = !flipX;
+					event = RENDER;
+				}
+			else if (cmd.equals("flipy") && dropping != null)
+				synchronized (eventSync) {
+					flipY = !flipY;
+					event = RENDER;
+				}
+			else if (cmd.equals("rotate"))
+				rotate(90);
 			else if (cmd.equals("saveas")) save(true);
 			else if (cmd.equals("save")) save(false);
 			else if (cmd.equals("open")) open();
@@ -1080,6 +1123,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			} else if (code == KeyEvent.VK_ESCAPE) {
 				selected = null;
 				dropping = null;
+				flipX = flipY = false;
 				synchronized (eventSync) {
 					event = RENDER;
 				}
@@ -1088,6 +1132,16 @@ public class EditorUI extends JFrame implements GLEventListener {
 			else if (code == KeyEvent.VK_P && dropping != null)
 				synchronized (eventSync) {
 					event = PREVIEW;
+				}
+			else if (code == KeyEvent.VK_X && dropping != null)
+				synchronized (eventSync) {
+					flipX = !flipX;
+					event = RENDER;
+				}
+			else if (code == KeyEvent.VK_Y && dropping != null)
+				synchronized (eventSync) {
+					flipY = !flipY;
+					event = RENDER;
 				}
 		}
 		public void keyTyped(KeyEvent e) { }
@@ -1140,8 +1194,12 @@ public class EditorUI extends JFrame implements GLEventListener {
 			selected = null;
 			dropping = element;
 			rotation = 0;
+			flipX = flipY = false;
 			setSelected(true);
 			deselect = this;
+			synchronized (eventSync) {
+				event = RENDER;
+			}
 		}
 	}
 }
