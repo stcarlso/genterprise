@@ -10,10 +10,11 @@ public class FrameRunner extends JFrame {
 		game= new GameWindow();
 		setSize(800,800);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		getContentPane().add(game);
+		setVisible(true);
+		game.canvas.requestFocus();
 	}
 	public static void main(String[] args) {
 		FrameRunner runner= new FrameRunner();
-		runner.getContentPane().add(game);
-		runner.setVisible(true);
 	}
 }

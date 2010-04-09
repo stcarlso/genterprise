@@ -3,6 +3,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
 import java.nio.FloatBuffer;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
@@ -19,6 +21,7 @@ public class GameWindow extends JPanel implements Constants {
 	ResourceGetter res;
 	Level level;
 	Block block;
+	List<GameObject> elements;
 	
 	boolean up;
 	boolean upDone;
@@ -42,25 +45,28 @@ public class GameWindow extends JPanel implements Constants {
 	Player player;	
 	private PhysicsThread physics;
 	Animator anim;
+	GLU glu;
+	GLCanvas canvas;
 	
 	public GameWindow() {
 		super(new BorderLayout());	
 		res = new FilesystemResources(null, new File("res/"));
-		LevelReader lreader = new LevelReader(res, "test-level.dat");
+		LevelReader lreader = new LevelReader(res, "../test-level.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
+		elements = block.getElements();
 		
 		player= new Player();
 		GLCapabilities glcaps = new GLCapabilities(); 
-		GLCanvas glCanvas = new GLCanvas(glcaps);
+		canvas = new GLCanvas(glcaps);
 
 		GLGameListener listener= new GLGameListener(player,sync);
-		glCanvas.addKeyListener(listener);
-		glCanvas.addGLEventListener(listener);   // add event listener
-		add(glCanvas);
+		canvas.addKeyListener(listener);
+		canvas.addGLEventListener(listener);   // add event listener
+		add(canvas);
 		physics= new PhysicsThread();
 		physics.start();
-		anim=new Animator(glCanvas);
+		anim=new Animator(canvas);
 		anim.start();
 	}
 	//***************************PHYSICS THREAD***********************
@@ -139,7 +145,7 @@ public class GameWindow extends JPanel implements Constants {
 								player.ax=-.1;
 							else if(player.position==WALLONRIGHT && player.wallJumps>0) {
 								player.wallJumps=0;
-								player.vy=1;
+								player.vy=.8;
 								player.ax=-.3;
 							} else if(player.position==AIRBORNE)
 								player.ax=-.07;
@@ -152,13 +158,13 @@ public class GameWindow extends JPanel implements Constants {
 								player.ax=.1;
 							else if(player.position==WALLONLEFT && player.wallJumps>0) {
 								player.wallJumps=0;
-								player.vy=1;
+								player.vy=.8;
 								player.ax=.3;
 							} else if(player.position==AIRBORNE)
 								player.ax=.07;
 						}
 						if(up && !upDone && player.jumps>0) {
-							player.vy=1;
+							player.vy=.8;
 							player.jumps--;
 						}
 						upDone=up;
@@ -240,29 +246,57 @@ public class GameWindow extends JPanel implements Constants {
 		
 		public void display(GLAutoDrawable drawable) {
 			GL gl = drawable.getGL();   		
-			GLU glu = new GLU(); 	
-		 	gl.glClearColor(0.0f,0.0f,0.0f,0.0f);
-			gl.glMatrixMode(GL.GL_PROJECTION);
-		 	gl.glLoadIdentity();		 			 	
-		 	glu.gluPerspective(60,1.0,1.0,100);
 		 	gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-		 	glu.gluLookAt(0,10,30,0,10,0,0,1,0);
-		 	gl.glMatrixMode(GL.GL_MODELVIEW);
 		 	
-		 	//Draw the axes, which will not be visible in the final game
-		 	gl.glBegin(GL.GL_LINES);
-		 		gl.glColor3f(0f,0f,1f);
-		 		gl.glVertex3d(0,-50,0);
-		 		gl.glVertex3d(0,50,0);
-		 		gl.glColor3f(1f,0f,0f);
-				gl.glVertex3d(-50,0,0);
-				gl.glVertex3d(50,0,0);	 			
-				gl.glEnd();
-				gl.glColor3f(0f,1f,0f);
-				gl.glVertex3d(0,0,-9001);
-				gl.glVertex3d(0,0,9001);	 			
-			gl.glEnd();	
+		 	gl.glLoadIdentity();
+		 	glu.gluLookAt(player.x, player.y, 10, player.x, player.y, -10, 0, 1, 0);
+
 			drawCharacter(gl);
+			renderScene(gl);
+		}
+		
+		private void renderScene(GL gl) {
+			int objectCount = 1;
+			synchronized (block) {
+				List<GameObject> list = block.getElements();
+				Iterator<GameObject> it = list.iterator();
+				Element element; GameObject o; String lastTexture = null, lastModel = "";
+				while (it.hasNext()) {
+					gl.glPushMatrix();
+					o = it.next();
+					element = o.getSource();
+					gl.glTranslated(o.getX(), o.getY(), o.getZ());
+					doRotate(gl, element, o.getRotFlip());
+					if (!Utils.properCompare(lastTexture, element.getTextureLocation())) {
+						element.setTexture(gl);
+						lastTexture = element.getTextureLocation();
+					}
+					if (!lastModel.equals(element.getGeometryLocation())) {
+						element.renderModel(gl);
+						lastModel = element.getGeometryLocation();
+					}
+					element.draw(gl);
+					gl.glPopMatrix();
+					objectCount++;
+				}
+			}
+		}
+		/**
+		 * Correctly rotates the element.
+		 * 
+		 * @param gl the OpenGL context
+		 * @param toRotate the object to rotate
+		 * @param amount the amount to rotate
+		 */
+		private void doRotate(GL gl, Element toRotate, Vector3 amount) {
+			if (amount.getX() != 0. || amount.getY() != 0. || amount.getZ() != 0.) {
+				float x = (float)toRotate.getWidth() / 2.f, y = (float)toRotate.getHeight() / 2.f;
+				gl.glTranslatef(x, y, 0);
+				gl.glRotatef((float)amount.getZ(), 0, 0, 1);
+				gl.glRotatef((float)amount.getY(), 0, 1, 0);
+				gl.glRotatef((float)amount.getX(), 1, 0, 0);
+				gl.glTranslatef(-x, -y, 0);
+			}
 		}
 		/**
 		 * Draw the character onto the screen. This method needs to be completely changed for the real character model
@@ -288,7 +322,8 @@ public class GameWindow extends JPanel implements Constants {
 			else if(player.ability instanceof ThirdJump)
 				gl.glColor3f(1f,0f,0f);	
 			else
-				gl.glColor3f(1f,1f,1f);		
+				gl.glColor3f(1f,1f,1f);
+			Element.clearOptions(gl);
 			gl.glBegin(GL.GL_QUADS);
 				if(player.position==DUCKING) {
 					gl.glVertex3d(player.x,player.y,0);
@@ -311,7 +346,16 @@ public class GameWindow extends JPanel implements Constants {
 					gl.glVertex3d(player.x,player.y+1.5,.1);
 					gl.glVertex3d(player.x+.5,player.y+1.5,.1);
 				}
-			gl.glEnd();	
+			gl.glEnd();
+			gl.glBegin(GL.GL_LINES);
+	 		gl.glColor3f(0f,0f,1f);
+	 		gl.glVertex3d(0,-50,0);
+	 		gl.glVertex3d(0,50,0);
+	 		gl.glColor3f(1f,0f,0f);
+			gl.glVertex3d(-50,0,0);
+			gl.glVertex3d(50,0,0);	 			
+			gl.glEnd();
+			Element.setOptions(gl);
 			drawSuspicion(gl,player.suspicion);
 		}
 		/**
@@ -343,35 +387,25 @@ public class GameWindow extends JPanel implements Constants {
 			gl.glPopMatrix();
 			gl.glViewport(0, 0, w, h);
 		}
-		/* marked for destruction
-		/**
-		 * Draws 2D elements as an overlay on the screen, including the suspicion meter
-		 
-		public void drawOverlay() {
-			g2.setColor(Color.white);
-			g2.fillRect(width-100,100,40,40);
-			g2.setColor(Color.green);
-			g2.drawString(player.suspicion+"",100,100);
-			//System.out.println(360-(int)player.suspicion);
-			g2.fillArc(width-100,100,40,40,90,360-(int)player.suspicion);
-		}
-		*/
 
 		public void displayChanged(GLAutoDrawable arg0, boolean arg1, boolean arg2) {		
 		}
 
 		public void init(GLAutoDrawable drawable) {
-			GL gl = drawable.getGL();   		
-			GLU glu = new GLU(); 	
+			GL gl = drawable.getGL();
+			glu = new GLU();
 			gl.glClearColor(0.0f,0.0f,0.0f,0.0f);
 			gl.glMatrixMode(GL.GL_PROJECTION);
-		 	gl.glLoadIdentity();	
-		 	glu.gluPerspective(60,1.0,1.0,100);
+		 	gl.glLoadIdentity();
+		 	gl.glMatrixMode(GL.GL_MODELVIEW);
+		 	gl.glLoadIdentity();
+		 	//glu.gluPerspective(60,1.0,1.0,100);
 		 	
 		 	//enables
 		 	gl.glEnable(GL.GL_DEPTH_TEST);
 			gl.glEnable(GL.GL_BLEND);
-			gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+			gl.glDepthFunc(GL.GL_LEQUAL);
+			gl.glBlendFunc(GL.GL_ONE, GL.GL_ONE_MINUS_SRC_ALPHA);
 			gl.glEnable(GL.GL_TEXTURE_2D);
 			gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
 			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
@@ -379,11 +413,18 @@ public class GameWindow extends JPanel implements Constants {
 			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
 			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR);
 			gl.glBindTexture(GL.GL_TEXTURE_2D, 0);
+			gl.glDisable(GL.GL_LIGHTING);
 			
-		 	gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
-			gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
-			gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+			Element el;
+			for (GameObject o : block.getElements()) {
+				el = o.getSource();
+				if (el.getVertexArray() == null)
+					el.loadGeometry(res);
+				if (!el.hasTexture())
+					el.loadTexture(res);
+			}
 		 	suspicion();
+		 	Element.setOptions(gl);
 		}
 		/**
 		 * Creates a vertex array for the supicion meter
@@ -410,8 +451,13 @@ public class GameWindow extends JPanel implements Constants {
 		}
 
 		public void reshape(GLAutoDrawable arg0, int arg1, int arg2, int arg3, int arg4) {
+			GL gl = arg0.getGL();
 			width=arg3;
 			height=arg4;
+			gl.glMatrixMode(GL.GL_PROJECTION);
+			gl.glLoadIdentity();
+			gl.glOrtho(-6,6,-6,6,-20,20);
+			gl.glMatrixMode(GL.GL_MODELVIEW);
 		}
 		
 		//**************KEY LISTENER********************
