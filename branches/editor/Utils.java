@@ -1,4 +1,6 @@
-import java.awt.*; 
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
 import java.awt.image.*;
 import javax.swing.*;
 
@@ -12,7 +14,35 @@ public final class Utils {
 	 * The image loader.
 	 */
 	private static ImageIcon iconLoad;
+	/**
+	 * Key stroke for backspace.
+	 */
+	private static final KeyStroke BACK = KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0);
+	/**
+	 * Key stroke for shift+backspace.
+	 */
+	private static final KeyStroke SHIFT_BACK = KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, KeyEvent.SHIFT_MASK);
+	/**
+	 * Key stroke for enter.
+	 */
+	private static final KeyStroke ENTER = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
+	/**
+	 * Key stroke for shift+enter.
+	 */
+	private static final KeyStroke SHIFT_ENTER = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, KeyEvent.SHIFT_MASK);
 
+	/**
+	 * Fixes shift+backspace on the component.
+	 * 
+	 * @param c the component to repair
+	 */
+	public static final void fixShiftBackspace(JComponent c) {
+		InputMap map = c.getInputMap();
+		if (map.get(SHIFT_BACK) == null)
+			map.put(SHIFT_BACK, map.get(BACK));
+		if (map.get(SHIFT_ENTER) == null)
+			map.put(SHIFT_ENTER, map.get(ENTER));
+	}
 	/**
 	 * Rounds the decimal to 1 decimal place.
 	 * 
@@ -66,10 +96,29 @@ public final class Utils {
 	 * 
 	 * @param img the image to load
 	 */
-	public synchronized final static void loadFully(Image img) {
+	public synchronized static final void loadFully(Image img) {
 		if (img == null) return;
 		if (iconLoad == null) iconLoad = new ImageIcon();
 		iconLoad.setImage(img);
+	}
+	/**
+	 * Loads the specified file from disk into a string.
+	 * 
+	 * @param in the file to read
+	 * @return the text in the file (ASCII)
+	 */
+	public static final String readFile(File in) throws IOException {
+		long olen = in.length();
+		if (olen >= Integer.MAX_VALUE)
+			throw new IOException("File cannot fit in memory");
+		int read;
+		StringBuilder build = new StringBuilder((int)olen);
+		char[] data = new char[1024];
+		BufferedReader br = new BufferedReader(new FileReader(in));
+		while ((read = br.read(data)) > 0)
+			build.append(data, 0, read);
+		br.close();
+		return build.toString();
 	}
 	/**
 	 * Gets the base path (one folder up) of a document.
@@ -97,61 +146,6 @@ public final class Utils {
 		return new String(bytes);
 	}
 	/**
-	 * Clones the specified byte array.
-	 * 
-	 * @param in the array to copy
-	 * @return a copy of the array
-	 */
-	public static final byte[] cloneArray(byte[] in) {
-		if (in == null) return null;
-		byte[] output = new byte[in.length];
-		// could use System.arraycopy, but this is guaranteed to be cryptographically stable
-		for (int i = 0; i < in.length; i++)
-			output[i] = in[i];
-		return output;
-	}
-	/**
-	 * Clones the specified integer array.
-	 * 
-	 * @param in the array to copy
-	 * @return a copy of the array
-	 */
-	public static final int[] cloneArray(int[] in) {
-		if (in == null) return null;
-		int[] output = new int[in.length];
-		// could use System.arraycopy, but this is guaranteed to be cryptographically stable
-		for (int i = 0; i < in.length; i++)
-			output[i] = in[i];
-		return output;
-	}
-	/**
-	 * Copies the source array into another array.
-	 * 
-	 * @param src the byte source
-	 * @param dest the destination
-	 * @param start the place to start in the destination
-	 * @param num the number of bytes to copy
-	 */
-	public static final void byteblt(byte[] src, byte[] dest, int start, int num) {
-		if (src == null || dest == null) return;
-		// could use System.arraycopy, but this is guaranteed to be cryptographically stable
-		for (int i = 0; i < Math.min(num, src.length); i++)
-			dest[i + start] = src[i];
-	}
-	/**
-	 * Copies the source array into another array.
-	 * 
-	 * @param src the integer source
-	 * @param dest the destination
-	 * @param start the place to start in the destination
-	 * @param num the number of integers to copy
-	 */
-	public static final void intblt(int[] src, int[] dest, int start, int num) {
-		if (src == null || dest == null) return;
-		// could use System.arraycopy, but this is guaranteed to be cryptographically stable
-		for (int i = 0; i < Math.min(num, src.length); i++)
-			dest[i + start] = src[i];
-	}
 	/**
 	 * Creates an integer array from the packed bytes of another array.
 	 * 

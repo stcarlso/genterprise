@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.event.*;
+
 import javax.swing.*;
 import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
@@ -244,6 +245,18 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * The destination file for saving.
 	 */
 	private File fileName;
+	/**
+	 * The level code's name.
+	 */
+	private String code;
+	/**
+	 * Level code goes here.
+	 */
+	private JTextArea editCode;
+	/**
+	 * Edit code dialog.
+	 */
+	private JDialog codeDialog;
 
 	/**
 	 * Sets the window title.
@@ -257,7 +270,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		modelview = new double[16];
 		projection = new double[16];
 		viewport = new int[4];
-		block = new Block();
+		block = null;
 		snapTo = true;
 		lastPlace = coords = null;
 		center = new Point3(0.0, 0.0, 0.0);
@@ -299,6 +312,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 0));
 		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot", 2));
 		addElement(new Element("door.png", "2x1square.dat", "door", -1));
+		addElement(new Element("light-emitter.png", "1x2square.dat", "light-emitter", 1));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
@@ -311,6 +325,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addWindowListener(events);
 		Utils.centerWindow(this);
 		validate();
+		newFile();
 		setVisible(true);
 		canvas.requestFocus();
 		center();
@@ -365,6 +380,46 @@ public class EditorUI extends JFrame implements GLEventListener {
 		canvas.addMouseMotionListener(events);
 		canvas.addKeyListener(events);
 		canvas.addMouseWheelListener(events);
+		setupBottom();
+		setupMenus();
+		setupCode();
+		chooser = new JFileChooser();
+		chooser.setCurrentDirectory(new File(".").getAbsoluteFile().getParentFile());
+		chooser.setMultiSelectionEnabled(false);
+	}
+	/**
+	 * Sets up the edit code dialog box.
+	 */
+	private void setupCode() {
+		TextareaListener ta = new TextareaListener();
+		codeDialog = new JDialog(this, "Edit Code");
+		codeDialog.setModal(true);
+		codeDialog.setResizable(true);
+		editCode = new JTextArea();
+		editCode.setEditable(true);
+		editCode.setFont(new Font("Lucida Console", Font.PLAIN, 10));
+		editCode.setTabSize(4);
+		editCode.addKeyListener(ta);
+		Utils.fixShiftBackspace(editCode);
+		JScrollPane sp = new JScrollPane(editCode);
+		Container c = codeDialog.getContentPane();
+		c.setLayout(new BorderLayout(0, 0));
+		c.add(sp, BorderLayout.CENTER);
+		JButton close = new JButton("Close");
+		close.setFocusable(false);
+		close.setActionCommand("nocode");
+		close.addActionListener(events);
+		JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
+		bottom.setOpaque(false);
+		bottom.add(close);
+		c.add(bottom, BorderLayout.SOUTH);
+		codeDialog.setSize(640, 480);
+		Utils.centerWindow(codeDialog);
+	}
+	/**
+	 * Sets up the status bar at the bottom of the screen.
+	 */
+	private void setupBottom() {
 		grid = new JCheckBox("Show Grid");
 		grid.setSelected(true);
 		grid.setFocusable(false);
@@ -375,15 +430,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		bottom.add(grid);
 		bottom.add(location);
 		getContentPane().add(bottom, BorderLayout.SOUTH);
-		menus();
-		chooser = new JFileChooser();
-		chooser.setCurrentDirectory(new File(".").getAbsoluteFile().getParentFile());
-		chooser.setMultiSelectionEnabled(false);
 	}
 	/**
-	 * Creates the menus.
+	 * Creates the menus at the top of the screen.
 	 */
-	private void menus() {
+	private void setupMenus() {
 		JMenuBar across = new JMenuBar();
 		JMenu file = new JMenu("File");
 		file.setMnemonic(KeyEvent.VK_F);
@@ -949,9 +1000,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 			fileName = chooser.getSelectedFile();
 		}
 		if (fileName != null) try {
+			code = editCode.getText();
 			LevelWriter out = new LevelWriter(new FileOutputStream(fileName));
 			out.writeLevel(new Level(Collections.nCopies(1, block)));
 			out.close();
+			Writer pr = new BufferedWriter(new FileWriter(getCodeFile()));
+			pr.write(code);
+			pr.close();
 			return true;
 		} catch (IOException e) {
 			Utils.showWarning("Can't save level!");
@@ -964,6 +1019,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * @return true to continue, false to abort close
 	 */
 	private boolean saveDialog() {
+		if (fileName == null && block.getElements().size() == 0) return true;
 		int choice = JOptionPane.showConfirmDialog(this, "Save changes to level?",
 			"Save", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
 		if (choice == JOptionPane.YES_OPTION && save(false)) return true;
@@ -974,13 +1030,15 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Erases everything and makes a new file.
 	 */
 	private void newFile() {
-		if (!saveDialog()) return;
+		if (block != null && !saveDialog()) return;
 		fileName = null;
 		block = new Block();
 		selected = null;
 		dropping = null;
 		if (deselect != null) deselect.setSelected(false);
 		deselect = null;
+		code = root.getString("default.java");
+		editCode.setText(code);
 	}
 	/**
 	 * Opens a level.
@@ -991,7 +1049,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		chooser.setDialogTitle("Open Level");
 		if (chooser.showDialog(this, "Open") == JFileChooser.APPROVE_OPTION) try {
 			File file = chooser.getSelectedFile();
-			current = new FilesystemResources(root, file.getAbsoluteFile().getParentFile());
+			if (file == null) return;
+			file = file.getAbsoluteFile();
+			current = new FilesystemResources(root, file.getParentFile());
 			LevelReader in = new LevelReader(current, file.getName());
 			fileName = file;
 			Level level = in.getLevel();
@@ -1004,11 +1064,51 @@ public class EditorUI extends JFrame implements GLEventListener {
 				block = level.blockIterator().next();
 				event = LOADALL;
 			}
+			File code = getCodeFile();
+			if (code.exists()) {
+				this.code = Utils.readFile(code);
+			} else
+				this.code = root.getString("default.java");
+			editCode.setText(this.code);
 		} catch (Exception e) {
 			Utils.showWarning("Can't open level!");
 		}
 	}
+	/**
+	 * Gets the file for level code, given that fileName is initialized.
+	 * 
+	 * @return the level code file
+	 */
+	private File getCodeFile() {
+		if (fileName == null) return null;
+		String name = fileName.getName();
+		int dot = name.lastIndexOf('.');
+		if (dot > 0)
+			name = name.substring(0, dot);
+		return new File(fileName.getParentFile(), name + ".java");
+	}
 
+	/**
+	 * Listens for events in the edit code text area.
+	 */
+	private class TextareaListener extends KeyAdapter {
+		public void keyTyped(KeyEvent e) {
+			if (e.getKeyChar() == '\r' || e.getKeyChar() == '\n') {
+				// Auto indent
+				if (editCode.getSelectedText() != null)
+					editCode.replaceSelection("");
+				int pos = editCode.getCaretPosition();
+				String text = editCode.getText();
+				int lastLF = text.lastIndexOf('\n', pos - 2);
+				if (lastLF < 0) return;
+				int nextSpace = lastLF;
+				while (text.charAt(nextSpace) <= ' ' && nextSpace < pos - 1)
+					nextSpace++;
+				text = text.substring(lastLF + 1, nextSpace);
+				editCode.insert(text, pos);
+			}
+		}
+	}
 	/**
 	 * Listens for events. All your events are belong to me.
 	 */
@@ -1021,7 +1121,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 			dispose();
 		}
 		public void windowClosing(WindowEvent e) {
-			if (saveDialog()) {
+			if (e.getSource() == codeDialog)
+				code = editCode.getText();
+			else if (saveDialog()) {
 				windowClosed(e);
 				System.exit(0);
 			}
@@ -1070,6 +1172,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 			else if (cmd.equals("save")) save(false);
 			else if (cmd.equals("open")) open();
 			else if (cmd.equals("new")) newFile();
+			else if (cmd.equals("code")) {
+				codeDialog.setVisible(true);
+				editCode.requestFocus();
+			} else if (cmd.equals("nocode")) {
+				codeDialog.setVisible(false);
+				code = editCode.getText();
+			}
 		}
 		public void mouseEntered(MouseEvent e) {
 			mouseMoved(e);
