@@ -8,6 +8,10 @@ public class Player implements Constants {
 	double ax;
 	double ay;
 	double m;
+	double left;
+	double right;
+	double top;
+	double bottom;
 	
 	int jumps;
 	int wallJumps;
@@ -26,6 +30,13 @@ public class Player implements Constants {
 		ax=0;
 		ay=0;
 		m=4;
+		
+		//hitbox of the player
+		left=0;
+		right=1;
+		top=2;
+		bottom=0;
+		
 		jumps=2;
 		wallJumps=1;
 		position=STANDING;

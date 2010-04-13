@@ -3,6 +3,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -54,7 +55,13 @@ public class GameWindow extends JPanel implements Constants {
 		LevelReader lreader = new LevelReader(res, "../test-level.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
-		elements = block.getElements();
+		elements = new ArrayList<GameObject>(block.getElements().size());
+		Iterator<GameObject> itr = block.getElements().iterator();
+		while(itr.hasNext()) {
+			GameObject element = itr.next();
+			if(element.getZ() == 0.)
+				elements.add(element);
+		}
 		
 		player= new Player();
 		GLCapabilities glcaps = new GLCapabilities(); 
@@ -101,8 +108,6 @@ public class GameWindow extends JPanel implements Constants {
 					}
 					if(player.status==HELPLESS)
 						player.status=NORMAL;
-				} else if(player.x<=0){
-					player.position=WALLONLEFT;
 				} else
 					player.position=AIRBORNE;
 				
@@ -215,15 +220,22 @@ public class GameWindow extends JPanel implements Constants {
 				}
 				//gravity and ground detection
 				player.ay+=-gravity;
-				player.vy+=player.ay*dt;
+				
 				player.vx+=player.ax*dt;				
+				if(!(collided(UP) && player.vy>0) && !(collided(DOWN) && player.vy<0)) {
+					System.out.println(collided(UP) + " " + collided(DOWN));
+					player.vy+=player.ay*dt;
+				} else {
+					player.vy=0;
+					player.ay=0;
+				}
 				player.y+=player.vy*dt;
+									
 				if(player.y<0) //obsolete after block collision, stops you from falling into ground
 					player.y=0;
 				//move with velocity (speed limit of 1)
 				player.x+=Math.signum(player.vx)*Math.min(1,Math.abs(player.vx))*dt;
-				if(player.x<0)	//obsolete after block collision, stops you from falling into walls
-					player.x=0;
+
 				player.ax=0;
 				player.ay=0;
 				
@@ -235,6 +247,25 @@ public class GameWindow extends JPanel implements Constants {
 				} catch (InterruptedException e) {}
 			}
 		}		
+		
+		public boolean collided(int dir) {
+			boolean collided = false;
+			Iterator<GameObject> itr = elements.iterator();
+			while(itr.hasNext()) {
+				GameObject element = itr.next();
+				Element source = element.getSource();
+				if(dir == UP 
+					&& player.x+1 >= element.getX() && player.x <= element.getX()+source.getWidth()
+					&& player.y <= element.getY() && player.y+2 >= element.getY()) {
+					collided = true;
+				} else if(dir == DOWN
+					&& player.x+1 >= element.getX() && player.x <= element.getX()+source.getWidth()
+					&& player.y >= element.getY()+source.getHeight() && player.y+2 >= element.getY()+source.getHeight()) {
+					collided = true;
+				}
+			}
+			return collided;
+		}
 	}
 	
 	public class GLGameListener implements GLEventListener, KeyListener {

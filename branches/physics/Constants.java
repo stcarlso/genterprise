@@ -25,4 +25,11 @@ public interface Constants {
 	public static final int NORMAL=0;
 	public static final int INVINCIBLE=1;
 	public static final int HELPLESS=2;	
+	
+	//Used to store directions in an int
+	public static final int RIGHT=0;
+	public static final int UP=1;
+	public static final int LEFT=2;
+	public static final int DOWN=3;
+	
 }
