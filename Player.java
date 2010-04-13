@@ -16,10 +16,11 @@ public class Player implements Constants {
 	int jumps;
 	int wallJumps;
 	int suspicion;
-	int position;
 	int status;
 	
 	boolean facingRight;
+	
+	boolean[] walls;
 	Move ability;
 	Color color; //may be deprecated as soon as player models are available
 	public Player() {
@@ -39,13 +40,14 @@ public class Player implements Constants {
 		
 		jumps=2;
 		wallJumps=1;
-		position=STANDING;
+		
 		suspicion=0;
 		facingRight=true;
+		
+		walls = new boolean [4];
 		ability=null;
 		color= Color.white;
 		
-		position=STANDING;
 		status=NORMAL;
 	}
 }
