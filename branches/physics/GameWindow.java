@@ -95,30 +95,30 @@ public class GameWindow extends JPanel implements Constants {
 				time+=dt;
 				
 				//player state determination
-				if(player.y<=0 && player.vy<=0) { //this condition will be obsolete after level editor, tells whether player is grounded
+				collideTest();
+				if(player.walls[DOWN] && player.vy<=0) { //this condition will be obsolete after level editor, tells whether player is grounded
 					player.jumps=2;
-					player.wallJumps=1;
+					player.wallJumps=2;
 					if(down)
-						player.position=DUCKING;
+						player.status=DUCKING;
 					else
-						player.position=STANDING;
+						player.status=NORMAL;
 					if(player.ability!=null && player.ability instanceof AirDodge) {
 						player.status=NORMAL;
 						player.ability=null;
 					}
 					if(player.status==HELPLESS)
 						player.status=NORMAL;
-				} else
-					player.position=AIRBORNE;
+				}
 				
 				//****************KEY RESPONSE*******************
 				//refresh when touching ground, tell the player where he is
 				
 				if(player.ability==null && player.status!=HELPLESS){
 					if(act) {
-						if(player.position==AIRBORNE) {
+						if(! (player.walls[UP] || player.walls[DOWN] || player.walls[LEFT] || player.walls[RIGHT])) {
 							player.ability=new AirDodge(player);
-						} else if(player.position==STANDING || player.position==DUCKING){
+						} else if(player.walls[DOWN]){
 							if(down) {
 								player.ability=new Dodge(player);
 							} else if(up) {
@@ -144,28 +144,28 @@ public class GameWindow extends JPanel implements Constants {
 						//basic movement
 						if(left) {
 							player.facingRight=false;
-							if(player.position==DUCKING)
+							if(player.status==DUCKING)
 								player.ax=-.06;
-							else if(player.position==STANDING)
+							else if(player.walls[DOWN])
 								player.ax=-.1;
-							else if(player.position==WALLONRIGHT && player.wallJumps>0) {
-								player.wallJumps=0;
+							else if(player.walls[RIGHT] && (player.wallJumps==-1 || player.wallJumps==2)) {
+								player.wallJumps=1;
 								player.vy=.8;
 								player.ax=-.3;
-							} else if(player.position==AIRBORNE)
+							} else if(! (player.walls[UP] || player.walls[DOWN] || player.walls[LEFT] || player.walls[RIGHT]))
 								player.ax=-.07;
 						}
 						if(right) {
 							player.facingRight=true;
-							if(player.position==DUCKING)
+							if(player.status==DUCKING)
 								player.ax=.06;
-							else if(player.position==STANDING)
+							else if(player.walls[DOWN])
 								player.ax=.1;
-							else if(player.position==WALLONLEFT && player.wallJumps>0) {
-								player.wallJumps=0;
+							else if(player.walls[LEFT] && (player.wallJumps==1 || player.wallJumps==2)) {
+								player.wallJumps=-1;
 								player.vy=.8;
 								player.ax=.3;
-							} else if(player.position==AIRBORNE)
+							} else if(! (player.walls[UP] || player.walls[DOWN] || player.walls[LEFT] || player.walls[RIGHT]))
 								player.ax=.07;
 						}
 						if(up && !upDone && player.jumps>0) {
@@ -205,7 +205,7 @@ public class GameWindow extends JPanel implements Constants {
 				}
 				
 				//acceleration calculations
-				if(player.position==AIRBORNE) {		//air friction
+				if(! (player.walls[UP] || player.walls[DOWN] || player.walls[LEFT] || player.walls[RIGHT])) {		//air friction
 					if(player.vx>0) {
 						player.ax+= Math.max(-player.vx/dt,-kair*player.vx/player.m);
 					} else if(player.vx<0) {
@@ -218,12 +218,11 @@ public class GameWindow extends JPanel implements Constants {
 						player.ax+= Math.min(-player.vx/dt,muk*gravity);
 					}
 				}
-				//gravity and ground detection
+				
 				player.ay+=-gravity;
 				
-				player.vx+=player.ax*dt;				
-				if(!(collided(UP) && player.vy>0) && !(collided(DOWN) && player.vy<0)) {
-					System.out.println(collided(UP) + " " + collided(DOWN));
+								
+				if(!(player.walls[UP] && player.vy>0) && !(player.walls[DOWN] && player.vy<0)) {
 					player.vy+=player.ay*dt;
 				} else {
 					player.vy=0;
@@ -233,9 +232,15 @@ public class GameWindow extends JPanel implements Constants {
 									
 				if(player.y<0) //obsolete after block collision, stops you from falling into ground
 					player.y=0;
-				//move with velocity (speed limit of 1)
-				player.x+=Math.signum(player.vx)*Math.min(1,Math.abs(player.vx))*dt;
-
+				
+				player.vx+=player.ax*dt;
+				//move with velocity (speed limit of 1)	
+				if(!(player.walls[LEFT] && player.vx<0) && !(player.walls[RIGHT] && player.vx>0)) {
+					player.x+=Math.signum(player.vx)*Math.min(1,Math.abs(player.vx))*dt;
+				} else {					
+					player.vx=0;
+					player.ax=0;
+				}
 				player.ax=0;
 				player.ay=0;
 				
@@ -248,23 +253,41 @@ public class GameWindow extends JPanel implements Constants {
 			}
 		}		
 		
-		public boolean collided(int dir) {
-			boolean collided = false;
+		public void collideTest() {
 			Iterator<GameObject> itr = elements.iterator();
+			player.walls[UP]=false;
+			player.walls[DOWN]=false;
+			player.walls[LEFT]=false;
+			player.walls[RIGHT]=false;
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
-				if(dir == UP 
-					&& player.x+1 >= element.getX() && player.x <= element.getX()+source.getWidth()
+				//ceiling detection
+				if(player.x+1 > element.getX() && player.x < element.getX()+source.getWidth()
 					&& player.y <= element.getY() && player.y+2 >= element.getY()) {
-					collided = true;
-				} else if(dir == DOWN
-					&& player.x+1 >= element.getX() && player.x <= element.getX()+source.getWidth()
-					&& player.y >= element.getY()+source.getHeight() && player.y+2 >= element.getY()+source.getHeight()) {
-					collided = true;
+					player.walls[UP]=true;
+					//player.y=element.getY()-2;
+				}
+				//floor detection
+				if(player.x+1 > element.getX() && player.x < element.getX()+source.getWidth()
+					&& player.y+2 >= element.getY()+source.getHeight() && player.y <= element.getY()+source.getHeight()) {
+					player.walls[DOWN]=true;
+					//player.y=element.getY()+source.getHeight();
+				}
+				//left wall detection
+				if(player.y+2 > element.getY() && player.y < element.getY()+source.getHeight()
+					&& player.x+1 >= element.getX()+source.getWidth() && player.x <= element.getX()+source.getWidth()) {
+					player.walls[LEFT]=true;
+					player.x=element.getX()+source.getWidth();
+				}
+				//right wall detection				
+				if(player.y+2 > element.getY() && player.y < element.getY()+source.getHeight()
+					&& player.x+1 >= element.getX() && player.x <= element.getX()) {
+					player.walls[RIGHT]=true;
+					player.x=element.getX()-1;
 				}
 			}
-			return collided;
+			//System.out.println(player.walls[UP] + " " + player.walls[DOWN] + " " + player.walls[LEFT] + " " + player.walls[RIGHT]);
 		}
 	}
 	
@@ -356,7 +379,7 @@ public class GameWindow extends JPanel implements Constants {
 				gl.glColor3f(1f,1f,1f);
 			Element.clearOptions(gl);
 			gl.glBegin(GL.GL_QUADS);
-				if(player.position==DUCKING) {
+				if(player.status==DUCKING) {
 					gl.glVertex3d(player.x,player.y,0);
 					gl.glVertex3d(player.x+1,player.y,0);
 					gl.glVertex3d(player.x+1,player.y+1,0);
