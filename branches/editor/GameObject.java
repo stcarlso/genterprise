@@ -86,7 +86,10 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	 */
 	public void putAttribute(String name, String value) {
 		if (attributes == null) attributes = new HashMap<String, String>(32);
-		attributes.put(name, value);
+		if (value == null)
+			attributes.remove(name);
+		else
+			attributes.put(name, value);
 	}
 	/**
 	 * Gets the element to be rendered here.

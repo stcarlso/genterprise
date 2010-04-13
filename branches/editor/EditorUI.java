@@ -257,6 +257,18 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Edit code dialog.
 	 */
 	private JDialog codeDialog;
+	/**
+	 * The name of the object.
+	 */
+	private JTextField propName;
+	/**
+	 * The motion path information.
+	 */
+	private JTextField propMotion;
+	/**
+	 * Properties dialog.
+	 */
+	private JDialog propDialog;
 
 	/**
 	 * Sets the window title.
@@ -297,9 +309,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		coords = null;
 		size = new Rectangle(ZEROZERO);
 		// TODO temp
-		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard", -1));
-		addElement(new Element("checkerboard.png", "1x1dark.dat", "darkcheck", -1));
-		addElement(new Element("grass.png", "1x1square.dat", "grass", -1));
+		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard", -2));
+		addElement(new Element("checkerboard.png", "1x1dark.dat", "darkcheck", -2));
+		addElement(new Element("grass.png", "1x1square.dat", "grass", -2));
 		addElement(new Element("angleblock.png", "1x1square.dat", "ramp", 0));
 		addElement(new Element("angletransition.png", "1x1square.dat", "ramp-t", 0));
 		addElement(new Element("bottomblock.png", "1x1square.dat", "bottom", 0));
@@ -312,7 +324,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 0));
 		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot", 2));
 		addElement(new Element("door.png", "2x1square.dat", "door", -1));
-		addElement(new Element("light-emitter.png", "1x2square.dat", "light-emitter", 1));
+		addElement(new Element("light-emitter.png", "1x2square.dat", "light-emitter", -1));
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
@@ -383,6 +395,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		setupBottom();
 		setupMenus();
 		setupCode();
+		setupProps();
 		chooser = new JFileChooser();
 		chooser.setCurrentDirectory(new File(".").getAbsoluteFile().getParentFile());
 		chooser.setMultiSelectionEnabled(false);
@@ -395,6 +408,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		codeDialog = new JDialog(this, "Edit Code");
 		codeDialog.setModal(true);
 		codeDialog.setResizable(true);
+		codeDialog.addWindowListener(events);
 		editCode = new JTextArea();
 		editCode.setEditable(true);
 		editCode.setFont(new Font("Lucida Console", Font.PLAIN, 10));
@@ -415,6 +429,49 @@ public class EditorUI extends JFrame implements GLEventListener {
 		c.add(bottom, BorderLayout.SOUTH);
 		codeDialog.setSize(640, 480);
 		Utils.centerWindow(codeDialog);
+	}
+	/**
+	 * Sets up the properties dialog box.
+	 */
+	private void setupProps() {
+		propDialog = new JDialog(this, "Properties");
+		propDialog.setModal(true);
+		propDialog.setResizable(false);
+		propDialog.addWindowListener(events);
+		propName = new JTextField(32);
+		Utils.fixShiftBackspace(propName);
+		propMotion = new JTextField(32);
+		Utils.fixShiftBackspace(propMotion);
+		Container c = propDialog.getContentPane();
+		JComponent props = new Box(BoxLayout.Y_AXIS);
+		// add rows
+		props.add(addHorizontal("Name:", propName));
+		props.add(addHorizontal("Motion:", propMotion));
+		c.add(props, BorderLayout.CENTER);
+		JPanel horiz = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
+		horiz.setOpaque(false);
+		JButton cancel = new JButton("Close");
+		cancel.setFocusable(false);
+		cancel.setActionCommand("noprops");
+		cancel.addActionListener(events);
+		horiz.add(cancel);
+		c.add(horiz, BorderLayout.SOUTH);
+		propDialog.pack();
+		Utils.centerWindow(propDialog);
+	}
+	/**
+	 * Creates a two-component horizontal entry box.
+	 * 
+	 * @param label the label for the text box
+	 * @param entry the actual text box
+	 * @return a panel containing both of them
+	 */
+	private JComponent addHorizontal(String label, JComponent entry) {
+		JComponent ret = new Box(BoxLayout.X_AXIS);
+		ret.add(new JLabel(label));
+		ret.add(Box.createHorizontalStrut(5));
+		ret.add(entry);
+		return ret;
 	}
 	/**
 	 * Sets up the status bar at the bottom of the screen.
@@ -453,7 +510,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 		edit.add(createMenuItem("Flip X (X)", "flipx", 0));
 		edit.add(createMenuItem("Flip Y (Y)", "flipy", 0));
 		edit.addSeparator();
-		edit.add(createMenuItem("Code", "code", KeyEvent.VK_1));
+		edit.add(createMenuItem("Properties", "prop", KeyEvent.VK_1));
+		edit.add(createMenuItem("Code", "code", KeyEvent.VK_E));
 		across.add(edit);
 		setJMenuBar(across);
 	}
@@ -1027,6 +1085,38 @@ public class EditorUI extends JFrame implements GLEventListener {
 		return false;
 	}
 	/**
+	 * Sets properties on the selected block.
+	 */
+	private void doProps() {
+		if (selected == null) return;
+		String text = propName.getText();
+		if (text == null || text.length() < 1)
+			selected.putAttribute("name", null);
+		else
+			selected.putAttribute("name", text);
+		text = propMotion.getText();
+		if (text == null || text.length() < 1)
+			selected.putAttribute("motion", null);
+		else
+			selected.putAttribute("motion", text);
+	}
+	/**
+	 * Gets the properties from the block and puts them into the window.
+	 */
+	private void getProps() {
+		if (selected == null) return;
+		String attrib = selected.getAttribute("name");
+		if (attrib == null)
+			propName.setText("");
+		else
+			propName.setText(attrib);
+		attrib = selected.getAttribute("motion");
+		if (attrib == null)
+			propMotion.setText("");
+		else
+			propMotion.setText(attrib);
+	}
+	/**
 	 * Erases everything and makes a new file.
 	 */
 	private void newFile() {
@@ -1115,33 +1205,42 @@ public class EditorUI extends JFrame implements GLEventListener {
 	private class EventListener extends MouseAdapter implements WindowListener, WindowFocusListener,
 			ActionListener, MouseMotionListener, KeyListener, MouseWheelListener {
 		public void windowActivated(WindowEvent e) {
-			startRun();
+			if (e.getSource() == EditorUI.this)
+				startRun();
 		}
 		public void windowClosed(WindowEvent e) {
-			dispose();
+			if (e.getSource() == EditorUI.this)
+				dispose();
 		}
 		public void windowClosing(WindowEvent e) {
 			if (e.getSource() == codeDialog)
 				code = editCode.getText();
+			else if (e.getSource() == propDialog)
+				doProps();
 			else if (saveDialog()) {
 				windowClosed(e);
 				System.exit(0);
 			}
 		}
 		public void windowDeactivated(WindowEvent e) {
-			stopRun();
+			if (e.getSource() == EditorUI.this)
+				stopRun();
 		}
 		public void windowDeiconified(WindowEvent e) {
-			startRun();
+			if (e.getSource() == EditorUI.this)
+				startRun();
 		}
 		public void windowGainedFocus(WindowEvent e) {
-			startRun();
+			if (e.getSource() == EditorUI.this)
+				startRun();
 		}
 		public void windowIconified(WindowEvent e) {
-			stopRun();
+			if (e.getSource() == EditorUI.this)
+				stopRun();
 		}
 		public void windowLostFocus(WindowEvent e) {
-			stopRun();
+			if (e.getSource() == EditorUI.this)
+				stopRun();
 		}
 		public void windowOpened(WindowEvent e) { }
 		public void actionPerformed(ActionEvent e) {
@@ -1175,9 +1274,17 @@ public class EditorUI extends JFrame implements GLEventListener {
 			else if (cmd.equals("code")) {
 				codeDialog.setVisible(true);
 				editCode.requestFocus();
+			} else if (cmd.equals("prop")) {
+				if (selected == null) return;
+				getProps();
+				propDialog.setVisible(true);
+				propName.requestFocus();
 			} else if (cmd.equals("nocode")) {
 				codeDialog.setVisible(false);
 				code = editCode.getText();
+			} else if (cmd.equals("noprops")) {
+				propDialog.setVisible(false);
+				doProps();
 			}
 		}
 		public void mouseEntered(MouseEvent e) {
