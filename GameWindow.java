@@ -71,6 +71,7 @@ public class GameWindow extends JPanel implements Constants {
 		canvas.addKeyListener(listener);
 		canvas.addGLEventListener(listener);   // add event listener
 		add(canvas);
+		
 		physics= new PhysicsThread();
 		physics.start();
 		anim=new Animator(canvas);
@@ -219,17 +220,18 @@ public class GameWindow extends JPanel implements Constants {
 					}
 				}
 				
-				player.ay+=-gravity;
-				
+				collideTest();
 								
-				if(!(player.walls[UP] && player.vy>0) && !(player.walls[DOWN] && player.vy<0)) {
+				if(!(player.walls[UP] && player.vy>0) && !(player.walls[DOWN] && player.vy<=0)) {
+					player.ay+=-gravity;
 					player.vy+=player.ay*dt;
+					player.y+=player.vy*dt;
 				} else {
 					player.vy=0;
 					player.ay=0;
 				}
-				player.y+=player.vy*dt;
-									
+
+							
 				if(player.y<0) //obsolete after block collision, stops you from falling into ground
 					player.y=0;
 				
@@ -248,7 +250,7 @@ public class GameWindow extends JPanel implements Constants {
 				player.suspicion=Math.max(0,player.suspicion-1);
 			
 				try {				
-					Thread.sleep(33L);
+					Thread.sleep(30L);
 				} catch (InterruptedException e) {}
 			}
 		}		
@@ -259,34 +261,38 @@ public class GameWindow extends JPanel implements Constants {
 			player.walls[DOWN]=false;
 			player.walls[LEFT]=false;
 			player.walls[RIGHT]=false;
+			double xtemp = player.x;
+			double ytemp = player.y;
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
-				//ceiling detection
-				if(player.x+1 > element.getX() && player.x < element.getX()+source.getWidth()
-					&& player.y <= element.getY() && player.y+2 >= element.getY()) {
-					player.walls[UP]=true;
-					//player.y=element.getY()-2;
-				}
 				//floor detection
-				if(player.x+1 > element.getX() && player.x < element.getX()+source.getWidth()
-					&& player.y+2 >= element.getY()+source.getHeight() && player.y <= element.getY()+source.getHeight()) {
+				if(player.x+player.right > element.getX() && player.x+player.left < element.getX()+source.getWidth()
+						&& player.y+player.top >= element.getY()+source.getHeight() && player.y+player.bottom <= element.getY()+source.getHeight()) {
 					player.walls[DOWN]=true;
-					//player.y=element.getY()+source.getHeight();
+					ytemp=element.getY()+source.getHeight()+player.bottom;
+				}
+				//ceiling detection
+				if(player.x+player.right > element.getX() && player.x+player.left < element.getX()+source.getWidth()
+					&& player.y+player.bottom <= element.getY() && player.y+player.top >= element.getY()) {
+					player.walls[UP]=true;
+					ytemp=element.getY()-player.top;
 				}
 				//left wall detection
-				if(player.y+2 > element.getY() && player.y < element.getY()+source.getHeight()
-					&& player.x+1 >= element.getX()+source.getWidth() && player.x <= element.getX()+source.getWidth()) {
+				if(player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
+					&& player.x+player.right >= element.getX()+source.getWidth() && player.x+player.left <= element.getX()+source.getWidth()) {
 					player.walls[LEFT]=true;
-					player.x=element.getX()+source.getWidth();
+					xtemp=element.getX()+source.getWidth()-player.left;
 				}
 				//right wall detection				
-				if(player.y+2 > element.getY() && player.y < element.getY()+source.getHeight()
-					&& player.x+1 >= element.getX() && player.x <= element.getX()) {
+				if(player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
+					&& player.x+player.right >= element.getX() && player.x+player.left <= element.getX()) {
 					player.walls[RIGHT]=true;
-					player.x=element.getX()-1;
+					xtemp=element.getX()+(1-player.right)-1;
 				}
 			}
+			player.y=ytemp;
+			player.x=xtemp;
 			//System.out.println(player.walls[UP] + " " + player.walls[DOWN] + " " + player.walls[LEFT] + " " + player.walls[RIGHT]);
 		}
 	}
@@ -380,24 +386,24 @@ public class GameWindow extends JPanel implements Constants {
 			Element.clearOptions(gl);
 			gl.glBegin(GL.GL_QUADS);
 				if(player.status==DUCKING) {
-					gl.glVertex3d(player.x,player.y,0);
-					gl.glVertex3d(player.x+1,player.y,0);
-					gl.glVertex3d(player.x+1,player.y+1,0);
-					gl.glVertex3d(player.x,player.y+1,0);
+					gl.glVertex3d(player.x+player.left,player.y+player.bottom,0);
+					gl.glVertex3d(player.x+player.right,player.y+player.bottom,0);
+					gl.glVertex3d(player.x+player.right,player.y+player.top/2,0);
+					gl.glVertex3d(player.x+player.left,player.y+player.top/2,0);
 				} else {
-					gl.glVertex3d(player.x,player.y,0);
-					gl.glVertex3d(player.x+1,player.y,0);
-					gl.glVertex3d(player.x+1,player.y+2,0);
-					gl.glVertex3d(player.x,player.y+2,0);
+					gl.glVertex3d(player.x+player.left,player.y+player.bottom,0);
+					gl.glVertex3d(player.x+player.right,player.y+player.bottom,0);
+					gl.glVertex3d(player.x+player.right,player.y+player.top,0);
+					gl.glVertex3d(player.x+player.left,player.y+player.top,0);
 				}
 			gl.glEnd();
 			gl.glColor3f(0f,0f,0f);	
 			gl.glBegin(GL.GL_LINES);
 				if(player.facingRight) {
 					gl.glVertex3d(player.x+.5,player.y+1.5,.1);
-					gl.glVertex3d(player.x+1,player.y+1.5,.1);
+					gl.glVertex3d(player.x+player.right,player.y+1.5,.1);
 				} else {
-					gl.glVertex3d(player.x,player.y+1.5,.1);
+					gl.glVertex3d(player.x+player.left,player.y+1.5,.1);
 					gl.glVertex3d(player.x+.5,player.y+1.5,.1);
 				}
 			gl.glEnd();
