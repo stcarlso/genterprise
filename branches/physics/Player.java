@@ -24,7 +24,7 @@ public class Player implements Constants {
 	Move ability;
 	Color color; //may be deprecated as soon as player models are available
 	public Player() {
-		x=1;
+		x=0;
 		y=0;
 		vx=0;
 		vy=0;
@@ -33,9 +33,9 @@ public class Player implements Constants {
 		m=4;
 		
 		//hitbox of the player
-		left=0;
-		right=1;
-		top=2;
+		left=.1;
+		right=.9;
+		top=1.7;
 		bottom=0;
 		
 		jumps=2;
