@@ -1133,6 +1133,53 @@ public class EditorUI extends JFrame implements GLEventListener {
 		editCode.setText(code);
 	}
 	/**
+	 * Makes the level a win jar (for later)
+	 */
+	private void packLevel() {
+		if (fileName == null) return;
+		String[] args = new String[5];
+		File temp = new File(System.getProperty("java.io.tmpdir", ".")).getAbsoluteFile();
+		File lCode = new File(temp, "LevelCode.java");
+		if (!copyFile(getCodeFile(), lCode)) {
+			Utils.showWarning("Failed to copy to temp directory.");
+			return;
+		}
+		args[0] = "\"" + lCode.getAbsolutePath() + "\"";
+		args[1] = "-sourcepath";
+		args[2] = "\"" + temp.getPath() + "\"";
+		args[3] = "-cp";
+		args[4] = "." + File.pathSeparator + "game.jar";
+		lCode.delete();
+		int c = com.sun.tools.javac.Main.compile(args, new PrintWriter(new OutputStreamWriter(System.out)));
+		if (c == 0 && copyFile(new File(temp, "LevelCode.class"), getCodeFile().getParentFile())) {
+			Utils.showWarning("Wrote successfully");
+		} else
+			Utils.showWarning("Did not compile");
+		requestFocus();
+	}
+	/**
+	 * Copies src to dest.
+	 * 
+	 * @param src the source file
+	 * @param dest the destination file
+	 * @return true if success, false if failed
+	 */
+	private boolean copyFile(File src, File dest) {
+		try {
+			InputStream in = new FileInputStream(src);
+			OutputStream out = new FileOutputStream(dest);
+			byte[] buffer = new byte[1024];
+			int read;
+			while ((read = in.read(buffer)) > 0)
+				out.write(buffer, 0, read);
+			out.close();
+			in.close();
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+	/**
 	 * Opens a level.
 	 */
 	private void open() {
@@ -1164,6 +1211,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			editCode.setText(this.code);
 		} catch (Exception e) {
 			Utils.showWarning("Can't open level!");
+			requestFocus();
 		}
 	}
 	/**
@@ -1257,6 +1305,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 				deselect = null;
 			} else if (cmd.equals("exit") && saveDialog())
 				System.exit(0);
+			else if (cmd.equals("pack") && fileName != null)
+				packLevel();
 			else if (cmd.equals("flipx") && dropping != null)
 				synchronized (eventSync) {
 					flipX = !flipX;
