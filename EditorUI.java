@@ -439,8 +439,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 		propDialog.setResizable(false);
 		propDialog.addWindowListener(events);
 		propName = new JTextField(32);
+		propName.setActionCommand("noprops");
 		Utils.fixShiftBackspace(propName);
 		propMotion = new JTextField(32);
+		propMotion.setActionCommand("noprops");
 		Utils.fixShiftBackspace(propMotion);
 		Container c = propDialog.getContentPane();
 		JComponent props = new Box(BoxLayout.Y_AXIS);
