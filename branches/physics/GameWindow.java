@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
+import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,11 +13,13 @@ import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLCapabilities;
 import javax.media.opengl.GLEventListener;
+import javax.media.opengl.GLException;
 import javax.media.opengl.glu.GLU;
 import javax.swing.JPanel;
 
 import com.sun.opengl.util.Animator;
 import com.sun.opengl.util.BufferUtil;
+import com.sun.opengl.util.texture.TextureIO;
 
 public class GameWindow extends JPanel implements Constants {
 	ResourceGetter res;
@@ -257,11 +260,12 @@ public class GameWindow extends JPanel implements Constants {
 		}		
 		
 		public void collideTest() {
+			/*
 			player.x = 1e-4 * Math.round(1e4 * player.x);
 			player.y = 1e-4 * Math.round(1e4 * player.y);
 			player.vx = 1e-4 * Math.round(1e4 * player.vx);
 			player.vy = 1e-4 * Math.round(1e4 * player.vy);
-			System.out.println(player.x);
+			//System.out.println(player.x);*/
 			Iterator<GameObject> itr = elements.iterator();
 			player.walls[UP]=false;
 			player.walls[DOWN]=false;
@@ -296,13 +300,13 @@ public class GameWindow extends JPanel implements Constants {
 				//right wall detection				
 				if(player.y+player.vy*dt+player.top > element.getY() && player.y+player.vy*dt+player.bottom < element.getY()+source.getHeight()
 					&& player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
-					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left <= element.getX()) {
+					&& player.x+player.vx*dt+player.right >= element.getX() && player.x+player.vx*dt+player.left <= element.getX()) {
 					player.walls[RIGHT]=true;
 					xtemp=element.getX()+(1-player.right)-1;
 				}
 			}
-			xtemp = 1e-4 * Math.round(1e4 * xtemp);
-			ytemp = 1e-4 * Math.round(1e4 * ytemp);
+			//	xtemp = 1e-4 * Math.round(1e4 * xtemp);
+			//ytemp = 1e-4 * Math.round(1e4 * ytemp);
 			if (player.walls[LEFT] != player.walls[RIGHT])
 				player.x=xtemp;
 			if(player.walls[UP] != player.walls[DOWN])
@@ -397,6 +401,7 @@ public class GameWindow extends JPanel implements Constants {
 			else
 				gl.glColor3f(1f,1f,1f);
 			Element.clearOptions(gl);
+			player.stand.bind();
 			gl.glBegin(GL.GL_QUADS);
 				if(player.status==DUCKING) {
 					gl.glVertex3d(player.x+player.left,player.y+player.bottom,0);
@@ -404,12 +409,28 @@ public class GameWindow extends JPanel implements Constants {
 					gl.glVertex3d(player.x+player.right,player.y+player.top/2,0);
 					gl.glVertex3d(player.x+player.left,player.y+player.top/2,0);
 				} else {
-					gl.glVertex3d(player.x+player.left,player.y+player.bottom,0);
-					gl.glVertex3d(player.x+player.right,player.y+player.bottom,0);
-					gl.glVertex3d(player.x+player.right,player.y+player.top,0);
-					gl.glVertex3d(player.x+player.left,player.y+player.top,0);
+					if(player.facingRight) {
+						gl.glTexCoord2d(0,1);
+						gl.glVertex3d(player.x,player.y,0);
+						gl.glTexCoord2d(1,1);
+						gl.glVertex3d(player.x+1,player.y,0);
+						gl.glTexCoord2d(1,0);
+						gl.glVertex3d(player.x+1,player.y+2,0);
+						gl.glTexCoord2d(0,0);
+						gl.glVertex3d(player.x,player.y+2,0);
+					} else {
+						gl.glTexCoord2d(1,1);
+						gl.glVertex3d(player.x,player.y,0);
+						gl.glTexCoord2d(0,1);
+						gl.glVertex3d(player.x+1,player.y,0);
+						gl.glTexCoord2d(0,0);
+						gl.glVertex3d(player.x+1,player.y+2,0);
+						gl.glTexCoord2d(1,0);
+						gl.glVertex3d(player.x,player.y+2,0);
+					}
 				}
 			gl.glEnd();
+			/*	gunther texture coming soon
 			gl.glColor3f(0f,0f,0f);	
 			gl.glBegin(GL.GL_LINES);
 				if(player.facingRight) {
@@ -419,7 +440,7 @@ public class GameWindow extends JPanel implements Constants {
 					gl.glVertex3d(player.x+player.left,player.y+1.5,.1);
 					gl.glVertex3d(player.x+.5,player.y+1.5,.1);
 				}
-			gl.glEnd();
+			gl.glEnd();*/
 			gl.glBegin(GL.GL_LINES);
 	 		gl.glColor3f(0f,0f,1f);
 	 		gl.glVertex3d(0,-50,0);
@@ -467,7 +488,7 @@ public class GameWindow extends JPanel implements Constants {
 		public void init(GLAutoDrawable drawable) {
 			GL gl = drawable.getGL();
 			glu = new GLU();
-			gl.glClearColor(0.0f,0.0f,0.0f,0.0f);
+			gl.glClearColor(0.7f,0.7f,0.6f,1.0f);
 			gl.glMatrixMode(GL.GL_PROJECTION);
 		 	gl.glLoadIdentity();
 		 	gl.glMatrixMode(GL.GL_MODELVIEW);
@@ -498,6 +519,13 @@ public class GameWindow extends JPanel implements Constants {
 			}
 		 	suspicion();
 		 	Element.setOptions(gl);
+		 	
+		 	//player texture setting
+		 	try {
+				player.stand=TextureIO.newTexture(new File("res/textures/gunther.png"),false);
+			} catch (Exception e) {
+				System.out.println("no file");
+			}
 		}
 		/**
 		 * Creates a vertex array for the supicion meter
