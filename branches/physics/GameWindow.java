@@ -259,13 +259,15 @@ public class GameWindow extends JPanel implements Constants {
 			}
 		}		
 		
+		/**
+		 * Determines on which sides the character has encountered a wall
+		 */
 		public void collideTest() {
-			/*
-			player.x = 1e-4 * Math.round(1e4 * player.x);
-			player.y = 1e-4 * Math.round(1e4 * player.y);
-			player.vx = 1e-4 * Math.round(1e4 * player.vx);
-			player.vy = 1e-4 * Math.round(1e4 * player.vy);
-			//System.out.println(player.x);*/
+			
+			player.x = Math.round(1e4 * player.x)/10000.0;
+			player.y = Math.round(1e4 * player.y)/10000.0;
+			player.vx = Math.round(1e4 * player.vx)/10000.0;
+			player.vy = Math.round(1e4 * player.vy)/10000.0;
 			Iterator<GameObject> itr = elements.iterator();
 			player.walls[UP]=false;
 			player.walls[DOWN]=false;
@@ -279,14 +281,14 @@ public class GameWindow extends JPanel implements Constants {
 				//floor detection
 				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
 					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.y+player.vy*dt+player.bottom+.6 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
+					&& player.y+player.vy*dt+player.bottom+.8 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
 					player.walls[DOWN]=true;
 					ytemp=element.getY()+source.getHeight()+player.bottom;
 				}
 				//ceiling detection
 				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
 					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.y+player.vy*dt+player.top-.6 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
+					&& player.y+player.vy*dt+player.top-.8 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
 					player.walls[UP]=true;
 					ytemp=element.getY()-player.top;
 				}
@@ -305,8 +307,8 @@ public class GameWindow extends JPanel implements Constants {
 					xtemp=element.getX()+(1-player.right)-1;
 				}
 			}
-			//	xtemp = 1e-4 * Math.round(1e4 * xtemp);
-			//ytemp = 1e-4 * Math.round(1e4 * ytemp);
+			xtemp = Math.round(1e4 * xtemp)/10000.0;
+			ytemp = Math.round(1e4 * ytemp)/10000.0;
 			if (player.walls[LEFT] != player.walls[RIGHT])
 				player.x=xtemp;
 			if(player.walls[UP] != player.walls[DOWN])
