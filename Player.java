@@ -1,5 +1,7 @@
 import java.awt.Color;
 
+import com.sun.opengl.util.texture.Texture;
+
 public class Player implements Constants {
 	double x;
 	double y;
@@ -23,6 +25,8 @@ public class Player implements Constants {
 	boolean[] walls;
 	Move ability;
 	Color color; //may be deprecated as soon as player models are available
+	Texture stand;
+	
 	public Player() {
 		x=0;
 		y=0;
@@ -35,7 +39,7 @@ public class Player implements Constants {
 		//hitbox of the player
 		left=.1;
 		right=.9;
-		top=1.7;
+		top=1.8;
 		bottom=0;
 		
 		jumps=2;
