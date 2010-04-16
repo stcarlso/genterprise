@@ -1,6 +1,8 @@
 import java.awt.Color;
+import java.io.File;
 
 import com.sun.opengl.util.texture.Texture;
+import com.sun.opengl.util.texture.TextureIO;
 
 public class Player implements Constants {
 	double x;
