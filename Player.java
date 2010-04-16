@@ -41,7 +41,7 @@ public class Player implements Constants {
 		//hitbox of the player
 		left=.1;
 		right=.9;
-		top=1.8;
+		top=1.75;
 		bottom=0;
 		
 		jumps=2;
