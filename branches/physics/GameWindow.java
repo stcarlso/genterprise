@@ -281,14 +281,14 @@ public class GameWindow extends JPanel implements Constants {
 				//floor detection
 				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
 					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.y+player.vy*dt+player.bottom+.8 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
+					&& player.y+player.vy*dt+player.bottom+1 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
 					player.walls[DOWN]=true;
 					ytemp=element.getY()+source.getHeight()+player.bottom;
 				}
 				//ceiling detection
 				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
 					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.y+player.vy*dt+player.top-.8 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
+					&& player.y+player.vy*dt+player.top-1 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
 					player.walls[UP]=true;
 					ytemp=element.getY()-player.top;
 				}
