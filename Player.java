@@ -28,6 +28,8 @@ public class Player implements Constants {
 	Move ability;
 	Color color; //may be deprecated as soon as player models are available
 	Texture stand;
+	Texture[] walk;
+	Texture air;
 	
 	public Player() {
 		x=0;
@@ -55,5 +57,9 @@ public class Player implements Constants {
 		color= Color.white;
 		
 		status=NORMAL;
+		
+		//texture loading
+		walk = new Texture[8];
+		
 	}
 }
