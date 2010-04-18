@@ -116,7 +116,6 @@ public class GameWindow extends JPanel implements Constants {
 					if(player.status==HELPLESS)
 						player.status=NORMAL;
 				}
-				
 				//****************KEY RESPONSE*******************
 				//refresh when touching ground, tell the player where he is
 				
@@ -152,9 +151,11 @@ public class GameWindow extends JPanel implements Constants {
 							player.facingRight=false;
 							if(player.status==DUCKING)
 								player.ax=-.06;
-							else if(player.walls[DOWN])
+							else if(player.walls[DOWN]) {
 								player.ax=-.1;
-							else if(player.walls[RIGHT] && (player.wallJumps==-1 || player.wallJumps==2)) {
+								if(player.status==NORMAL)
+									player.status=WALKING;
+							} else if(player.walls[RIGHT] && (player.wallJumps==-1 || player.wallJumps==2)) {
 								player.wallJumps=1;
 								player.vy=.8;
 								player.ax=-.3;
@@ -165,9 +166,11 @@ public class GameWindow extends JPanel implements Constants {
 							player.facingRight=true;
 							if(player.status==DUCKING)
 								player.ax=.06;
-							else if(player.walls[DOWN])
+							else if(player.walls[DOWN]) {
 								player.ax=.1;
-							else if(player.walls[LEFT] && (player.wallJumps==1 || player.wallJumps==2)) {
+								if(player.status==NORMAL)
+									player.status=WALKING;
+							} else if(player.walls[LEFT] && (player.wallJumps==1 || player.wallJumps==2)) {
 								player.wallJumps=-1;
 								player.vy=.8;
 								player.ax=.3;
@@ -403,7 +406,12 @@ public class GameWindow extends JPanel implements Constants {
 			else
 				gl.glColor3f(1f,1f,1f);
 			Element.clearOptions(gl);
-			player.stand.bind();
+			if(player.status==WALKING) {
+				player.walk[((int)(time*.2))%8].bind();
+			} else if(!player.walls[DOWN]) {
+				player.air.bind();
+			}else 
+				player.stand.bind();
 			gl.glBegin(GL.GL_QUADS);
 				if(player.status==DUCKING) {
 					gl.glVertex3d(player.x+player.left,player.y+player.bottom,0);
@@ -524,8 +532,17 @@ public class GameWindow extends JPanel implements Constants {
 		 	
 		 	//player texture setting
 		 	try {
-				player.stand=TextureIO.newTexture(new File("res/textures/gunther.png"),false);
-			} catch (Exception e) {
+				player.stand = TextureIO.newTexture(new File("res/textures/gunther.png"),false);
+				player.walk[0]= TextureIO.newTexture(new File("res/textures/gunther.png"),false);
+				player.walk[1]= TextureIO.newTexture(new File("res/textures/guntherwalk1.png"),false);
+				player.walk[2]= TextureIO.newTexture(new File("res/textures/guntherwalk2.png"),false);
+				player.walk[3]= TextureIO.newTexture(new File("res/textures/guntherwalk3.png"),false);
+				player.walk[4]= TextureIO.newTexture(new File("res/textures/guntherwalk4.png"),false);
+				player.walk[5]= TextureIO.newTexture(new File("res/textures/guntherwalk5.png"),false);
+				player.walk[6]= TextureIO.newTexture(new File("res/textures/guntherwalk6.png"),false);
+				player.walk[7]= TextureIO.newTexture(new File("res/textures/guntherwalk7.png"),false);
+				player.air= TextureIO.newTexture(new File("res/textures/guntherair.png"),false);
+		 	} catch (Exception e) {
 				System.out.println("no file");
 			}
 		}
