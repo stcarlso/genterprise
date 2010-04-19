@@ -532,16 +532,16 @@ public class GameWindow extends JPanel implements Constants {
 		 	
 		 	//player texture setting
 		 	try {
-				player.stand = TextureIO.newTexture(new File("res/textures/gunther.png"),false);
-				player.walk[0]= TextureIO.newTexture(new File("res/textures/gunther.png"),false);
-				player.walk[1]= TextureIO.newTexture(new File("res/textures/guntherwalk1.png"),false);
-				player.walk[2]= TextureIO.newTexture(new File("res/textures/guntherwalk2.png"),false);
-				player.walk[3]= TextureIO.newTexture(new File("res/textures/guntherwalk3.png"),false);
-				player.walk[4]= TextureIO.newTexture(new File("res/textures/guntherwalk4.png"),false);
-				player.walk[5]= TextureIO.newTexture(new File("res/textures/guntherwalk5.png"),false);
-				player.walk[6]= TextureIO.newTexture(new File("res/textures/guntherwalk6.png"),false);
-				player.walk[7]= TextureIO.newTexture(new File("res/textures/guntherwalk7.png"),false);
-				player.air= TextureIO.newTexture(new File("res/textures/guntherair.png"),false);
+				player.stand = res.getTexture("gunther.png");
+				player.walk[0]= res.getTexture("gunther.png");
+				player.walk[1]= res.getTexture("guntherwalk1.png");
+				player.walk[2]= res.getTexture("guntherwalk2.png");
+				player.walk[3]= res.getTexture("guntherwalk3.png");
+				player.walk[4]= res.getTexture("guntherwalk4.png");
+				player.walk[5]= res.getTexture("guntherwalk5.png");
+				player.walk[6]= res.getTexture("guntherwalk6.png");
+				player.walk[7]= res.getTexture("guntherwalk7.png");
+				player.air= res.getTexture("guntherair.png");
 		 	} catch (Exception e) {
 				System.out.println("no file");
 			}
