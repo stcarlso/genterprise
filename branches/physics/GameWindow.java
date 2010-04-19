@@ -55,7 +55,7 @@ public class GameWindow extends JPanel implements Constants {
 	public GameWindow() {
 		super(new BorderLayout());	
 		res = new FilesystemResources(null, new File("res/"));
-		LevelReader lreader = new LevelReader(res, "../test-level.dat");
+		LevelReader lreader = new LevelReader(res, "../level1.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
@@ -271,6 +271,7 @@ public class GameWindow extends JPanel implements Constants {
 			player.y = Math.round(1e4 * player.y)/10000.0;
 			player.vx = Math.round(1e4 * player.vx)/10000.0;
 			player.vy = Math.round(1e4 * player.vy)/10000.0;
+			System.out.println((player.vy*dt));
 			Iterator<GameObject> itr = elements.iterator();
 			player.walls[UP]=false;
 			player.walls[DOWN]=false;
@@ -284,14 +285,14 @@ public class GameWindow extends JPanel implements Constants {
 				//floor detection
 				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
 					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.y+player.vy*dt+player.bottom+1 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
+					&& player.y+player.vy*dt+player.bottom+.9 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
 					player.walls[DOWN]=true;
 					ytemp=element.getY()+source.getHeight()+player.bottom;
 				}
 				//ceiling detection
 				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
 					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.y+player.vy*dt+player.top-1 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
+					&& player.y+player.vy*dt+player.top-.9 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
 					player.walls[UP]=true;
 					ytemp=element.getY()-player.top;
 				}
@@ -409,7 +410,7 @@ public class GameWindow extends JPanel implements Constants {
 			else
 				gl.glColor3f(1f,1f,1f);
 			if(player.status==WALKING) {
-				player.walk[((int)(time*.2))%8].bind();
+				player.walk[((int)(time*.4))%8].bind();
 			} else if(!player.walls[DOWN]) {
 				player.air.bind();
 			}else 
@@ -481,7 +482,7 @@ public class GameWindow extends JPanel implements Constants {
 		public void init(GLAutoDrawable drawable) {
 			GL gl = drawable.getGL();
 			glu = new GLU();
-			gl.glClearColor(0.7f,0.7f,0.6f,1.0f);
+			gl.glClearColor(0.0f,0.0f,0.0f,1.0f);
 			gl.glMatrixMode(GL.GL_PROJECTION);
 		 	gl.glLoadIdentity();
 		 	gl.glMatrixMode(GL.GL_MODELVIEW);
