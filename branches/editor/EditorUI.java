@@ -314,7 +314,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("grass.png", "1x1square.dat", "grass", -2));
 		addElement(new Element("ladder.png", "1x1square.dat", "ladder", -1));
 		addElement(new Element("door.png", "2x1square.dat", "door", -1));
-		addElement(new Element("ceilingLighting", "1x1square.dat", "ceiling-light", -1));
+		addElement(new Element("ceiling-light.png", "1x1square.dat", "ceiling-light", 2));
 		addElement(new Element("light-emitter.png", "1x2square.dat", "light-emitter", -1));
 		addElement(new Element("angleblock.png", "1x1square.dat", "ramp", 0));
 		addElement(new Element("angletransition.png", "1x1square.dat", "ramp-t", 0));
@@ -322,25 +322,25 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("wall.png", "1x1square.dat", "wall", 0));
 		addElement(new Element(null, "1x1black.dat", "filler", 0));
 		addElement(new Element("floor.png", "1x1square.dat", "floor", 0)); //note change used to be bottom
-		addElement(new Element("floorLight.png", "1x1square.dat", "floor+light", 0)); 
-		addElement(new Element("floorCeiling.png", "1x1square.dat", "floor+ceiling", 0)); 
-		addElement(new Element("junct2", "1x1square.dat", "connector-l", 0));
-		addElement(new Element("junct2Wall", "1x1square.dat", "connector-l+wall", 0));
-		addElement(new Element("junct2Corner", "1x1square.dat", "connector-l+corner", 0));
-		addElement(new Element("junct2Light", "1x1square.dat", "connector-l+light", 0));
-		addElement(new Element("junct3", "1x1square.dat", "connector-t", 0));
-		addElement(new Element("junct3Light", "1x1square.dat", "connector-t+light", 0));
-		addElement(new Element("junct4", "1x1square.dat", "connector-plus", 0));
-		addElement(new Element("platformMid", "1x1square.dat", "platform-middle", 0));
-		addElement(new Element("platformEnd", "1x1square.dat", "platform-end", 0));
-		addElement(new Element("platformSingle", "1x1square.dat", "platform-small", 0));
-		addElement(new Element("platformCorner", "1x1square.dat", "platform-corner", 0));
-		addElement(new Element("platformLight", "1x1square.dat", "platform-middle+light", 0));
+		addElement(new Element("floorLight.png", "1x1square.dat", "floorlight", 0)); 
+		addElement(new Element("floorCeiling.png", "1x1square.dat", "floorceiling", 0)); 
+		addElement(new Element("junct2.png", "1x1square.dat", "junct2", 0));
+		addElement(new Element("junct2Wall.png", "1x1square.dat", "junct2Wall", 0));
+		addElement(new Element("junct2Corner.png", "1x1square.dat", "junct2Corner", 0));
+		addElement(new Element("junct2Light.png", "1x1square.dat", "junct2Light", 0));
+		addElement(new Element("junct3.png", "1x1square.dat", "junct3", 0));
+		addElement(new Element("junct3Light.png", "1x1square.dat", "junct3Light", 0));
+		addElement(new Element("junct4.png", "1x1square.dat", "junct4", 0));
+		addElement(new Element("platformMid.png", "1x1square.dat", "platformMid", 0));
+		addElement(new Element("platformEnd.png", "1x1square.dat", "platformEnd", 0));
+		addElement(new Element("platformSingle.png", "1x1square.dat", "platformSingle", 0));
+		addElement(new Element("platformCorner.png", "1x1square.dat", "platformCorner", 0));
+		addElement(new Element("platformLight.png", "1x1square.dat", "platformLight", 0));
 		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 0));
 		addElement(new Element("laserbase.png", "1x1square.dat", "laserbase", 1));
 		addElement(new Element("lasermid.png", "1x1square.dat", "lasermid", 1));
 		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot", 2));
-		addElement(new Element("gunther", "Gunther.dat", "gunther", 0));
+		addElement(new Element("gunther", "2x1square.dat", "gunther", 0));
 
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
@@ -559,6 +559,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		Element element;
 		while (it.hasNext()) {
 			element = it.next();
+			System.out.println("Loading " + element + "...");
 			try {
 				element.loadGeometry(current);
 			} catch (Exception e) {

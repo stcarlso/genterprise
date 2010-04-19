@@ -7,6 +7,7 @@ import javax.swing.*;
 public class FrameRunner extends JFrame {
 	private static GameWindow game;
 	public FrameRunner () {
+		Utils.staticInit();
 		game= new GameWindow();
 		setSize(800,800);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
