@@ -333,8 +333,9 @@ public class GameWindow extends JPanel implements Constants {
 		 	gl.glLoadIdentity();
 		 	glu.gluLookAt(player.x, player.y, 10, player.x, player.y, -10, 0, 1, 0);
 
-			drawCharacter(gl);
 			renderScene(gl);
+			drawCharacter(gl);
+			drawSuspicion(gl,player.suspicion);
 		}
 		
 		private void renderScene(GL gl) {
@@ -387,6 +388,8 @@ public class GameWindow extends JPanel implements Constants {
 		public void drawCharacter(GL gl) {
 			//drawing the player
 			//colors will be obsolete when rendering improves
+			Element.clearOptions(gl);
+			gl.glDisable(GL.GL_DEPTH_TEST);
 			if(player.status==HELPLESS)
 				gl.glColor3f(.5f,.5f,.5f);	
 			else if(player.status==INVINCIBLE)
@@ -405,7 +408,6 @@ public class GameWindow extends JPanel implements Constants {
 				gl.glColor3f(1f,0f,0f);	
 			else
 				gl.glColor3f(1f,1f,1f);
-			Element.clearOptions(gl);
 			if(player.status==WALKING) {
 				player.walk[((int)(time*.2))%8].bind();
 			} else if(!player.walls[DOWN]) {
@@ -440,27 +442,8 @@ public class GameWindow extends JPanel implements Constants {
 					}
 				}
 			gl.glEnd();
-			/*	gunther texture coming soon
-			gl.glColor3f(0f,0f,0f);	
-			gl.glBegin(GL.GL_LINES);
-				if(player.facingRight) {
-					gl.glVertex3d(player.x+.5,player.y+1.5,.1);
-					gl.glVertex3d(player.x+player.right,player.y+1.5,.1);
-				} else {
-					gl.glVertex3d(player.x+player.left,player.y+1.5,.1);
-					gl.glVertex3d(player.x+.5,player.y+1.5,.1);
-				}
-			gl.glEnd();*/
-			gl.glBegin(GL.GL_LINES);
-	 		gl.glColor3f(0f,0f,1f);
-	 		gl.glVertex3d(0,-50,0);
-	 		gl.glVertex3d(0,50,0);
-	 		gl.glColor3f(1f,0f,0f);
-			gl.glVertex3d(-50,0,0);
-			gl.glVertex3d(50,0,0);	 			
-			gl.glEnd();
+			gl.glEnable(GL.GL_DEPTH_TEST);
 			Element.setOptions(gl);
-			drawSuspicion(gl,player.suspicion);
 		}
 		/**
 		 * Displays a suspicion meter on the screen
