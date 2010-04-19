@@ -310,6 +310,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		size = new Rectangle(ZEROZERO);
 		// TODO temp
 		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard", -2));
+		addElement(new Element("darkcheck.png", "1x1dark.dat", "darkcheck", -2));
 		addElement(new Element("grass.png", "1x1square.dat", "grass", -2));
 		addElement(new Element("ladder.png", "1x1square.dat", "ladder", -1));
 		addElement(new Element("door.png", "2x1square.dat", "door", -1));
@@ -818,7 +819,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		hitBuffer = BufferUtil.newIntBuffer(48);
 		gl.glSelectBuffer(12, hitBuffer);
 		glu = new GLU();
-		gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
 		gl.glLoadIdentity();
 		gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX, modelview, 0);
