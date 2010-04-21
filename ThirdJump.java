@@ -9,11 +9,11 @@ public class ThirdJump extends Move {
 	}
 	
 	public void initiate() {
-		player.vy=1.3;
+		player.vy=.5;
 		if(player.facingRight)
-			player.vx=.6;
+			player.vx=.35;
 		else
-			player.vx=-.6;
+			player.vx=-.35;
 	}
 	public void linger() {
 		player.status = HELPLESS;

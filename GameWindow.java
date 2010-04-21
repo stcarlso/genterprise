@@ -85,8 +85,8 @@ public class GameWindow extends JPanel implements Constants {
 	//***************************PHYSICS THREAD***********************
 	public class PhysicsThread extends Thread {
 		private double kair=.5;
-		private double muk=.9;
-		private double gravity=9.8/100;
+		private double muk=6;
+		private double gravity=.025;
 		private long dt;
 		private long initiate=0;
 		private long effectStart=0;
@@ -150,35 +150,35 @@ public class GameWindow extends JPanel implements Constants {
 						if(left) {
 							player.facingRight=false;
 							if(player.status==DUCKING)
-								player.ax=-.06;
+								player.ax=-.04;
 							else if(player.walls[DOWN]) {
 								player.ax=-.1;
 								if(player.status==NORMAL)
 									player.status=WALKING;
 							} else if(player.walls[RIGHT] && (player.wallJumps==-1 || player.wallJumps==2)) {
 								player.wallJumps=1;
-								player.vy=.8;
-								player.ax=-.3;
+								player.vy=.4;
+								player.ax=-.1;
 							} else if(! (player.walls[UP] || player.walls[DOWN] || player.walls[LEFT] || player.walls[RIGHT]))
-								player.ax=-.07;
+								player.ax=-.02;
 						}
 						if(right) {
 							player.facingRight=true;
 							if(player.status==DUCKING)
-								player.ax=.06;
+								player.ax=.04;
 							else if(player.walls[DOWN]) {
 								player.ax=.1;
 								if(player.status==NORMAL)
 									player.status=WALKING;
 							} else if(player.walls[LEFT] && (player.wallJumps==1 || player.wallJumps==2)) {
 								player.wallJumps=-1;
-								player.vy=.8;
-								player.ax=.3;
+								player.vy=.4;
+								player.ax=.1;
 							} else if(! (player.walls[UP] || player.walls[DOWN] || player.walls[LEFT] || player.walls[RIGHT]))
-								player.ax=.07;
+								player.ax=.02;
 						}
 						if(up && !upDone && player.jumps>0) {
-							player.vy=.8;
+							player.vy=.4;
 							player.jumps--;
 						}
 						upDone=up;
@@ -232,7 +232,7 @@ public class GameWindow extends JPanel implements Constants {
 				if(!(player.walls[UP] && player.vy>0) && !(player.walls[DOWN] && player.vy<=0)) {
 					player.ay+=-gravity;
 					player.vy+=player.ay*dt;
-					player.y+=player.vy*dt;
+					player.y+=Math.signum(player.vy)*Math.min(.3,Math.abs(player.vy))*dt;
 				} else {
 					player.vy=0;
 					player.ay=0;
@@ -245,7 +245,7 @@ public class GameWindow extends JPanel implements Constants {
 				player.vx+=player.ax*dt;
 				//move with velocity (speed limit of 1)	
 				if(!(player.walls[LEFT] && player.vx<0) && !(player.walls[RIGHT] && player.vx>0)) {
-					player.x+=Math.signum(player.vx)*Math.min(1,Math.abs(player.vx))*dt;
+					player.x+=Math.signum(player.vx)*Math.min(.3,Math.abs(player.vx))*dt;
 				} else {					
 					player.vx=0;
 					player.ax=0;
@@ -257,7 +257,7 @@ public class GameWindow extends JPanel implements Constants {
 				player.suspicion=Math.max(0,player.suspicion-1);
 			
 				try {				
-					Thread.sleep(30L);
+					Thread.sleep(15L);
 				} catch (InterruptedException e) {}
 			}
 		}		
@@ -410,7 +410,7 @@ public class GameWindow extends JPanel implements Constants {
 			else
 				gl.glColor3f(1f,1f,1f);
 			if(player.status==WALKING) {
-				player.walk[((int)(time*.4))%8].bind();
+				player.walk[((int)(time*.1))%8].bind();
 			} else if(!player.walls[DOWN]) {
 				player.air.bind();
 			}else 
