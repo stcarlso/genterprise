@@ -65,10 +65,10 @@ public class GameWindow extends JPanel implements Constants {
 			GameObject element = itr.next();
 			if (element.getSource().getVertexArray() == null)
 				element.getSource().loadGeometry(res);
-			if(element.getZ() == 0.)
+			if(element.getZ() == 0. || element.getSource().getName().indexOf("laser") > 0)
 				elements.add(element);
 		}
-		
+
 		player= new Player();
 		GLCapabilities glcaps = new GLCapabilities(); 
 		canvas = new GLCanvas(glcaps);
@@ -288,6 +288,7 @@ public class GameWindow extends JPanel implements Constants {
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
+				if (element.getZ() != 0.) continue;
 				//floor detection
 				if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
 					&& right > element.getX() && left < element.getX()+source.getWidth()
