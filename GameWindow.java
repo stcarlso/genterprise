@@ -86,7 +86,7 @@ public class GameWindow extends JPanel implements Constants {
 	public class PhysicsThread extends Thread {
 		private double kair=.5;
 		private double muk=6;
-		private double gravity=.025;
+		private double gravity=.03;
 		private long dt;
 		private long initiate=0;
 		private long effectStart=0;
@@ -254,7 +254,8 @@ public class GameWindow extends JPanel implements Constants {
 				player.ay=0;
 				
 				//recover suspicion
-				player.suspicion=Math.max(0,player.suspicion-1);
+				if (time % 3 == 0)
+					player.suspicion=Math.max(0,player.suspicion-1);
 			
 				try {				
 					Thread.sleep(15L);
@@ -271,7 +272,6 @@ public class GameWindow extends JPanel implements Constants {
 			player.y = Math.round(1e4 * player.y)/10000.0;
 			player.vx = Math.round(1e4 * player.vx)/10000.0;
 			player.vy = Math.round(1e4 * player.vy)/10000.0;
-			System.out.println((player.vy*dt));
 			Iterator<GameObject> itr = elements.iterator();
 			player.walls[UP]=false;
 			player.walls[DOWN]=false;
