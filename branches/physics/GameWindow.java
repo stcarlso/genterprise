@@ -267,16 +267,18 @@ public class GameWindow extends JPanel implements Constants {
 		 */
 		public void collideTest() {
 			
-			player.x = Math.round(1e4 * player.x)/10000.0;
-			player.y = Math.round(1e4 * player.y)/10000.0;
-			player.left = Math.round(1e4 * player.left)/10000.0;
-			player.right = Math.round(1e4 * player.right)/10000.0;
-			player.top = Math.round(1e4 * player.top)/10000.0;
-			player.bottom = Math.round(1e4 * player.bottom)/10000.0;
+			double left = Math.round(1e4 * (player.x + player.left))/10000.0;
+			double right = Math.round(1e4 * (player.x + player.right))/10000.0;
+			double top = Math.round(1e4 * (player.y + player.top))/10000.0;
+			double bottom = Math.round(1e4 * (player.y + player.bottom))/10000.0;
+			double leftFuture = Math.round(1e4 * (player.x + player.vx*dt + player.left))/10000.0;
+			double rightFuture = Math.round(1e4 * (player.x + player.vx*dt + player.right))/10000.0;
+			double bottomFuture = Math.round(1e4 * (player.y + player.vy*dt + player.bottom))/10000.0;
+			double topFuture = Math.round(1e4 * (player.y + player.vy*dt + player.top))/10000.0;
 			player.vx = Math.round(1e4 * player.vx)/10000.0;
 			player.vy = Math.round(1e4 * player.vy)/10000.0;
 			Iterator<GameObject> itr = elements.iterator();
-			System.out.println(player.right + " " + player.vx);
+			System.out.println(right + " " + player.vx);
 			player.walls[UP]=false;
 			player.walls[DOWN]=false;
 			player.walls[LEFT]=false;
@@ -287,16 +289,16 @@ public class GameWindow extends JPanel implements Constants {
 				GameObject element = itr.next();
 				Element source = element.getSource();
 				//floor detection
-				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.x+player.right > element.getX() && player.x+player.left < element.getX()+source.getWidth()
+				if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
+					&& right > element.getX() && left < element.getX()+source.getWidth()
 					&& player.y+player.vy*dt+player.bottom+.9 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
 					player.walls[DOWN]=true;
 					System.out.println("down" + element.getX() + " "+element.getY());
 					ytemp=element.getY()+source.getHeight()+player.bottom;
 				}
 				//ceiling detection
-				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.x+player.right > element.getX() && player.x+player.left < element.getX()+source.getWidth()
+				if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
+					&& right > element.getX() && left < element.getX()+source.getWidth()
 					&& player.y+player.vy*dt+player.top-.9 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
 					player.walls[UP]=true;
 					ytemp=element.getY()-player.top;
@@ -304,14 +306,14 @@ public class GameWindow extends JPanel implements Constants {
 				//left wall detection
 				if(player.y+player.vy*dt+player.top > element.getY() && player.y+player.vy*dt+player.bottom < element.getY()+source.getHeight()
 					&& player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
-					&& player.x+player.vx*dt+player.right >= element.getX()+source.getWidth() && player.x+player.vx*dt+player.left <= element.getX()+source.getWidth()) {
+					&& rightFuture >= element.getX()+source.getWidth() && leftFuture <= element.getX()+source.getWidth()) {
 					player.walls[LEFT]=true;
 					xtemp=element.getX()+source.getWidth()-player.left;
 				}
 				//right wall detection				
 				if(player.y+player.vy*dt+player.top > element.getY() && player.y+player.vy*dt+player.bottom < element.getY()+source.getHeight()
 					&& player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
-					&& player.x+player.vx*dt+player.right >= element.getX() && player.x+player.vx*dt+player.left <= element.getX()) {
+					&& rightFuture >= element.getX() && leftFuture <= element.getX()) {
 					player.walls[RIGHT]=true;
 					xtemp=element.getX()+(1-player.right)-1;
 				}
@@ -325,40 +327,7 @@ public class GameWindow extends JPanel implements Constants {
 			if(player.walls[UP] && player.walls[DOWN]) {
 				player.status=DUCKING;
 				player.top=.9;
-			}
-			/*
-			itr=lasers.iterator();
-			while(itr.hasNext()) {
-				GameObject element = itr.next();
-				Element source = element.getSource();
-				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.y+player.vy*dt+player.bottom+.9 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
-					player.walls[DOWN]=true;
-					ytemp=element.getY()+source.getHeight()+player.bottom;
-				}
-				//ceiling detection
-				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
-					&& player.y+player.vy*dt+player.top-.9 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
-					player.walls[UP]=true;
-					ytemp=element.getY()-player.top;
-				}
-				//left wall detection
-				if(player.y+player.vy*dt+player.top > element.getY() && player.y+player.vy*dt+player.bottom < element.getY()+source.getHeight()
-					&& player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
-					&& player.x+player.vx*dt+player.right >= element.getX()+source.getWidth() && player.x+player.vx*dt+player.left <= element.getX()+source.getWidth()) {
-					player.walls[LEFT]=true;
-					xtemp=element.getX()+source.getWidth()-player.left;
-				}
-				//right wall detection				
-				if(player.y+player.vy*dt+player.top > element.getY() && player.y+player.vy*dt+player.bottom < element.getY()+source.getHeight()
-					&& player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
-					&& player.x+player.vx*dt+player.right >= element.getX() && player.x+player.vx*dt+player.left <= element.getX()) {
-					player.walls[RIGHT]=true;
-					xtemp=element.getX()+(1-player.right)-1;
-				}
-			}*/
+			}			
 		}
 	}
 	
@@ -524,11 +493,7 @@ public class GameWindow extends JPanel implements Constants {
 		public void init(GLAutoDrawable drawable) {
 			GL gl = drawable.getGL();
 			glu = new GLU();
-<<<<<<< .mine
-			gl.glClearColor(0.3f,0.3f,0.3f,1.0f);
-=======
 			gl.glClearColor(0.2f,0.2f,0.2f,1.0f);
->>>>>>> .r86
 			gl.glMatrixMode(GL.GL_PROJECTION);
 		 	gl.glLoadIdentity();
 		 	gl.glMatrixMode(GL.GL_MODELVIEW);

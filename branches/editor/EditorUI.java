@@ -335,7 +335,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("platformsingle.png", "1x1square.dat", "platformsingle", 0));
 		addElement(new Element("platformcorner.png", "1x1square.dat", "platformcorner", 0));
 		addElement(new Element("platformlight.png", "1x1square.dat", "platformlight", 0));
-		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 0));
+		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 1));
 		addElement(new Element("laserbase.png", "1x1square.dat", "laserbase", 1));
 		addElement(new Element("lasermid.png", "1x1square.dat", "lasermid", 1));
 		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot-1", 2));
