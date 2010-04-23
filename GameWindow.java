@@ -26,6 +26,7 @@ public class GameWindow extends JPanel implements Constants {
 	Level level;
 	Block block;
 	List<GameObject> elements;
+	List<GameObject> lasers;
 	
 	boolean up;
 	boolean upDone;
@@ -55,7 +56,7 @@ public class GameWindow extends JPanel implements Constants {
 	public GameWindow() {
 		super(new BorderLayout());	
 		res = new FilesystemResources(null, new File("res/"));
-		LevelReader lreader = new LevelReader(res, "../level1.dat");
+		LevelReader lreader = new LevelReader(res, "../level1crawl.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
@@ -101,14 +102,16 @@ public class GameWindow extends JPanel implements Constants {
 				time+=dt;
 				
 				//player state determination
-				//collideTest();
 				if(player.walls[DOWN] && player.vy<=0) { //this condition will be obsolete after level editor, tells whether player is grounded
 					player.jumps=2;
 					player.wallJumps=2;
-					if(down && player.ability==null)
+					if(down && player.ability==null) {
 						player.status=DUCKING;
-					else
+						player.top=.9;
+					} else {
 						player.status=NORMAL;
+						player.top=1.75;
+					}
 					if(player.ability!=null && player.ability instanceof AirDodge) {
 						player.status=NORMAL;
 						player.ability=null;
@@ -237,10 +240,6 @@ public class GameWindow extends JPanel implements Constants {
 					player.vy=0;
 					player.ay=0;
 				}
-
-						/*
-				if(player.y<0) //obsolete after block collision, stops you from falling into ground
-					player.y=0;*/
 				
 				player.vx+=player.ax*dt;
 				//move with velocity (speed limit of 1)	
@@ -270,9 +269,14 @@ public class GameWindow extends JPanel implements Constants {
 			
 			player.x = Math.round(1e4 * player.x)/10000.0;
 			player.y = Math.round(1e4 * player.y)/10000.0;
+			player.left = Math.round(1e4 * player.left)/10000.0;
+			player.right = Math.round(1e4 * player.right)/10000.0;
+			player.top = Math.round(1e4 * player.top)/10000.0;
+			player.bottom = Math.round(1e4 * player.bottom)/10000.0;
 			player.vx = Math.round(1e4 * player.vx)/10000.0;
 			player.vy = Math.round(1e4 * player.vy)/10000.0;
 			Iterator<GameObject> itr = elements.iterator();
+			System.out.println(player.right + " " + player.vx);
 			player.walls[UP]=false;
 			player.walls[DOWN]=false;
 			player.walls[LEFT]=false;
@@ -283,6 +287,50 @@ public class GameWindow extends JPanel implements Constants {
 				GameObject element = itr.next();
 				Element source = element.getSource();
 				//floor detection
+				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
+					&& player.x+player.right > element.getX() && player.x+player.left < element.getX()+source.getWidth()
+					&& player.y+player.vy*dt+player.bottom+.9 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
+					player.walls[DOWN]=true;
+					System.out.println("down" + element.getX() + " "+element.getY());
+					ytemp=element.getY()+source.getHeight()+player.bottom;
+				}
+				//ceiling detection
+				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
+					&& player.x+player.right > element.getX() && player.x+player.left < element.getX()+source.getWidth()
+					&& player.y+player.vy*dt+player.top-.9 <= element.getY() && player.y+player.vy*dt+player.top >= element.getY()) {
+					player.walls[UP]=true;
+					ytemp=element.getY()-player.top;
+				}
+				//left wall detection
+				if(player.y+player.vy*dt+player.top > element.getY() && player.y+player.vy*dt+player.bottom < element.getY()+source.getHeight()
+					&& player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
+					&& player.x+player.vx*dt+player.right >= element.getX()+source.getWidth() && player.x+player.vx*dt+player.left <= element.getX()+source.getWidth()) {
+					player.walls[LEFT]=true;
+					xtemp=element.getX()+source.getWidth()-player.left;
+				}
+				//right wall detection				
+				if(player.y+player.vy*dt+player.top > element.getY() && player.y+player.vy*dt+player.bottom < element.getY()+source.getHeight()
+					&& player.y+player.top > element.getY() && player.y+player.bottom < element.getY()+source.getHeight()
+					&& player.x+player.vx*dt+player.right >= element.getX() && player.x+player.vx*dt+player.left <= element.getX()) {
+					player.walls[RIGHT]=true;
+					xtemp=element.getX()+(1-player.right)-1;
+				}
+			}
+			xtemp = Math.round(1e4 * xtemp)/10000.0;
+			ytemp = Math.round(1e4 * ytemp)/10000.0;
+			if (player.walls[LEFT] != player.walls[RIGHT])
+				player.x=xtemp;
+			if(player.walls[UP] != player.walls[DOWN])
+				player.y=ytemp;
+			if(player.walls[UP] && player.walls[DOWN]) {
+				player.status=DUCKING;
+				player.top=.9;
+			}
+			/*
+			itr=lasers.iterator();
+			while(itr.hasNext()) {
+				GameObject element = itr.next();
+				Element source = element.getSource();
 				if(player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
 					&& player.x+player.vx*dt+player.right > element.getX() && player.x+player.vx*dt+player.left < element.getX()+source.getWidth()
 					&& player.y+player.vy*dt+player.bottom+.9 >= element.getY()+source.getHeight() && player.y+player.vy*dt+player.bottom <= element.getY()+source.getHeight()) {
@@ -310,13 +358,7 @@ public class GameWindow extends JPanel implements Constants {
 					player.walls[RIGHT]=true;
 					xtemp=element.getX()+(1-player.right)-1;
 				}
-			}
-			xtemp = Math.round(1e4 * xtemp)/10000.0;
-			ytemp = Math.round(1e4 * ytemp)/10000.0;
-			if (player.walls[LEFT] != player.walls[RIGHT])
-				player.x=xtemp;
-			if(player.walls[UP] != player.walls[DOWN])
-				player.y=ytemp;
+			}*/
 		}
 	}
 	
@@ -466,7 +508,7 @@ public class GameWindow extends JPanel implements Constants {
 			gl.glDisableClientState(GL.GL_COLOR_ARRAY);
 			gl.glColor4f(0.7f, 0f, 0f, 0.3f);
 			gl.glVertexPointer(3, GL.GL_FLOAT, 0, this.suspicion);
-			gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 2 * ((2 * suspicion / 5) / 2) + 3);
+			gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 2 * ((2 * Math.min(360, suspicion) / 5) / 2) + 3);
 			gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
 			gl.glEnableClientState(GL.GL_COLOR_ARRAY);
 			gl.glEnable(GL.GL_DEPTH_TEST);
@@ -482,7 +524,11 @@ public class GameWindow extends JPanel implements Constants {
 		public void init(GLAutoDrawable drawable) {
 			GL gl = drawable.getGL();
 			glu = new GLU();
+<<<<<<< .mine
+			gl.glClearColor(0.3f,0.3f,0.3f,1.0f);
+=======
 			gl.glClearColor(0.2f,0.2f,0.2f,1.0f);
+>>>>>>> .r86
 			gl.glMatrixMode(GL.GL_PROJECTION);
 		 	gl.glLoadIdentity();
 		 	gl.glMatrixMode(GL.GL_MODELVIEW);
@@ -531,7 +577,7 @@ public class GameWindow extends JPanel implements Constants {
 			}
 		}
 		/**
-		 * Creates a vertex array for the supicion meter
+		 * Creates a vertex array for the suspicion meter
 		 */
 		private void suspicion() {
 			suspicion = BufferUtil.newFloatBuffer(147 * 3);
