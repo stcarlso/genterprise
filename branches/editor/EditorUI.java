@@ -329,7 +329,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("junct2light.png", "1x1square.dat", "junct2light", 0));
 		addElement(new Element("junct3.png", "1x1square.dat", "junct3", 0));
 		addElement(new Element("junct3light.png", "1x1square.dat", "junct3light", 0));
+		addElement(new Element("junct3open.png", "1x1square.dat", "junct3", 0));
 		addElement(new Element("junct4.png", "1x1square.dat", "junct4", 0));
+		addElement(new Element("junct4open.png", "1x1square.dat", "junct3", 0));
 		addElement(new Element("platformmid.png", "1x1square.dat", "platformmid", 0));
 		addElement(new Element("platformend.png", "1x1square.dat", "platformend", 0));
 		addElement(new Element("platformsingle.png", "1x1square.dat", "platformsingle", 0));
@@ -342,7 +344,13 @@ public class EditorUI extends JFrame implements GLEventListener {
 		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 1));
 		addElement(new Element("laserbase.png", "1x1square.dat", "laserbase", 1));
 		addElement(new Element("lasermid.png", "1x1square.dat", "lasermid", 1));
+<<<<<<< .mine
 		addElement(new Element("laserz.png", "1x1square.dat", "laserz", 1));
+		addElement(new Element("camera.png", "1x1square.dat", "camera", 1));
+		addElement(new Element("cameramount.png", "1x1square.dat", "cameramount", 1));
+=======
+		addElement(new Element("laserz.png", "1x1square.dat", "laserz", 1));
+>>>>>>> .r89
 		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot-1", 2));
 
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
