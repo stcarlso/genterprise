@@ -63,6 +63,7 @@ public class MusicThread extends Thread {
 						Clip clip = map.get(song);
 						if (clip != null) {
 							// wav
+							clip.stop();
 							clip.setFramePosition(0);
 							clip.start();
 						}

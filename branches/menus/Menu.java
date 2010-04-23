@@ -30,13 +30,13 @@ public class Menu extends JFrame {
 		for (int i = 0; i < modes.length; i++)
 			if (modes[i].getRefreshRate() == rate && modes[i].getBitDepth() == depth)
 				System.out.println(modes[i].getWidth() + "x" + modes[i].getHeight());
-		setBackground(Color.BLACK);
-		setLayout(new BorderLayout(10, 10));
+		getContentPane().setBackground(Color.BLACK);
+		getContentPane().setLayout(new BorderLayout(10, 10));
 		JLabel header = new JLabel(res.getIcon("title.png"));
 		header.setHorizontalAlignment(SwingConstants.CENTER);
 		header.setBorder(BorderFactory.createEmptyBorder(50, 0, 50, 0));
 		header.setForeground(Color.WHITE);
-		add(header, BorderLayout.NORTH);
+		getContentPane().add(header, BorderLayout.NORTH);
 		JComponent vert = new Box(BoxLayout.Y_AXIS);
 		vert.add(getMenuItem("Campaign", "campaign"));
 		vert.add(Box.createVerticalStrut(30));
@@ -45,7 +45,7 @@ public class Menu extends JFrame {
 		vert.add(getMenuItem("Options", "options"));
 		vert.add(Box.createVerticalStrut(30));
 		vert.add(getMenuItem("Exit", "exit"));
-		add(vert, BorderLayout.CENTER);
+		getContentPane().add(vert, BorderLayout.CENTER);
 		dev.setFullScreenWindow(this);
 	}
 	private JButton getMenuItem(String text, String code) {
@@ -54,7 +54,7 @@ public class Menu extends JFrame {
 		myButton.setFocusable(false);
 		myButton.setForeground(Color.WHITE);
 		myButton.setFont(myButton.getFont().deriveFont(Font.PLAIN, 26.f));
-		//myButton.setContentAreaFilled(false);
+		myButton.setContentAreaFilled(false);
 		myButton.setOpaque(true);
 		myButton.setBackground(BF);
 		myButton.setAlignmentX(JComponent.CENTER_ALIGNMENT);

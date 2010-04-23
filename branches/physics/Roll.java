@@ -16,7 +16,8 @@ public class Roll extends Move {
 		player.status = NORMAL;
 	}
 	public void initiate() {
-		player.vx=dir*.2;
+		player.vx=dir*0.5;
+		player.ax=dir*0.5;
 	}
 	public void linger() {}
 }
