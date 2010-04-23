@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.event.*;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 
@@ -15,13 +16,15 @@ public class Menu extends JFrame {
 		new Menu().start();
 	}
 
+	private EventListener events;
+
 	public Menu() {
 		super("Menu test");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setUndecorated(true);
 	}
 	public void start() {
-		FilesystemResources res = new FilesystemResources(null, new java.io.File("res/"));
+		events = new EventListener();
 		GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
 		DisplayMode[] modes = dev.getDisplayModes();
 		DisplayMode curMode = dev.getDisplayMode();
@@ -32,8 +35,9 @@ public class Menu extends JFrame {
 				System.out.println(modes[i].getWidth() + "x" + modes[i].getHeight());
 		getContentPane().setBackground(Color.BLACK);
 		getContentPane().setLayout(new BorderLayout(10, 10));
-		JLabel header = new JLabel(res.getIcon("title.png"));
+		JLabel header = new JLabel("Gunther's Enterprise");
 		header.setHorizontalAlignment(SwingConstants.CENTER);
+		header.setFont(header.getFont().deriveFont(56.f));
 		header.setBorder(BorderFactory.createEmptyBorder(50, 0, 50, 0));
 		header.setForeground(Color.WHITE);
 		getContentPane().add(header, BorderLayout.NORTH);
@@ -52,6 +56,7 @@ public class Menu extends JFrame {
 		JButton myButton = new JButton(text);
 		myButton.setBorder(BORDER);
 		myButton.setFocusable(false);
+		myButton.setActionCommand(code);
 		myButton.setForeground(Color.WHITE);
 		myButton.setFont(myButton.getFont().deriveFont(Font.PLAIN, 26.f));
 		myButton.setContentAreaFilled(false);
@@ -61,6 +66,18 @@ public class Menu extends JFrame {
 		myButton.setPreferredSize(new Dimension(300, myButton.getPreferredSize().height));
 		myButton.setMinimumSize(myButton.getPreferredSize());
 		myButton.setMaximumSize(myButton.getPreferredSize());
+		myButton.addActionListener(events);
 		return myButton;
+	}
+
+	private class EventListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			String cmd = e.getActionCommand();
+			if (cmd == null) return;
+			else if (cmd.equals("exit")) {
+				GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().setFullScreenWindow(null);
+				System.exit(0);
+			}
+		}
 	}
 }
