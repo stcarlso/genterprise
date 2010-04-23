@@ -482,7 +482,7 @@ public class GameWindow extends JPanel implements Constants {
 		public void init(GLAutoDrawable drawable) {
 			GL gl = drawable.getGL();
 			glu = new GLU();
-			gl.glClearColor(0.0f,0.0f,0.0f,1.0f);
+			gl.glClearColor(0.2f,0.2f,0.2f,1.0f);
 			gl.glMatrixMode(GL.GL_PROJECTION);
 		 	gl.glLoadIdentity();
 		 	gl.glMatrixMode(GL.GL_MODELVIEW);

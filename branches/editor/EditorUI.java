@@ -819,7 +819,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		hitBuffer = BufferUtil.newIntBuffer(48);
 		gl.glSelectBuffer(12, hitBuffer);
 		glu = new GLU();
-		gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		gl.glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		gl.glMatrixMode(GL.GL_MODELVIEW);
 		gl.glLoadIdentity();
 		gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX, modelview, 0);
