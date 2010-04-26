@@ -59,6 +59,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	public static final int PREVIEW = 8;
 	/**
+	 * Kill all resources in use.
+	 */
+	public static final int KILLALL = 9;
+	/**
 	 * The size of placable block buttons.
 	 */
 	public static final Dimension BLOCK_SIZE = new Dimension(84, 56);
@@ -297,6 +301,26 @@ public class EditorUI extends JFrame implements GLEventListener {
 		fileName = null;
 	}
 	/**
+	 * Loads in the block list from a file.
+	 */
+	public void readBlockList() {
+		try {
+			BufferedReader br = new BufferedReader(new FileReader("blocks.txt"));
+			String line, texSrc, geoSrc, name; StringTokenizer str; double z;
+			while ((line = br.readLine()) != null) {
+				str = new StringTokenizer(line, ",");
+				texSrc = str.nextToken().trim();
+				geoSrc = str.nextToken().trim();
+				name = str.nextToken().trim();
+				z = Double.parseDouble(str.nextToken().trim());
+				addElement(new Element(texSrc, geoSrc, name, z));
+			}
+			br.close();
+		} catch (Exception e) {
+			Utils.showWarning("No blocks.txt found or format bad, try Tools > Update Block List");
+		}
+	}
+	/**
 	 * Invoked to start the level editor.
 	 */
 	public void start() {
@@ -308,51 +332,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		dropping = null;
 		coords = null;
 		size = new Rectangle(ZEROZERO);
-		// TODO temp
-		addElement(new Element("checkerboard.png", "1x1square.dat", "checkerboard", -2));
-		addElement(new Element("darkcheck.png", "1x1dark.dat", "darkcheck", -2));
-		addElement(new Element("grass.png", "1x1square.dat", "grass", -2));
-		addElement(new Element("ladder.png", "1x1square.dat", "ladder", -1));
-		addElement(new Element("door.png", "2x1square.dat", "door", -1));
-		addElement(new Element("ceilinglighting.png", "1x1square.dat", "ceilinglighting", 2));
-		addElement(new Element("angleblock.png", "1x1square.dat", "angleblock", 0));
-		addElement(new Element("angletransition.png", "1x1square.dat", "angletransition", 0));
-		addElement(new Element("ceiling.png", "1x1square.dat", "ceiling", 0));
-		addElement(new Element("wall.png", "1x1square.dat", "wall", 0));
-		addElement(new Element(null, "1x1black.dat", "filler", 0));
-		addElement(new Element("floor.png", "1x1square.dat", "floor", 0)); //note change used to be bottom
-		addElement(new Element("floorlight.png", "1x1square.dat", "floorlight", 0)); 
-		addElement(new Element("floorceiling.png", "1x1square.dat", "floorceiling", 0)); 
-		addElement(new Element("junct2.png", "1x1square.dat", "junct2", 0));
-		addElement(new Element("junct2wall.png", "1x1square.dat", "junct2wall", 0));
-		addElement(new Element("junct2corner.png", "1x1square.dat", "junct2corner", 0));
-		addElement(new Element("junct2light.png", "1x1square.dat", "junct2light", 0));
-		addElement(new Element("junct3.png", "1x1square.dat", "junct3", 0));
-		addElement(new Element("junct3light.png", "1x1square.dat", "junct3light", 0));
-		addElement(new Element("junct3open.png", "1x1square.dat", "junct3", 0));
-		addElement(new Element("junct4.png", "1x1square.dat", "junct4", 0));
-		addElement(new Element("junct4open.png", "1x1square.dat", "junct3", 0));
-		addElement(new Element("platformmid.png", "1x1square.dat", "platformmid", 0));
-		addElement(new Element("platformend.png", "1x1square.dat", "platformend", 0));
-		addElement(new Element("platformsingle.png", "1x1square.dat", "platformsingle", 0));
-		addElement(new Element("platformcorner.png", "1x1square.dat", "platformcorner", 0));
-		addElement(new Element("platformlight.png", "1x1square.dat", "platformlight", 0));
-		addElement(new Element("junct3open.png", "1x1square.dat", "junct3open", 0));
-		addElement(new Element("junct4open.png", "1x1square.dat", "junct4open", 0));
-		addElement(new Element("camera.png", "1x1square.dat", "camera", 1));
-		addElement(new Element("cameraMount.png", "1x1square.dat", "cameraMount", 1));
-		addElement(new Element("savepoint.png", "2x1square.dat", "savepoint", 1));
-		addElement(new Element("laserbase.png", "1x1square.dat", "laserbase", 1));
-		addElement(new Element("lasermid.png", "1x1square.dat", "lasermid", 1));
-<<<<<<< .mine
-		addElement(new Element("laserz.png", "1x1square.dat", "laserz", 1));
-		addElement(new Element("camera.png", "1x1square.dat", "camera", 1));
-		addElement(new Element("cameramount.png", "1x1square.dat", "cameramount", 1));
-=======
-		addElement(new Element("laserz.png", "1x1square.dat", "laserz", 1));
->>>>>>> .r89
-		addElement(new Element("static-spot-1.png", "2x2square.dat", "static-spot-1", 2));
-
+		readBlockList();
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
@@ -370,6 +350,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		canvas.requestFocus();
 		center();
 		startRun();
+		canvas.requestFocus();
 	}
 	/**
 	 * Adds the element to the list. Does NOT change the screen.
@@ -543,6 +524,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		edit.add(createMenuItem("Properties", "prop", KeyEvent.VK_1));
 		edit.add(createMenuItem("Code", "code", KeyEvent.VK_E));
 		across.add(edit);
+		JMenu tools = new JMenu("Tools");
+		tools.setMnemonic(KeyEvent.VK_T);
+		tools.add(createMenuItem("Refresh Block List", "blocklist", 0));
+		tools.add(createMenuItem("Auto Resource Generator", "resgen", 0));
+		across.add(tools);
 		setJMenuBar(across);
 	}
 	/**
@@ -662,6 +648,16 @@ public class EditorUI extends JFrame implements GLEventListener {
 							el.loadGeometry(current);
 						if (!el.hasTexture())
 							el.loadTexture(current);
+					}
+				}
+				break;
+			case KILLALL:
+				synchronized (block) {
+					Element el;
+					for (GameObject o : block.getElements()) {
+						el = o.getSource();
+						el.releaseGeometry();
+						el.releaseTexture();
 					}
 				}
 				break;
@@ -1116,6 +1112,17 @@ public class EditorUI extends JFrame implements GLEventListener {
 		return false;
 	}
 	/**
+	 * Brings up a yes/no dialog.
+	 * 
+	 * @param message the confirmation message
+	 * @return if the user chose yes
+	 */
+	private boolean yesNo(String message) {
+		int choice = JOptionPane.showConfirmDialog(this, message,
+			"Confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+		return choice == JOptionPane.YES_OPTION;
+	}
+	/**
 	 * Sets properties on the selected block.
 	 */
 	private void doProps() {
@@ -1278,6 +1285,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			}
 		}
 	}
+
 	/**
 	 * Listens for events. All your events are belong to me.
 	 */
@@ -1352,7 +1360,20 @@ public class EditorUI extends JFrame implements GLEventListener {
 			else if (cmd.equals("save")) save(false);
 			else if (cmd.equals("open")) open();
 			else if (cmd.equals("new")) newFile();
-			else if (cmd.equals("code")) {
+			else if (cmd.equals("blocklist") &&
+				yesNo("Regenerate block list? Will close the editor without save!!!\n" +
+					"You should probably auto resource first if you have not already.")) {
+				stopRun();
+				dispose();
+				MkList.main(new String[] { "-u" });
+				System.exit(0);
+			} else if (cmd.equals("resgen") &&
+				yesNo("Generate res/ folder? Will close the editor without save!!!")) {
+				stopRun();
+				dispose();
+				AutoResource.main(null);
+				System.exit(0);
+			} else if (cmd.equals("code")) {
 				codeDialog.setVisible(true);
 				editCode.requestFocus();
 			} else if (cmd.equals("prop")) {
