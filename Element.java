@@ -9,7 +9,7 @@ import com.sun.opengl.util.texture.*;
  * 
  * @author Stephen
  */
-public class Element implements java.io.Serializable {
+public class Element implements java.io.Serializable, Comparable<Element> {
 	private static final long serialVersionUID = 238146789346781278L;
 
 	/**
@@ -97,6 +97,9 @@ public class Element implements java.io.Serializable {
 	public boolean equals(Object o) {
 		Element other = (Element)o;
 		return name.equals(other.getName());
+	}
+	public int compareTo(Element other) {
+		return name.compareTo(other.getName());
 	}
 	/**
 	 * Gets the default Z buffer coordinate.

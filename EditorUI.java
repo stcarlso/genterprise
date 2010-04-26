@@ -137,6 +137,18 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private Map<String, Element> elements;
 	/**
+	 * Categories of placable elements go here. Hugely faster placement!
+	 */
+	private Map<String, List<Element>> category;
+	/**
+	 * List of available categories.
+	 */
+	private JList categoryList;
+	/**
+	 * Model for the category list.
+	 */
+	private CategoryListModel model;
+	/**
 	 * The one-stop shop for icons.
 	 */
 	private IconBuilder icons;
@@ -307,17 +319,37 @@ public class EditorUI extends JFrame implements GLEventListener {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader("blocks.txt"));
 			String line, texSrc, geoSrc, name; StringTokenizer str; double z;
+			category.clear(); Element element;
+			List<Element> list = new ArrayList<Element>(32);
+			category.put("No category", list);
 			while ((line = br.readLine()) != null) {
 				str = new StringTokenizer(line, ",");
 				texSrc = str.nextToken().trim();
-				if (texSrc.equalsIgnoreCase("null"))
-					texSrc = null;
-				geoSrc = str.nextToken().trim();
-				name = str.nextToken().trim();
-				z = Double.parseDouble(str.nextToken().trim());
-				addElement(new Element(texSrc, geoSrc, name, z));
+				if (str.countTokens() < 1) {
+					Collections.sort(list);
+					list = new ArrayList<Element>(32);
+					// section header
+					if (texSrc.startsWith("["))
+						texSrc = texSrc.substring(1);
+					if (texSrc.endsWith("]"))
+						texSrc = texSrc.substring(0, texSrc.length() - 1);
+					category.put(texSrc, list);
+				} else {
+					// real element
+					if (texSrc.equalsIgnoreCase("null"))
+						texSrc = null;
+					geoSrc = str.nextToken().trim();
+					name = str.nextToken().trim();
+					z = Double.parseDouble(str.nextToken().trim());
+					element = new Element(texSrc, geoSrc, name, z);
+					addElement(element);
+					list.add(element);
+				}
 			}
+			Collections.sort(list);
 			br.close();
+			if (!category.isEmpty())
+				setCategory(category.keySet().iterator().next());
 		} catch (Exception e) {
 			Utils.showWarning("No blocks.txt found or format bad, try Tools > Update Block List");
 		}
@@ -329,12 +361,12 @@ public class EditorUI extends JFrame implements GLEventListener {
 		// FIXME replace with the jar one
 		root = new FilesystemResources(null, new File("res/"));
 		current = new FilesystemResources(root, new File("res/"));
+		category = new TreeMap<String, List<Element>>();
 		depthBuffer = BufferUtil.newFloatBuffer(1);
 		icons = new IconBuilder(current);
 		dropping = null;
 		coords = null;
 		size = new Rectangle(ZEROZERO);
-		readBlockList();
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBackground(Color.WHITE);
 		setResizable(true);
@@ -342,6 +374,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		getContentPane().setLayout(new BorderLayout());
 		setupGL();
 		setupUI();
+		readBlockList();
 		loadBlocks();
 		addWindowFocusListener(events);
 		addWindowListener(events);
@@ -392,11 +425,24 @@ public class EditorUI extends JFrame implements GLEventListener {
 		cancel.setFocusable(false);
 		cancel.setActionCommand("done");
 		cancel.addActionListener(events);
+		model = new CategoryListModel();
+		categoryList = new JList(model);
+		categoryList.setFocusable(false);
+		categoryList.addMouseListener(model);
+		categoryList.setPrototypeCellValue("000000000000000000000000000");
+		JScrollPane sp = new JScrollPane(categoryList);
+		sp.setOpaque(false);
+		sp.getViewport().setOpaque(false);
+		sp.setBorder(BorderFactory.createEmptyBorder());
+		sp.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		sp.setMaximumSize(new Dimension(200, Short.MAX_VALUE));
 		JComponent horiz = new Box(BoxLayout.X_AXIS);
 		horiz.add(Box.createHorizontalStrut(5));
 		horiz.add(cancel);
 		horiz.add(Box.createHorizontalStrut(5));
 		horiz.add(pane);
+		horiz.add(Box.createHorizontalStrut(5));
+		horiz.add(sp);
 		horiz.add(Box.createHorizontalStrut(5));
 		getContentPane().add(horiz, BorderLayout.NORTH);
 		canvas.addMouseListener(events);
@@ -553,7 +599,6 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Loads the blocks.
 	 */
 	private void loadBlocks() {
-		available.removeAll();
 		Iterator<Element> it = elements.values().iterator();
 		Element element;
 		while (it.hasNext()) {
@@ -564,13 +609,27 @@ public class EditorUI extends JFrame implements GLEventListener {
 			} catch (Exception e) {
 				Utils.showWarning("Unable to load geometry for " + element + ".");
 			}
-			available.add(new PlacableBlock(element));
 		}
-		if (elements.size() % 2 > 0)
+	}
+	/**
+	 * Changes the category.
+	 * 
+	 * @param name the new category
+	 */
+	private void setCategory(String name) {
+		List<Element> blocks = category.get(name);
+		if (blocks == null) return;
+		available.removeAll();
+		Iterator<Element> it = blocks.iterator();
+		while (it.hasNext())
+			available.add(new PlacableBlock(it.next()));
+		if (blocks.size() % 2 > 0)
 			available.add(Box.createGlue());
 		available.validate();
 		available.repaint();
 		available.scrollRectToVisible(ZEROZERO);
+		model.update();
+		categoryList.setSelectedValue(name, true);
 	}
 	/**
 	 * Rotates the current block.
@@ -695,7 +754,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			renderScene(gl);
 			grid(gl);
 		}
-		Utils.sleep(15L);
+		Utils.sleep(5L);
 	}
 	/**
 	 * Correctly rotates the element.
@@ -821,6 +880,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 				gl.glVertex3f(xc - gw - 1, yc + y, 9.f);
 				gl.glVertex3f(xc + gw + 1, yc + y, 9.f);
 			}
+			gl.glEnd();
+			// gunther starts at 0,0,0
+			gl.glBegin(GL.GL_QUADS);
+			gl.glColor4f(0.5f, 0.f, 0.f, 0.1f);
+			gl.glVertex3f(0.f, 0.f, 9.f);
+			gl.glVertex3f(0.f, 1.f, 9.f);
+			gl.glVertex3f(1.f, 1.f, 9.f);
+			gl.glVertex3f(1.f, 0.f, 9.f);
 			gl.glEnd();
 		}
 	}
@@ -1523,6 +1590,36 @@ public class EditorUI extends JFrame implements GLEventListener {
 			synchronized (eventSync) {
 				event = RENDER;
 			}
+		}
+	}
+
+	private class CategoryListModel extends AbstractListModel implements MouseListener {
+		private static final long serialVersionUID = 0L;
+
+		public void mouseClicked(MouseEvent e) {}
+		public void mouseEntered(MouseEvent e) {}
+		public void mouseExited(MouseEvent e) {}
+		public void mousePressed(MouseEvent e) {}
+		public void mouseReleased(MouseEvent e) {
+			int index = categoryList.getSelectedIndex();
+			String category = getCategory(index);
+			setCategory(category);
+		}
+		public Object getElementAt(int index) {
+			return getCategory(index);
+		}
+		public String getCategory(int index) {
+			Iterator<String> it = category.keySet().iterator();
+			for (int i = 0; it.hasNext(); i++)
+				if (index == i) return it.next();
+				else it.next();
+			return null;
+		}
+		public void update() {
+			fireContentsChanged(this, 0, getSize());
+		}
+		public int getSize() {
+			return category.size();
 		}
 	}
 }
