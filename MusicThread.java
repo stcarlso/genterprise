@@ -7,25 +7,6 @@ import javax.sound.sampled.*;
  * @author Stephen
  */
 public class MusicThread extends Thread {
-	public static void main(String[] args) {
-		MusicThread t = new MusicThread(new FilesystemResources(null, new java.io.File("SFX/")));
-		t.start();
-		t.load("ping.wav");
-		t.load("aoogahorn.wav");
-		t.load("intruderalert.wav");
-		t.load("clocktickfast.wav");
-		Utils.sleep(1000L);
-		t.startSFX("clocktickfast.wav");
-		Utils.sleep(500L);
-		t.startSFX("intruderalert.wav");
-		Utils.sleep(1000L);
-		t.startSFX("ping.wav");
-		Utils.sleep(300L);
-		t.startSFX("aoogahorn.wav");
-		Utils.sleep(3000L);
-		System.exit(0);
-	}
-
 	/**
 	 * Map of loaded sounds.
 	 */
@@ -47,6 +28,7 @@ public class MusicThread extends Thread {
 	public MusicThread(ResourceGetter res) {
 		super("Music Thread");
 		setPriority(Thread.MIN_PRIORITY + 1);
+		setDaemon(true);
 		map = new HashMap<String, Clip>(64);
 		this.res = res;
 		toPlay = new LinkedList<String>();
