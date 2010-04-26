@@ -88,6 +88,7 @@ public abstract class ResourceGetter {
 			int read;
 			while ((read = in.read(buffer)) > 0)
 				out.write(buffer, 0, read);
+			in.close();
 			out.close();
 			// slow and inefficient - avoid this method
 			return out.toByteArray();
@@ -160,7 +161,10 @@ public abstract class ResourceGetter {
 	 * @return the image
 	 */
 	protected Image loadImage(String src) throws IOException {
-		return ImageIO.read(openResource("images/" + src));
+		InputStream is = openResource("images/" + src);
+		Image out = ImageIO.read(is);
+		is.close();
+		return out;
 	}
 	/**
 	 * Loads the texture specified by src into the cache.
@@ -170,6 +174,9 @@ public abstract class ResourceGetter {
 	 * @return the texture
 	 */
 	protected Texture loadTexture(String src) throws IOException {
-		return TextureIO.newTexture(ImageIO.read(openResource("textures/" + src)), true);
+		InputStream is = openResource("textures/" + src);
+		Texture t = TextureIO.newTexture(ImageIO.read(is), true);
+		is.close();
+		return t;
 	}
 }

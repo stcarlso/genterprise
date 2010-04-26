@@ -21,6 +21,7 @@ public class AutoResource {
 			die("No res directory.");
 		File models = new File(branches, "models");
 		File textures = new File(models, "textures");
+		File images = new File(models, "images");
 		File resModels = new File(res, "models");
 		if (!resModels.exists() && !resModels.mkdir())
 			die("No res/models directory.");
@@ -33,10 +34,21 @@ public class AutoResource {
 		if (!resImages.exists() && !resImages.mkdir())
 			die("No res/images directory.");
 		emptyDir(resImages);
+		File defaultJava = new File(res, "default.java");
+		try {
+			if (!defaultJava.exists() && !defaultJava.createNewFile())
+				die("No res/default.java file (it can be empty).");
+		} catch (IOException e) {
+			die("No res/default.java file (it can be empty).");
+		}
 		if (!models.exists() || !textures.exists())
 			die("Could not find models or textures. Please SVN Update.");
+		FileFilter ifilter = new ExtensionFilter(".png");
 		File[] modelList = models.listFiles(new ExtensionFilter(".dat"));
-		File[] textureList = textures.listFiles(new ExtensionFilter(".png"));
+		File[] textureList = textures.listFiles(ifilter);
+		File[] imageList = null;
+		if (images.canRead())
+			imageList = images.listFiles(ifilter);
 		for (File model : modelList) {
 			copyFile(model, new File(resModels, model.getName().toLowerCase()));
 			System.out.println("wrote res/models/" + model.getName());
@@ -52,9 +64,21 @@ public class AutoResource {
 			} catch (Exception e) {
 				die("Could not write '" + o1.getAbsolutePath() + "'!");
 			}
-			System.out.println("wrote res/textures/" + resource.getName());
+			System.out.println("wrote res/textures/" + resource.getName().toLowerCase());
 			copyFile(o1, new File(resImages, resource.getName().toLowerCase()));
-			System.out.println("wrote res/images/" + resource.getName());
+			System.out.println("wrote res/images/" + resource.getName().toLowerCase());
+		}
+		if (imageList != null) for (File resource : imageList) {
+			img = new ImageIcon(resource.getPath()).getImage();
+			if (img == null)
+				die("Could not load '" + resource.getPath() + "'; try opening and re-saving with Preview or Windows Picture and Fax Viewer.");
+			o1 = new File(resImages, resource.getName().toLowerCase());
+			try {
+				ImageIO.write(Utils.imageToBuffer(img), "png", o1);
+			} catch (Exception e) {
+				die("Could not write '" + o1.getAbsolutePath() + "'!");
+			}
+			System.out.println("wrote res/images/" + resource.getName().toLowerCase());
 		}
 	}
 	private static void emptyDir(File dir) {
