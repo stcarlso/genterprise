@@ -8,7 +8,7 @@ angleblock.png, 1x1square.dat, angleblock, 0
 angletransition.png, 1x1square.dat, angletransition, 0
 ceiling.png, 1x1square.dat, ceiling, 0
 wall.png, 1x1square.dat, wall, 0
-addElement(new Element(null, 1x1black.dat, filler, 0
+null, 1x1black.dat, filler, 0
 floor.png, 1x1square.dat, floor, 0
 floorlight.png, 1x1square.dat, floorlight, 0 
 floorceiling.png, 1x1square.dat, floorceiling, 0 
