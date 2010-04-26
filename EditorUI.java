@@ -310,6 +310,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 			while ((line = br.readLine()) != null) {
 				str = new StringTokenizer(line, ",");
 				texSrc = str.nextToken().trim();
+				if (texSrc.equalsIgnoreCase("null"))
+					texSrc = null;
 				geoSrc = str.nextToken().trim();
 				name = str.nextToken().trim();
 				z = Double.parseDouble(str.nextToken().trim());

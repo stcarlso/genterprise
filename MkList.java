@@ -57,7 +57,8 @@ public class MkList {
 			System.out.print("Updating List... ");
 			copyFile(new File(curdir, "branches/models/blocks.txt"), new File("blocks.txt"));
 			System.out.println("Done!");
-		}
+		} else if (option == 2)
+			System.out.println("Please edit the text file blocks.txt in branches/models.");
 	}
 	private static boolean copyFile(File src, File dest) {
 		try {
