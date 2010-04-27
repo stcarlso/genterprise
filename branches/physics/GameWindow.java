@@ -1,27 +1,19 @@
 import java.awt.BorderLayout;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.io.File;
-import java.io.IOException;
-import java.nio.FloatBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.awt.Color;
+import java.awt.event.*;
+import java.io.*;
+import java.nio.*;
+import java.util.*;
 
-import javax.media.opengl.GL;
-import javax.media.opengl.GLAutoDrawable;
-import javax.media.opengl.GLCanvas;
-import javax.media.opengl.GLCapabilities;
-import javax.media.opengl.GLEventListener;
-import javax.media.opengl.GLException;
-import javax.media.opengl.glu.GLU;
-import javax.swing.JPanel;
+import javax.media.opengl.*;
+import javax.media.opengl.glu.*;
+import javax.swing.*;
 
-import com.sun.opengl.util.Animator;
-import com.sun.opengl.util.BufferUtil;
-import com.sun.opengl.util.texture.TextureIO;
+import com.sun.opengl.util.*;
 
 public class GameWindow extends JPanel implements Constants {
+	private static final long serialVersionUID = 0L;
+
 	ResourceGetter res;
 	Level level;
 	Block block;
@@ -38,8 +30,8 @@ public class GameWindow extends JPanel implements Constants {
 	boolean move;
 	boolean paused;
 	
-	int width=800;
-	int height=800;
+	int width=0;
+	int height=0;
 	
 	long time=0;
 	
@@ -55,9 +47,18 @@ public class GameWindow extends JPanel implements Constants {
 	GLCanvas canvas;
 	
 	public GameWindow() {
-		super(new BorderLayout());	
+		super(new BorderLayout());
+		setBackground(Color.BLACK);
+	}
+	public void start() {
 		res = new FilesystemResources(null, new File("res/"));
-		LevelReader lreader = new LevelReader(res, "../level1crawl.dat");
+		JLabel load = new JLabel(res.getIcon("genterprise.png"));
+		load.setHorizontalAlignment(SwingConstants.CENTER);
+		load.setVerticalAlignment(SwingConstants.CENTER);
+		add(load, BorderLayout.CENTER);
+		validate();
+	
+		LevelReader lreader = new LevelReader(res, "../jumplol.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
@@ -71,7 +72,7 @@ public class GameWindow extends JPanel implements Constants {
 			if(element.getZ() == 0.)
 				elements.add(element);
 			else if(element.getSource().getName().indexOf("laser") >= 0)
-					lasers.add(element);
+				lasers.add(element);
 			else if(element.getSource().getName().indexOf("savepoint") >= 0 || element.getSource().getName().indexOf("door") >= 0 || element.getSource().getName().indexOf("ladder") >= 0)
 				interactives.add(element);
 		}
@@ -83,7 +84,9 @@ public class GameWindow extends JPanel implements Constants {
 		GLGameListener listener= new GLGameListener(player,sync);
 		canvas.addKeyListener(listener);
 		canvas.addGLEventListener(listener);   // add event listener
+		removeAll();
 		add(canvas);
+		validate();
 		
 		physics= new PhysicsThread();
 		physics.start();
@@ -96,7 +99,6 @@ public class GameWindow extends JPanel implements Constants {
 		private double muk=6;
 		private double gravity=.03;
 		private long dt;
-		private long initiate=0;
 		private long effectStart=0;
 		private long effectEnd=0;
 		private long stop=0;
@@ -207,7 +209,6 @@ public class GameWindow extends JPanel implements Constants {
 				if(player.ability!=null) {
 					if(player.ability.started) {
 						player.suspicion+=player.ability.duration;
-						initiate=time;
 						effectStart= time+player.ability.start;
 						effectEnd= time+player.ability.end;
 						stop= time+player.ability.duration;
