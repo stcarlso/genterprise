@@ -126,14 +126,16 @@ public class GameWindow extends JPanel implements Constants {
 					if(player.status==HELPLESS)
 						player.status=NORMAL;
 				} else {
-					if(player.status==WALKING)
+					if(player.jumps>1)
+						player.jumps=1;
+					if(player.status==WALKING || player.status==DUCKING)
 						player.status=NORMAL;
 				}
 				//****************KEY RESPONSE*******************
 				//refresh when touching ground, tell the player where he is
 				
-				if(player.ability==null && player.status!=HELPLESS){
-					if(act) {
+				if(player.ability==null){
+					if(act && player.status!=HELPLESS) {
 						if(!player.walls[DOWN]) {
 							player.ability=new AirDodge(player);
 						} else if(player.walls[DOWN]){
@@ -151,11 +153,10 @@ public class GameWindow extends JPanel implements Constants {
 						}
 
 						act=false;
-					} else if(move) {
+					} else if(move && player.status!=HELPLESS) {
 						if(up) {
 							player.ability=new ThirdJump(player);
 						}
-						
 						move=false;
 					} else {
 						
@@ -344,28 +345,54 @@ public class GameWindow extends JPanel implements Constants {
 				while(itr.hasNext()) {
 					GameObject element = itr.next();
 					Element source = element.getSource();
-					if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
-						&& right > element.getX() && left < element.getX()+source.getWidth()
-						&& bottomFuture+.9 >= element.getY()+source.getHeight() && bottomFuture <= element.getY()+source.getHeight()) {
-						tagged=true;
-					}
-					//ceiling detection
-					if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
-						&& right > element.getX() && left < element.getX()+source.getWidth()
-						&& topFuture-.9 <= element.getY() && topFuture >= element.getY()) {
-						tagged=true;
-					}
-					//left wall detection
-					if(topFuture > element.getY() && bottomFuture < element.getY()+source.getHeight()
-						&& top > element.getY() && bottom < element.getY()+source.getHeight()
-						&& rightFuture >= element.getX()+source.getWidth() && leftFuture <= element.getX()+source.getWidth()) {
-						tagged=true;
-					}
-					//right wall detection				
-					if(topFuture > element.getY() && bottomFuture < element.getY()+source.getHeight()
-						&& top > element.getY() && bottom < element.getY()+source.getHeight()
-						&& rightFuture >= element.getX() && leftFuture <= element.getX()) {
-						tagged=true;
+					if(element.getRotation()%180==0) {
+						if(rightFuture > element.getX()+.43 && leftFuture < element.getX()+source.getWidth()-.43
+							&& right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
+							&& bottomFuture+.9 >= element.getY()+source.getHeight() && bottomFuture <= element.getY()+source.getHeight()) {
+							tagged=true;
+						}
+						//ceiling detection
+						if(rightFuture > element.getX()+.43 && leftFuture < element.getX()+source.getWidth()-.43
+							&& right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
+							&& topFuture-.9 <= element.getY() && topFuture >= element.getY()) {
+							tagged=true;
+						}
+						//left wall detection
+						if(topFuture > element.getY() && bottomFuture < element.getY()+source.getHeight()
+							&& top > element.getY() && bottom < element.getY()+source.getHeight()
+							&& rightFuture >= element.getX()+source.getWidth()-.43 && leftFuture <= element.getX()+source.getWidth()-.43) {
+							tagged=true;
+						}
+						//right wall detection				
+						if(topFuture > element.getY() && bottomFuture < element.getY()+source.getHeight()
+							&& top > element.getY() && bottom < element.getY()+source.getHeight()
+							&& rightFuture >= element.getX()+.43 && leftFuture <= element.getX()+.43) {
+							tagged=true;
+						} 
+					} else {
+						if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
+							&& right > element.getX() && left < element.getX()+source.getWidth()
+							&& bottomFuture+.9 >= element.getY()+source.getHeight()-.43 && bottomFuture <= element.getY()+source.getHeight()-.43) {
+							tagged=true;
+						}
+						//ceiling detection
+						if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
+							&& right > element.getX() && left < element.getX()+source.getWidth()
+							&& topFuture-.9 <= element.getY()+.43 && topFuture >= element.getY()+.43) {
+							tagged=true;
+						}
+						//left wall detection
+						if(topFuture > element.getY()+.43 && bottomFuture < element.getY()+source.getHeight()-.43
+							&& top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
+							&& rightFuture >= element.getX()+source.getWidth() && leftFuture <= element.getX()+source.getWidth()) {
+							tagged=true;
+						}
+						//right wall detection				
+						if(topFuture > element.getY()+.43 && bottomFuture < element.getY()+source.getHeight()-.43
+							&& top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
+							&& rightFuture >= element.getX() && leftFuture <= element.getX()) {
+							tagged=true;
+						} 
 					}
 				}
 				if(tagged)
