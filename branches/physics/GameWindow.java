@@ -70,12 +70,10 @@ public class GameWindow extends JPanel implements Constants {
 				element.getSource().loadGeometry(res);
 			if(element.getZ() == 0.)
 				elements.add(element);
-			else if(element.getZ() == 1.) {
-				if(element.getSource().getName().indexOf("laser") >= 0)
+			else if(element.getSource().getName().indexOf("laser") >= 0)
 					lasers.add(element);
-				else
-					interactives.add(element);
-			}
+			else if(element.getSource().getName().indexOf("savepoint") >= 0 || element.getSource().getName().indexOf("door") >= 0 || element.getSource().getName().indexOf("ladder") >= 0)
+				interactives.add(element);
 		}
 
 		player= new Player();
@@ -345,62 +343,77 @@ public class GameWindow extends JPanel implements Constants {
 				player.top=.9;
 			}			
 			
-			if(player.status!=INVINCIBLE) {
-				boolean tagged=false;
-				itr = lasers.iterator();
-				while(itr.hasNext()) {
-					GameObject element = itr.next();
-					Element source = element.getSource();
+			//laser detection
+			itr = lasers.iterator();
+			while(itr.hasNext()) {
+				GameObject element = itr.next();
+				Element source = element.getSource();
+				if(player.status!=INVINCIBLE) {
 					if(element.getRotation()%180==0) {
-						if(right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
-							&& bottom+.9 >= element.getY()+source.getHeight() && bottom <= element.getY()+source.getHeight()) {
-							tagged=true;
-						}
-						//ceiling detection
-						if(right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
-							&& top-.9 <= element.getY() && top >= element.getY()) {
-							tagged=true;
-						}
-						//left wall detection
-						if(top > element.getY() && bottom < element.getY()+source.getHeight()
-							&& right >= element.getX()+source.getWidth()-.43 && left <= element.getX()+source.getWidth()-.43) {
-							tagged=true;
-						}
-						//right wall detection				
-						if(top > element.getY() && bottom < element.getY()+source.getHeight()
+						if( //floor
+							right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
+							&& bottom+.9 >= element.getY()+source.getHeight() && bottom <= element.getY()+source.getHeight()
+							||
+							//ceiling
+							right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
+							&& top-.9 <= element.getY() && top >= element.getY()
+							||
+							//left
+							top > element.getY() && bottom < element.getY()+source.getHeight()
+							&& right >= element.getX()+source.getWidth()-.43 && left <= element.getX()+source.getWidth()-.43
+							||
+							//right
+							top > element.getY() && bottom < element.getY()+source.getHeight()
 							&& right >= element.getX()+.43 && left <= element.getX()+.43) {
-							tagged=true;
+							player.suspicion+=Math.abs(90*player.vx);
 						} 
 					} else {
-						if(right > element.getX() && left < element.getX()+source.getWidth()
-							&& bottom+.9 >= element.getY()+source.getHeight()-.43 && bottom <= element.getY()+source.getHeight()-.43) {
-							tagged=true;
-						}
-						//ceiling detection
-						if(right > element.getX() && left < element.getX()+source.getWidth()
-							&& top-.9 <= element.getY()+.43 && top >= element.getY()+.43) {
-							tagged=true;
-						}
-						//left wall detection
-						if(top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
-							&& right >= element.getX()+source.getWidth() && left <= element.getX()+source.getWidth()) {
-							tagged=true;
-						}
-						//right wall detection				
-						if(top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
+						if(//bottom
+							right > element.getX() && left < element.getX()+source.getWidth()
+							&& bottom+.9 >= element.getY()+source.getHeight()-.43 && bottom <= element.getY()+source.getHeight()-.43
+							//ceiling
+							||
+							right > element.getX() && left < element.getX()+source.getWidth()
+							&& top-.9 <= element.getY()+.43 && top >= element.getY()+.43
+							//left
+							||
+							top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
+							&& right >= element.getX()+source.getWidth() && left <= element.getX()+source.getWidth()
+							||
+							//right
+							top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
 							&& right >= element.getX() && left <= element.getX()) {
-							tagged=true;
+							player.suspicion+=Math.abs(90*player.vy);
 						} 
 					}
+				} else if(element.getSource().getName().indexOf("laser") >= 0) {
+					if(Math.hypot(player.x-element.getX(),player.y-element.getY())<.2)  // TODO: change this to use attributes
+						player.suspicion+=90*Math.hypot(player.vy,player.vx);
 				}
-				if(tagged)
-					player.suspicion+=7;
+			} 
+			
+			//interactive element detection
+			itr = interactives.iterator();
+			while(itr.hasNext()) {
+				GameObject element = itr.next();
+				Element source = element.getSource();
+				if(right > element.getX() && left < element.getX()+source.getWidth()) {
+					if(element.getSource().getName().indexOf("savepoint") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
+						System.out.println("You just tried to save");
+					if(element.getSource().getName().indexOf("door") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
+						System.out.println("You just tried to win. But you cannot win. I LOST!s");
+					if(element.getSource().getName().indexOf("ladder") >= 0 && (up||down)) // TODO: change this to use attributes
+						System.out.println("You just tried to use a ladder");
+				}										
 			}
 		}
 	}
 	
 	public class GLGameListener implements GLEventListener, KeyListener {
 		private FloatBuffer suspicion;
+
+		private double player_x;
+		private double player_y;
 		
 		public GLGameListener(Player you, Object synch) {
 			player=you;
@@ -411,7 +424,9 @@ public class GameWindow extends JPanel implements Constants {
 		 	gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 		 	
 		 	gl.glLoadIdentity();
-		 	glu.gluLookAt(player.x, player.y, 10, player.x, player.y, -10, 0, 1, 0);
+		 	player_x = player.x;
+		 	player_y = player.y;
+		 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
 
 			renderScene(gl);
 			drawCharacter(gl);
@@ -500,42 +515,42 @@ public class GameWindow extends JPanel implements Constants {
 				if(player.status==DUCKING) {
 					if(player.facingRight) {
 						gl.glTexCoord2d(0,1);
-						gl.glVertex3d(player.x,player.y,0);
+						gl.glVertex3d(player_x,player_y,0);
 						gl.glTexCoord2d(1,1);
-						gl.glVertex3d(player.x+2,player.y,0);
+						gl.glVertex3d(player_x+2,player_y,0);
 						gl.glTexCoord2d(1,0);
-						gl.glVertex3d(player.x+2,player.y+1,0);
+						gl.glVertex3d(player_x+2,player_y+1,0);
 						gl.glTexCoord2d(0,0);
-						gl.glVertex3d(player.x,player.y+1,0);
+						gl.glVertex3d(player_x,player_y+1,0);
 					} else {
 						gl.glTexCoord2d(1,1);
-						gl.glVertex3d(player.x,player.y,0);
+						gl.glVertex3d(player_x,player_y,0);
 						gl.glTexCoord2d(0,1);
-						gl.glVertex3d(player.x+2,player.y,0);
+						gl.glVertex3d(player_x+2,player_y,0);
 						gl.glTexCoord2d(0,0);
-						gl.glVertex3d(player.x+2,player.y+1,0);
+						gl.glVertex3d(player_x+2,player_y+1,0);
 						gl.glTexCoord2d(1,0);
-						gl.glVertex3d(player.x,player.y+1,0);
+						gl.glVertex3d(player_x,player_y+1,0);
 					}
 				} else {
 					if(player.facingRight) {
 						gl.glTexCoord2d(0,1);
-						gl.glVertex3d(player.x,player.y,0);
+						gl.glVertex3d(player_x,player_y,0);
 						gl.glTexCoord2d(1,1);
-						gl.glVertex3d(player.x+1,player.y,0);
+						gl.glVertex3d(player_x+1,player_y,0);
 						gl.glTexCoord2d(1,0);
-						gl.glVertex3d(player.x+1,player.y+2,0);
+						gl.glVertex3d(player_x+1,player_y+2,0);
 						gl.glTexCoord2d(0,0);
-						gl.glVertex3d(player.x,player.y+2,0);
+						gl.glVertex3d(player_x,player_y+2,0);
 					} else {
 						gl.glTexCoord2d(1,1);
-						gl.glVertex3d(player.x,player.y,0);
+						gl.glVertex3d(player_x,player_y,0);
 						gl.glTexCoord2d(0,1);
-						gl.glVertex3d(player.x+1,player.y,0);
+						gl.glVertex3d(player_x+1,player_y,0);
 						gl.glTexCoord2d(0,0);
-						gl.glVertex3d(player.x+1,player.y+2,0);
+						gl.glVertex3d(player_x+1,player_y+2,0);
 						gl.glTexCoord2d(1,0);
-						gl.glVertex3d(player.x,player.y+2,0);
+						gl.glVertex3d(player_x,player_y+2,0);
 					}
 				}
 			gl.glEnd();
