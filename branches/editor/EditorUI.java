@@ -831,7 +831,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		synchronized (block) {
 			List<GameObject> list = block.getElements();
 			Iterator<GameObject> it = list.iterator();
-			Element element; GameObject o; String lastTexture = null, lastModel = "";
+			Element element; GameObject o; String lastTexture = "", lastModel = "";
 			while (it.hasNext()) {
 				gl.glPushMatrix();
 				o = it.next();
@@ -1593,6 +1593,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		}
 	}
 
+	/**
+	 * A list model that displays the available block categories.
+	 */
 	private class CategoryListModel extends AbstractListModel implements MouseListener {
 		private static final long serialVersionUID = 0L;
 
@@ -1600,6 +1603,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		public void mouseEntered(MouseEvent e) {}
 		public void mouseExited(MouseEvent e) {}
 		public void mousePressed(MouseEvent e) {}
+		/**
+		 * Item selected, change category.
+		 */
 		public void mouseReleased(MouseEvent e) {
 			int index = categoryList.getSelectedIndex();
 			String category = getCategory(index);
@@ -1608,6 +1614,12 @@ public class EditorUI extends JFrame implements GLEventListener {
 		public Object getElementAt(int index) {
 			return getCategory(index);
 		}
+		/**
+		 * Gets the category at the given position. Inefficient but required.
+		 * 
+		 * @param index the index of the item
+		 * @return the item at that index, or null if out of bounds
+		 */
 		public String getCategory(int index) {
 			Iterator<String> it = category.keySet().iterator();
 			for (int i = 0; it.hasNext(); i++)

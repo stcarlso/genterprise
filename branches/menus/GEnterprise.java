@@ -2,35 +2,89 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
+/**
+ * Main runner for the entire program in a frame.
+ *  All other classes are referenced, directly or indirectly, by this one.
+ * 
+ * @author Stephen
+ */
 public class GEnterprise extends JFrame {
 	private static final long serialVersionUID = 0L;
 
+	/**
+	 * Default game window width if not chosen in graphics preferences.
+	 */
 	public static final int WIDTH = 1024;
+	/**
+	 * Default game window height if not chosen in graphics preferences.
+	 */
 	public static final int HEIGHT = 768;
 
+	/**
+	 * Called when the program is first run.
+	 */
 	public static void main(String[] args) {
 		Utils.staticInit();
 		new GEnterprise().start();
 	}
 
+	/**
+	 * Listens for events on the menus.
+	 */
 	private EventListener events;
+	/**
+	 * The original screen size.
+	 */
 	private DisplayMode originalMode;
+	/**
+	 * The current menu.
+	 */
 	private JComponent current;
+	/**
+	 * The main menu.
+	 */
 	private Menu main;
+	/**
+	 * The pause menu.
+	 */
 	private Menu pause;
+	/**
+	 * The settings menu.
+	 */
 	private Menu settings;
+	/**
+	 * The sound and sfx player for the entire game.
+	 */
 	private MusicThread player;
+	/**
+	 * The resource fetcher for the entire game.
+	 */
 	private ResourceGetter res;
 
+	/**
+	 * Sets the title and window parameters.
+	 */
 	public GEnterprise() {
 		super("Gunther's Enterprise");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setUndecorated(true);
 	}
+	/**
+	 * Creates the game window.
+	 */
 	public void start() {
 		res = new FilesystemResources(null, new java.io.File("SFX/"));
 		events = new EventListener();
 		player = new MusicThread(res);
+		setupMenus();
+		player.load("click1.wav");
+		setScreenSize();
+		player.start();
+	}
+	/**
+	 * Sets the display resolution to what the graphics preferences want.
+	 */
+	private void setScreenSize() {
 		GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment()
 			.getDefaultScreenDevice();
 		DisplayMode[] modes = dev.getDisplayModes();
@@ -44,6 +98,17 @@ public class GEnterprise extends JFrame {
 				curMode = modes[i];
 				break;
 			}
+		try {
+			dev.setDisplayMode(curMode);
+		} catch (Exception e) {
+			System.out.println("Cannot change display mode?");
+		}
+		dev.setFullScreenWindow(this);
+	}
+	/**
+	 * Builds the menus on the screen.
+	 */
+	private void setupMenus() {
 		Container c = getContentPane();
 		c.setBackground(Color.BLACK);
 		c.setLayout(new BorderLayout(10, 10));
@@ -72,13 +137,12 @@ public class GEnterprise extends JFrame {
 		});
 		pause.setActionListener(events);
 		setMenu(main);
-		player.load("click1.wav");
-		try {
-			dev.setDisplayMode(curMode);
-		} catch (Exception e) { }
-		dev.setFullScreenWindow(this);
-		player.start();
 	}
+	/**
+	 * Sets the current menu.
+	 * 
+	 * @param menu the new menu
+	 */
 	public void setMenu(Menu menu) {
 		if (current != null)
 			getContentPane().remove(current);
@@ -88,6 +152,9 @@ public class GEnterprise extends JFrame {
 		validate();
 		repaint();
 	}
+	/**
+	 * Closes the program.
+	 */
 	public void close() {
 		GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment()
 			.getDefaultScreenDevice();
@@ -98,7 +165,10 @@ public class GEnterprise extends JFrame {
 		System.exit(0);
 	}
 
-	private class EventListener extends MouseAdapter implements ActionListener {
+	/**
+	 * Handles menu events and mouse events.
+	 */
+	private class EventListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			String cmd = e.getActionCommand();
 			if (cmd == null) return;

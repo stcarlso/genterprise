@@ -2,9 +2,11 @@
 checkerboard.png, 1x1square.dat, checkerboard, -2
 darkcheck.png, 1x1dark.dat, darkcheck, -2
 grass.png, 1x1square.dat, grass, -2
+null, 1x1dark.dat, gray, -2
 [Elements]
 ladder.png, 1x1square.dat, ladder, -1
 door.png, 2x1square.dat, door, -1
+savepoint.png, 2x1square.dat, savepoint, -1
 [Overlays]
 ceilinglighting.png, 1x1square.dat, ceilinglighting, 2
 static-spot-1.png, 2x2square.dat, static-spot-1, 2
@@ -35,9 +37,7 @@ platformcorner.png, 1x1square.dat, platformcorner, 0
 platformlight.png, 1x1square.dat, platformlight, 0
 [Enemies]
 camera.png, 1x1square.dat, camera, 1
-savepoint.png, 2x1square.dat, savepoint, 1
 laserbase.png, 1x1square.dat, laserbase, 1
 lasermid.png, 1x1square.dat, lasermid, 1
 laserz.png, 1x1square.dat, laserz, 1
-camera.png, 1x1square.dat, camera, 1
 cameramount.png, 1x1square.dat, cameramount, 1
