@@ -27,6 +27,7 @@ public class GameWindow extends JPanel implements Constants {
 	Block block;
 	List<GameObject> elements;
 	List<GameObject> lasers;
+	List<GameObject> interactives;
 	
 	boolean up;
 	boolean upDone;
@@ -56,11 +57,12 @@ public class GameWindow extends JPanel implements Constants {
 	public GameWindow() {
 		super(new BorderLayout());	
 		res = new FilesystemResources(null, new File("res/"));
-		LevelReader lreader = new LevelReader(res, "../level1.dat");
+		LevelReader lreader = new LevelReader(res, "../level1crawl.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
 		lasers = new ArrayList<GameObject>(block.getElements().size());
+		interactives = new ArrayList<GameObject>(block.getElements().size());
 		Iterator<GameObject> itr = block.getElements().iterator();
 		while(itr.hasNext()) {
 			GameObject element = itr.next();
@@ -68,8 +70,12 @@ public class GameWindow extends JPanel implements Constants {
 				element.getSource().loadGeometry(res);
 			if(element.getZ() == 0.)
 				elements.add(element);
-			if(element.getSource().getName().indexOf("laser") >= 0)
-				lasers.add(element);
+			else if(element.getZ() == 1.) {
+				if(element.getSource().getName().indexOf("laser") >= 0)
+					lasers.add(element);
+				else
+					interactives.add(element);
+			}
 		}
 
 		player= new Player();
@@ -346,51 +352,43 @@ public class GameWindow extends JPanel implements Constants {
 					GameObject element = itr.next();
 					Element source = element.getSource();
 					if(element.getRotation()%180==0) {
-						if(rightFuture > element.getX()+.43 && leftFuture < element.getX()+source.getWidth()-.43
-							&& right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
-							&& bottomFuture+.9 >= element.getY()+source.getHeight() && bottomFuture <= element.getY()+source.getHeight()) {
+						if(right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
+							&& bottom+.9 >= element.getY()+source.getHeight() && bottom <= element.getY()+source.getHeight()) {
 							tagged=true;
 						}
 						//ceiling detection
-						if(rightFuture > element.getX()+.43 && leftFuture < element.getX()+source.getWidth()-.43
-							&& right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
-							&& topFuture-.9 <= element.getY() && topFuture >= element.getY()) {
+						if(right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
+							&& top-.9 <= element.getY() && top >= element.getY()) {
 							tagged=true;
 						}
 						//left wall detection
-						if(topFuture > element.getY() && bottomFuture < element.getY()+source.getHeight()
-							&& top > element.getY() && bottom < element.getY()+source.getHeight()
-							&& rightFuture >= element.getX()+source.getWidth()-.43 && leftFuture <= element.getX()+source.getWidth()-.43) {
+						if(top > element.getY() && bottom < element.getY()+source.getHeight()
+							&& right >= element.getX()+source.getWidth()-.43 && left <= element.getX()+source.getWidth()-.43) {
 							tagged=true;
 						}
 						//right wall detection				
-						if(topFuture > element.getY() && bottomFuture < element.getY()+source.getHeight()
-							&& top > element.getY() && bottom < element.getY()+source.getHeight()
-							&& rightFuture >= element.getX()+.43 && leftFuture <= element.getX()+.43) {
+						if(top > element.getY() && bottom < element.getY()+source.getHeight()
+							&& right >= element.getX()+.43 && left <= element.getX()+.43) {
 							tagged=true;
 						} 
 					} else {
-						if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
-							&& right > element.getX() && left < element.getX()+source.getWidth()
-							&& bottomFuture+.9 >= element.getY()+source.getHeight()-.43 && bottomFuture <= element.getY()+source.getHeight()-.43) {
+						if(right > element.getX() && left < element.getX()+source.getWidth()
+							&& bottom+.9 >= element.getY()+source.getHeight()-.43 && bottom <= element.getY()+source.getHeight()-.43) {
 							tagged=true;
 						}
 						//ceiling detection
-						if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
-							&& right > element.getX() && left < element.getX()+source.getWidth()
-							&& topFuture-.9 <= element.getY()+.43 && topFuture >= element.getY()+.43) {
+						if(right > element.getX() && left < element.getX()+source.getWidth()
+							&& top-.9 <= element.getY()+.43 && top >= element.getY()+.43) {
 							tagged=true;
 						}
 						//left wall detection
-						if(topFuture > element.getY()+.43 && bottomFuture < element.getY()+source.getHeight()-.43
-							&& top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
-							&& rightFuture >= element.getX()+source.getWidth() && leftFuture <= element.getX()+source.getWidth()) {
+						if(top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
+							&& right >= element.getX()+source.getWidth() && left <= element.getX()+source.getWidth()) {
 							tagged=true;
 						}
 						//right wall detection				
-						if(topFuture > element.getY()+.43 && bottomFuture < element.getY()+source.getHeight()-.43
-							&& top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
-							&& rightFuture >= element.getX() && leftFuture <= element.getX()) {
+						if(top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
+							&& right >= element.getX() && left <= element.getX()) {
 							tagged=true;
 						} 
 					}
@@ -657,9 +655,10 @@ public class GameWindow extends JPanel implements Constants {
 			GL gl = arg0.getGL();
 			width=arg3;
 			height=arg4;
+			double ratio = (double)width / (double)height;
 			gl.glMatrixMode(GL.GL_PROJECTION);
 			gl.glLoadIdentity();
-			gl.glOrtho(-6,6,-6,6,-20,20);
+			gl.glOrtho(-6*ratio,6*ratio,-6,6,-20,20);
 			gl.glMatrixMode(GL.GL_MODELVIEW);
 		}
 		
