@@ -30,6 +30,7 @@ public class Player implements Constants {
 	Texture stand;
 	Texture[] walk;
 	Texture air;
+	Texture duck;
 	
 	public Player() {
 		x=0;

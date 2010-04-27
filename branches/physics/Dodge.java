@@ -4,7 +4,7 @@
 public class Dodge extends Move {
 	public Dodge(Player player) {
 		super(player);
-		start=2;
+		start=1;
 		end=9;
 		duration=11;
 	}

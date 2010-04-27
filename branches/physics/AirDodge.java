@@ -4,8 +4,8 @@
 public class AirDodge extends Move {
 	public AirDodge(Player player) {
 		super(player);
-		start=3;
-		end=11;
+		start=2;
+		end=16;
 		duration=18;
 	}
 
@@ -16,5 +16,6 @@ public class AirDodge extends Move {
 	public void linger() {}
 	public void startEffect() {
 		player.status=INVINCIBLE;
+		player.vy+=.2;
 	}
 }
