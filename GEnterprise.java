@@ -8,7 +8,7 @@ import javax.swing.*;
  * 
  * @author Stephen
  */
-public class GEnterprise extends JFrame {
+public class GEnterprise extends JFrame implements Runnable {
 	private static final long serialVersionUID = 0L;
 
 	/**
@@ -98,12 +98,12 @@ public class GEnterprise extends JFrame {
 				curMode = modes[i];
 				break;
 			}
+		dev.setFullScreenWindow(this);
 		try {
 			dev.setDisplayMode(curMode);
 		} catch (Exception e) {
 			System.out.println("Cannot change display mode?");
 		}
-		dev.setFullScreenWindow(this);
 	}
 	/**
 	 * Builds the menus on the screen.
@@ -158,11 +158,23 @@ public class GEnterprise extends JFrame {
 	public void close() {
 		GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment()
 			.getDefaultScreenDevice();
-		dev.setFullScreenWindow(null);
+		setVisible(false);
 		try {
 			dev.setDisplayMode(originalMode);
 		} catch (Exception ex) { }
+		dev.setFullScreenWindow(null);
 		System.exit(0);
+	}
+	/**
+	 * Runs the game!!!
+	 */
+	public void run() {
+		Utils.sleep(100L);
+		getContentPane().removeAll();
+		GameWindow gameWindow = new GameWindow();
+		getContentPane().add(gameWindow, BorderLayout.CENTER);
+		getContentPane().validate();
+		gameWindow.canvas.requestFocus();
 	}
 
 	/**
@@ -177,7 +189,9 @@ public class GEnterprise extends JFrame {
 				setMenu(main);
 			else if (cmd.equals("settings"))
 				setMenu(settings);
-			else if (cmd.equals("exit")) {
+			else if (cmd.equals("game")) {
+				new Thread(GEnterprise.this).start();
+			} else if (cmd.equals("exit")) {
 				close();
 			}
 		}
