@@ -33,10 +33,6 @@ public class GEnterprise extends JFrame implements Runnable {
 	 */
 	private EventListener events;
 	/**
-	 * The original screen size.
-	 */
-	private DisplayMode originalMode;
-	/**
 	 * The current menu.
 	 */
 	private JComponent current;
@@ -73,11 +69,15 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * Creates the game window.
 	 */
 	public void start() {
-		res = new FilesystemResources(null, new java.io.File("SFX/"));
+		res = new FilesystemResources(null, new java.io.File("res/"));
+		LoadFrame frame = new LoadFrame(res);
 		events = new EventListener();
 		player = new MusicThread(res);
 		setupMenus();
 		player.load("click1.wav");
+		frame.setVisible(false);
+		frame.dispose();
+		frame = null;
 		setScreenSize();
 		player.start();
 	}
@@ -89,7 +89,6 @@ public class GEnterprise extends JFrame implements Runnable {
 			.getDefaultScreenDevice();
 		DisplayMode[] modes = dev.getDisplayModes();
 		DisplayMode curMode = dev.getDisplayMode();
-		originalMode = curMode;
 		int rate = curMode.getRefreshRate();
 		int depth = curMode.getBitDepth();
 		for (int i = 0; i < modes.length; i++)
@@ -101,9 +100,7 @@ public class GEnterprise extends JFrame implements Runnable {
 		dev.setFullScreenWindow(this);
 		try {
 			dev.setDisplayMode(curMode);
-		} catch (Exception e) {
-			System.out.println("Cannot change display mode?");
-		}
+		} catch (Exception e) { }
 	}
 	/**
 	 * Builds the menus on the screen.
@@ -159,9 +156,10 @@ public class GEnterprise extends JFrame implements Runnable {
 		GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment()
 			.getDefaultScreenDevice();
 		setVisible(false);
-		try {
+		// looks unnecessary for now
+		/*try {
 			dev.setDisplayMode(originalMode);
-		} catch (Exception ex) { }
+		} catch (Exception ex) { }*/
 		dev.setFullScreenWindow(null);
 		System.exit(0);
 	}
@@ -174,6 +172,7 @@ public class GEnterprise extends JFrame implements Runnable {
 		GameWindow gameWindow = new GameWindow();
 		getContentPane().add(gameWindow, BorderLayout.CENTER);
 		getContentPane().validate();
+		gameWindow.start();
 		gameWindow.canvas.requestFocus();
 	}
 
