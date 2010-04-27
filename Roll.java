@@ -4,8 +4,8 @@
 public class Roll extends Move {
 	public Roll(Player player, int dir) {
 		super(player,dir);
-		start=2;
-		end=12;
+		start=1;
+		end=17;
 		duration=18;
 	}
 	
@@ -16,7 +16,7 @@ public class Roll extends Move {
 		player.status = NORMAL;
 	}
 	public void initiate() {
-		player.vx=dir*0.9;
+		player.vx=dir*0.8;
 		player.vy=.1;
 	}
 	public void linger() {}
