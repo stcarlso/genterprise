@@ -64,7 +64,7 @@ public class MusicThread extends Thread {
 	public synchronized void load(String file) {
 		try {
 			Clip clip = AudioSystem.getClip();
-			clip.open(AudioSystem.getAudioInputStream(res.getResource(file)));
+			clip.open(AudioSystem.getAudioInputStream(res.getResource("sound/" + file)));
 			clip.setFramePosition(0);
 			clip.setLoopPoints(0, -1);
 			map.put(file, clip);
