@@ -313,8 +313,10 @@ public class Element implements java.io.Serializable, Comparable<Element> {
 			texture = res.getTexture(textureSrc);
 			texture.bind();
 			return texture.getTextureObject();
-		} else
+		} else {
+			texture = null;
 			return 0;
+		}
 	}
 	/**
 	 * Releases the loaded texture.
