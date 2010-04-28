@@ -1343,7 +1343,31 @@ public class EditorUI extends JFrame implements GLEventListener {
 	private void moveLevel() {
 		String res = JOptionPane.showInputDialog(this, "Enter new starting location (x, y):",
 			"Translate Entire Level", JOptionPane.QUESTION_MESSAGE);
-		if (res == null) return;
+		canvas.requestFocus();
+		if (res == null || res.length() < 1) return;
+		// remove () if added
+		if (res.charAt(0) == '(')
+			res = res.substring(1);
+		if (res.endsWith(")"))
+			res = res.substring(0, res.length() - 1);
+		StringTokenizer str = new StringTokenizer(res, ",");
+		if (str.countTokens() < 2) return;
+		try {
+			double x = Double.parseDouble(str.nextToken().trim());
+			double y = Double.parseDouble(str.nextToken().trim());
+			Iterator<GameObject> it = block.getElements().iterator();
+			GameObject o;
+			// move all blocks
+			while (it.hasNext()) {
+				o = it.next();
+				o.getLocation().setX(o.getX() - x);
+				o.getLocation().setY(o.getY() - y);
+			}
+			event = RENDER;
+		} catch (Exception e) {
+			Utils.showWarning("Please enter x and y coordinates in the format 1, 2.");
+			canvas.requestFocus();
+		}
 	}
 
 	/**
