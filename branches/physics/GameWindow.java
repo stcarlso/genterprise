@@ -351,8 +351,10 @@ public class GameWindow extends JPanel implements Constants {
 				Element source = element.getSource();
 				if(element.getSource().getName().indexOf("laserZ") >= 0) {
 					//for lasers along the Z axis
-					if(Math.hypot(player.x-element.getX(),player.y-element.getY())<.2)  // TODO: change this to use attributes
-						player.suspicion+=90*Math.hypot(player.vy,player.vx);
+					double centerx=(element.getX()+source.getWidth())/2.0;
+					double centery=(element.getY()+source.getHeight())/2.0;
+					if(centerx<=right && centerx>=left && centery>=bottom && centery<=top)
+						player.suspicion+=Math.max(1,90*Math.hypot((top+bottom)/2.0,(left+right)/2.0));
 				} else if(player.status!=INVINCIBLE) {
 					//for lasers along the X or Y axis
 					if(element.getRotation()%180==0) {
@@ -371,7 +373,7 @@ public class GameWindow extends JPanel implements Constants {
 							//right
 							top > element.getY() && bottom < element.getY()+source.getHeight()
 							&& right >= element.getX()+.43 && left <= element.getX()+.43) {
-							player.suspicion+=Math.abs(90*player.vx);
+							player.suspicion+=Math.max(1,Math.abs(90*player.vx));
 						} 
 					} else {
 						if(//bottom
@@ -389,7 +391,7 @@ public class GameWindow extends JPanel implements Constants {
 							//right
 							top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
 							&& right >= element.getX() && left <= element.getX()) {
-							player.suspicion+=Math.abs(90*player.vy);
+							player.suspicion+=Math.max(1,Math.abs(90*player.vy));
 						} 
 					}
 				}
@@ -400,7 +402,7 @@ public class GameWindow extends JPanel implements Constants {
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
-				if(right > element.getX() && left < element.getX()+source.getWidth()
+				if(left > element.getX() && right < element.getX()+source.getWidth()
 					&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
 					if(element.getSource().getName().indexOf("savepoint") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
 						System.out.println("You just tried to save");
@@ -683,14 +685,19 @@ public class GameWindow extends JPanel implements Constants {
 		
 		//**************KEY LISTENER********************
 		public void keyPressed(KeyEvent e) {		
-			if(e.getKeyCode()==KeyEvent.VK_LEFT)
+			if(e.getKeyCode()==KeyEvent.VK_LEFT) {
 				left=true;
-			if(e.getKeyCode()==KeyEvent.VK_RIGHT)
+				right=false;
+			} if(e.getKeyCode()==KeyEvent.VK_RIGHT) {
 				right=true;
-			if(e.getKeyCode()==KeyEvent.VK_UP)
+				left=false;
+			} if(e.getKeyCode()==KeyEvent.VK_UP) {
 				up=true;
-			if(e.getKeyCode()==KeyEvent.VK_DOWN)
+				down=false;
+			} if(e.getKeyCode()==KeyEvent.VK_DOWN) {
 				down=true;
+				up=false;
+			}
 		}
 		public void keyReleased(KeyEvent e) {
 			if(e.getKeyCode()==KeyEvent.VK_LEFT)
