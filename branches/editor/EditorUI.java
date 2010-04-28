@@ -580,6 +580,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		tools.setMnemonic(KeyEvent.VK_T);
 		tools.add(createMenuItem("Refresh Block List", "blocklist", 0));
 		tools.add(createMenuItem("Auto Resource Generator", "resgen", 0));
+		tools.add(createMenuItem("Move Start Point...", "translate", KeyEvent.VK_M));
 		across.add(tools);
 		setJMenuBar(across);
 	}
@@ -1336,6 +1337,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 			name = name.substring(0, dot);
 		return new File(fileName.getParentFile(), name + ".java");
 	}
+	/**
+	 * Translates the whole level (moves the start point).
+	 */
+	private void moveLevel() {
+		String res = JOptionPane.showInputDialog(this, "Enter new starting location (x, y):",
+			"Translate Entire Level", JOptionPane.QUESTION_MESSAGE);
+		if (res == null) return;
+	}
 
 	/**
 	 * Listens for events in the edit code text area.
@@ -1433,6 +1442,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			else if (cmd.equals("save")) save(false);
 			else if (cmd.equals("open")) open();
 			else if (cmd.equals("new")) newFile();
+			else if (cmd.equals("translate")) moveLevel();
 			else if (cmd.equals("blocklist") &&
 				yesNo("Regenerate block list? Will close the editor without save!!!\n" +
 					"You should probably auto resource first if you have not already.")) {

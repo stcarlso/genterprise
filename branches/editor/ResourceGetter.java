@@ -106,7 +106,9 @@ public abstract class ResourceGetter {
 	 * @return the full resource as a string
 	 */
 	public synchronized String getString(String src) {
-		return new String(getBinary(src));
+		byte[] arr = getBinary(src);
+		if (arr == null) return null;
+		return new String(arr);
 	}
 	/**
 	 * Gets the specified resource as an AWT icon.
