@@ -175,7 +175,7 @@ public class GameWindow extends JPanel implements Constants {
 								player.ax=-.15;
 								if(player.status==NORMAL)
 									player.status=WALKING;
-							} else if(player.walls[RIGHT] && (player.wallJumps==-1 || player.wallJumps==2)) {
+							} else if(player.status!=HELPLESS && player.walls[RIGHT] && (player.wallJumps==-1 || player.wallJumps==2)) {
 								player.wallJumps=1;
 								player.vy=.4;
 								player.ax=-.1;
@@ -189,7 +189,7 @@ public class GameWindow extends JPanel implements Constants {
 								player.ax=.15;
 								if(player.status==NORMAL)
 									player.status=WALKING;
-							} else if(player.walls[LEFT] && (player.wallJumps==1 || player.wallJumps==2)) {
+							} else if(player.status!=HELPLESS && player.walls[LEFT] && (player.wallJumps==1 || player.wallJumps==2)) {
 								player.wallJumps=-1;
 								player.vy=.4;
 								player.ax=.1;
@@ -291,6 +291,7 @@ public class GameWindow extends JPanel implements Constants {
 			double rightFuture = Math.round(1e4 * (player.x + player.vx*dt + player.right))/10000.0;
 			double bottomFuture = Math.round(1e4 * (player.y + player.vy*dt + player.bottom))/10000.0;
 			double topFuture = Math.round(1e4 * (player.y + player.vy*dt + player.top))/10000.0;
+			System.out.println(right + " " + bottom);
 			player.vx = Math.round(1e4 * player.vx)/10000.0;
 			player.vy = Math.round(1e4 * player.vy)/10000.0;
 			Iterator<GameObject> itr = elements.iterator();
@@ -691,7 +692,7 @@ public class GameWindow extends JPanel implements Constants {
 			} if(e.getKeyCode()==KeyEvent.VK_RIGHT) {
 				right=true;
 				left=false;
-			} if(e.getKeyCode()==KeyEvent.VK_UP) {
+			} if(e.getKeyCode()==KeyEvent.VK_UP && player.status!=DUCKING) {
 				up=true;
 				down=false;
 			} if(e.getKeyCode()==KeyEvent.VK_DOWN) {
@@ -704,9 +705,8 @@ public class GameWindow extends JPanel implements Constants {
 				left=false;
 			if(e.getKeyCode()==KeyEvent.VK_RIGHT)
 				right=false;
-			if(e.getKeyCode()==KeyEvent.VK_UP) {
+			if(e.getKeyCode()==KeyEvent.VK_UP)
 				up=false;
-			}
 			if(e.getKeyCode()==KeyEvent.VK_DOWN)
 				down=false;
 		}
