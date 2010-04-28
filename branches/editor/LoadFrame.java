@@ -16,6 +16,7 @@ public class LoadFrame extends JFrame {
 	 */
 	public LoadFrame(ResourceGetter res) {
 		super("Loading Gunther's Enterprise");
+		getRootPane().putClientProperty("Window.shadow", Boolean.FALSE);
 		setUndecorated(true);
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		Container c = getContentPane();

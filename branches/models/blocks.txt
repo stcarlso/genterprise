@@ -16,6 +16,9 @@ angletransition.png, 1x1square.dat, angletransition, 0
 ceiling.png, 1x1square.dat, ceiling, 0
 wall.png, 1x1square.dat, wall, 0
 null, 1x1black.dat, filler, 0
+filler.png, 2x2square.dat, filler2x2, 0
+filler.png, 4x4square.dat, filler4x4, 0
+filler.png, 8x8square.dat, filler8x8, 0
 floor.png, 1x1square.dat, floor, 0
 floorlight.png, 1x1square.dat, floorlight, 0
 floorceiling.png, 1x1square.dat, floorceiling, 0
