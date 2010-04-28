@@ -349,7 +349,12 @@ public class GameWindow extends JPanel implements Constants {
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
-				if(player.status!=INVINCIBLE) {
+				if(element.getSource().getName().indexOf("laserZ") >= 0) {
+					//for lasers along the Z axis
+					if(Math.hypot(player.x-element.getX(),player.y-element.getY())<.2)  // TODO: change this to use attributes
+						player.suspicion+=90*Math.hypot(player.vy,player.vx);
+				} else if(player.status!=INVINCIBLE) {
+					//for lasers along the X or Y axis
 					if(element.getRotation()%180==0) {
 						if( //floor
 							right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
@@ -387,9 +392,6 @@ public class GameWindow extends JPanel implements Constants {
 							player.suspicion+=Math.abs(90*player.vy);
 						} 
 					}
-				} else if(element.getSource().getName().indexOf("laser") >= 0) {
-					if(Math.hypot(player.x-element.getX(),player.y-element.getY())<.2)  // TODO: change this to use attributes
-						player.suspicion+=90*Math.hypot(player.vy,player.vx);
 				}
 			} 
 			
@@ -398,11 +400,12 @@ public class GameWindow extends JPanel implements Constants {
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
-				if(right > element.getX() && left < element.getX()+source.getWidth()) {
+				if(right > element.getX() && left < element.getX()+source.getWidth()
+					&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
 					if(element.getSource().getName().indexOf("savepoint") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
 						System.out.println("You just tried to save");
 					if(element.getSource().getName().indexOf("door") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
-						System.out.println("You just tried to win. But you cannot win. I LOST!s");
+						System.out.println("You just tried to win. But you cannot win. I LOST!");
 					if(element.getSource().getName().indexOf("ladder") >= 0 && (up||down)) // TODO: change this to use attributes
 						System.out.println("You just tried to use a ladder");
 				}										
