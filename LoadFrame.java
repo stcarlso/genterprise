@@ -20,7 +20,11 @@ public class LoadFrame extends JFrame {
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		Container c = getContentPane();
 		c.setBackground(Color.BLACK);
-		c.add(new JLabel(res.getIcon("genterprise.png")));
+		JLabel lbl = new JLabel(res.getIcon("genterprise.png"));
+		lbl.setHorizontalAlignment(SwingConstants.CENTER);
+		lbl.setVerticalAlignment(SwingConstants.CENTER);
+		lbl.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		c.add(lbl);
 		pack();
 		Utils.centerWindow(this);
 		setVisible(true);
