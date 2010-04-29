@@ -116,6 +116,7 @@ public class MusicThread extends Thread {
 			mp3player = (AdvancedPlayer)map.get(song);
 			if (mp3player != null) try {
 				running = true;
+				load(song);
 				mp3player.play(0, Integer.MAX_VALUE);
 				running = false;
 				mp3player = null;
@@ -125,10 +126,10 @@ public class MusicThread extends Thread {
 				Iterator<String> it = toPlay.iterator();
 				while (it.hasNext()) {
 					song = it.next();
-					if (song.endsWith(".mp3") && child != null)
+					if (song.endsWith(".mp3") && child != null) {
 						// pass mp3 to child
 						child.queueMusic(song);
-					else {
+					} else {
 						Clip clip = (Clip)map.get(song);
 						if (clip != null) {
 							// wav

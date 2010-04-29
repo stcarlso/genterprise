@@ -56,6 +56,10 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * The resource fetcher for the entire game.
 	 */
 	private ResourceGetter res;
+	/**
+	 * The game window for actual playing.
+	 */
+	private GameWindow gameWindow;
 
 	/**
 	 * Sets the title and window parameters.
@@ -76,10 +80,12 @@ public class GEnterprise extends JFrame implements Runnable {
 		setupMenus();
 		player.load("click1.wav");
 		player.load("watching.mp3");
+		gameWindow = new GameWindow();
 		frame.setVisible(false);
 		frame.dispose();
 		frame = null;
 		setScreenSize();
+		player.setLoop(true);
 		player.start();
 		player.queueMusic("watching.mp3");
 	}
@@ -132,7 +138,7 @@ public class GEnterprise extends JFrame implements Runnable {
 		pause = new Menu(new String[] {
 			"Return to Game", "Keyboard Settings", "Sound", "Exit to Menu", "Exit Game"
 		}, new String[] {
-			"game", "keyboard", "sound", "menu", "exit"
+			"unpause", "keyboard", "sound", "menu", "exit"
 		});
 		pause.setActionListener(events);
 		setMenu(main);
@@ -170,13 +176,26 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * Runs the game!!!
 	 */
 	public void run() {
+		Container c = getContentPane();
 		Utils.sleep(100L);
-		getContentPane().removeAll();
-		GameWindow gameWindow = new GameWindow();
-		getContentPane().add(gameWindow, BorderLayout.CENTER);
-		getContentPane().validate();
+		c.removeAll();
+		c.add(gameWindow, BorderLayout.CENTER);
+		c.validate();
 		gameWindow.start();
 		gameWindow.canvas.requestFocus();
+		while (true) {
+			while (!gameWindow.paused) Utils.sleep(50L);
+			gameWindow.setVisible(false);
+			current = pause.layout();
+			pause.deselectAll();
+			c.add(current, BorderLayout.NORTH);
+			c.validate();
+			while (gameWindow.paused) Utils.sleep(50L);
+			c.remove(current);
+			c.validate();
+			gameWindow.setVisible(true);
+			gameWindow.canvas.requestFocus();
+		}
 	}
 
 	/**
@@ -191,11 +210,12 @@ public class GEnterprise extends JFrame implements Runnable {
 				setMenu(main);
 			else if (cmd.equals("settings"))
 				setMenu(settings);
-			else if (cmd.equals("game")) {
+			else if (cmd.equals("game"))
 				new Thread(GEnterprise.this).start();
-			} else if (cmd.equals("exit")) {
+			else if (cmd.equals("unpause"))
+				gameWindow.paused = false;
+			else if (cmd.equals("exit"))
 				close();
-			}
 		}
 	}
 }

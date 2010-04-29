@@ -50,6 +50,10 @@ public class Element implements java.io.Serializable, Comparable<Element> {
 	 * The number of vertices.
 	 */
 	private transient int size;
+	/**
+	 * The special bit, only required in the editor.
+	 */
+	private transient int special;
 
 	/**
 	 * Creates a blank element (serialization)
@@ -59,6 +63,7 @@ public class Element implements java.io.Serializable, Comparable<Element> {
 		geometrySrc = null;
 		name = null;
 		width = height = 0;
+		special = 0;
 	}
 	/**
 	 * Creates an element referencing data from data sources.
@@ -67,7 +72,7 @@ public class Element implements java.io.Serializable, Comparable<Element> {
 	 * @param geoSrc the geometry data source
 	 */
 	public Element(String texSrc, String geoSrc) {
-		this(texSrc, geoSrc, geoSrc, 0);
+		this(texSrc, geoSrc, geoSrc, 0, 0);
 	}
 	/**
 	 * Creates an element referencing data from data sources.
@@ -77,7 +82,7 @@ public class Element implements java.io.Serializable, Comparable<Element> {
 	 * @param name the element name
 	 */
 	public Element(String texSrc, String geoSrc, String name) {
-		this(texSrc, geoSrc, name, 0);
+		this(texSrc, geoSrc, name, 0, 0);
 	}
 	/**
 	 * Creates an element referencing data from data sources.
@@ -86,13 +91,15 @@ public class Element implements java.io.Serializable, Comparable<Element> {
 	 * @param geoSrc the geometry data source
 	 * @param name the element name
 	 * @param z the default z buffer coordinate
+	 * @param sp the special bit
 	 */
-	public Element(String texSrc, String geoSrc, String name, double z) {
+	public Element(String texSrc, String geoSrc, String name, double z, int sp) {
 		textureSrc = texSrc;
 		geometrySrc = geoSrc;
 		this.name = name;
 		defaultZ = z;
 		width = height = 0;
+		special = sp;
 	}
 	public boolean equals(Object o) {
 		Element other = (Element)o;
@@ -100,6 +107,14 @@ public class Element implements java.io.Serializable, Comparable<Element> {
 	}
 	public int compareTo(Element other) {
 		return name.compareTo(other.getName());
+	}
+	/**
+	 * Gets the default special bit. <b>Only properly set when in EditorUI.</b>
+	 * 
+	 * @return the special bit
+	 */
+	public int getDefaultSpecial() {
+		return special;
 	}
 	/**
 	 * Gets the default Z buffer coordinate.
