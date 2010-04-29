@@ -27,8 +27,10 @@ junct2.png, 1x1square.dat, junct2, 0
 junct2wall.png, 1x1square.dat, junct2wall, 0
 junct2corner.png, 1x1square.dat, junct2corner, 0
 junct2light.png, 1x1square.dat, junct2light, 0
+junct2floor.png, 1x1square.dat, junct2floor, 0
 junct3.png, 1x1square.dat, junct3, 0
 junct3light.png, 1x1square.dat, junct3light, 0
+junct3floor.png, 1x1square.dat, junct3floor, 0
 junct3open.png, 1x1square.dat, junct3open, 0
 junct4.png, 1x1square.dat, junct4, 0
 junct4open.png, 1x1square.dat, junct4open, 0
@@ -43,4 +45,8 @@ camera.png, 1x1square.dat, camera, 1
 laserbase.png, 1x1square.dat, laserbase, 1
 lasermid.png, 1x1square.dat, lasermid, 1
 laserz.png, 1x1square.dat, laserz, 1
+laserwall.png, 1x1square.dat, laserwall, 1
+laserend.png, 1x1square.dat, laserend, 1
+laserbaseend.png, 1x1square.dat, laserbaseend, 1
+laserdoublebase.png, 1x1square.dat, laserdoublebase, 1
 cameramount.png, 1x1square.dat, cameramount, 1

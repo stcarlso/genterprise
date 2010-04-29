@@ -58,7 +58,7 @@ public class GameWindow extends JPanel implements Constants {
 		add(load, BorderLayout.CENTER);
 		validate();
 	
-		LevelReader lreader = new LevelReader(res, "../jumplol.dat");
+		LevelReader lreader = new LevelReader(res, "../branches/levels/jumplol.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
@@ -134,8 +134,12 @@ public class GameWindow extends JPanel implements Constants {
 				} else {
 					if(player.jumps>1)
 						player.jumps=1;
-					if(player.status==WALKING || player.status==DUCKING)
+					if(player.status==WALKING || player.status==DUCKING) {
 						player.status=NORMAL;
+						player.left=.1;
+						player.right=.9;
+						player.top=1.75;
+					}
 				}
 				//****************KEY RESPONSE*******************
 				//refresh when touching ground, tell the player where he is
@@ -260,7 +264,7 @@ public class GameWindow extends JPanel implements Constants {
 				player.vx+=player.ax*dt;
 				//move with velocity (speed limit of 1)	
 				if(!(player.walls[LEFT] && player.vx<0) && !(player.walls[RIGHT] && player.vx>0)) {
-					player.x+=Math.signum(player.vx)*Math.min(.3,Math.abs(player.vx))*dt;
+					player.x+=Math.signum(player.vx)*Math.min(.2,Math.abs(player.vx))*dt;
 				} else {					
 					player.vx=0;
 					player.ax=0;
@@ -409,8 +413,14 @@ public class GameWindow extends JPanel implements Constants {
 						System.out.println("You just tried to save");
 					if(element.getSource().getName().indexOf("door") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
 						System.out.println("You just tried to win. But you cannot win. I LOST!");
-					if(element.getSource().getName().indexOf("ladder") >= 0 && (up||down)) // TODO: change this to use attributes
+					if(element.getSource().getName().indexOf("ladder") >= 0 && (up||down)) { // TODO: change this to use attributes
+						player.status = LADDER;
+						left=.1;
+						right=.9;
+						top=1.9;
+						bottom=0;
 						System.out.println("You just tried to use a ladder");
+					}
 				}										
 			}
 		}
