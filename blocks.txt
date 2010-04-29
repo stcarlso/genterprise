@@ -1,15 +1,16 @@
 [Scenery]
+ladder-scene.png, 1x1square.dat, ladder-scene, -1
 checkerboard.png, 1x1square.dat, checkerboard, -2
 darkcheck.png, 1x1dark.dat, darkcheck, -2
 grass.png, 1x1square.dat, grass, -2
 null, 1x1dark.dat, gray, -2
 [Elements]
-ladder.png, 1x1square.dat, ladder, -1
-door.png, 2x1square.dat, door, -1
-savepoint.png, 2x1square.dat, savepoint, -1
+ladder.png, 1x1square.dat, ladder, -1, 1
+door.png, 2x1square.dat, door, -1, 2
+savepoint.png, 2x1square.dat, savepoint, -1, 3
 [Overlays]
 ceilinglighting.png, 1x1square.dat, ceilinglighting, 2
-static-spot-1.png, 2x2square.dat, static-spot-1, 2
+static-spot-1.png, 2x2square.dat, static-spot-1, 2, 5
 [Statics]
 angleblock.png, 1x1square.dat, angleblock, 0
 angletransition.png, 1x1square.dat, angletransition, 0
@@ -41,14 +42,14 @@ platformsingle.png, 1x1square.dat, platformsingle, 0
 platformcorner.png, 1x1square.dat, platformcorner, 0
 platformlight.png, 1x1square.dat, platformlight, 0
 [Enemies]
-camera.png, 1x1square.dat, camera, 1
-laserbase.png, 1x1square.dat, laserbase, 1
-lasermid.png, 1x1square.dat, lasermid, 1
-laserz.png, 1x1square.dat, laserz, 1
-laserwall.png, 1x1square.dat, laserwall, 1
-laserwallbase.png, 1x1square.dat, laserwallbase, 1
-laserwallmid.png, 1x1square.dat, laserwallmid, 1
-laserend.png, 1x1square.dat, laserend, 1
-laserbaseend.png, 1x1square.dat, laserbaseend, 1
-laserdoublebase.png, 1x1square.dat, laserdoublebase, 1
+camera.png, 1x1square.dat, camera, 1, 5
+laserbase.png, 1x1square.dat, laserbase, 1, 4
+lasermid.png, 1x1square.dat, lasermid, 1, 4
+laserz.png, 1x1square.dat, laserz, 1, 4
+laserwall.png, 1x1square.dat, laserwall, 1, 6
+laserwallbase.png, 1x1square.dat, laserwallbase, 1, 6
+laserwallmid.png, 1x1square.dat, laserwallmid, 1, 6
+laserend.png, 1x1square.dat, laserend, 1, 4
+laserbaseend.png, 1x1square.dat, laserbaseend, 1, 4
+laserdoublebase.png, 1x1square.dat, laserdoublebase, 1, 4
 cameramount.png, 1x1square.dat, cameramount, 1
