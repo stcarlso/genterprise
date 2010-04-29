@@ -282,6 +282,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private JTextField propMotion;
 	/**
+	 * The special bit of the object.
+	 */
+	private JTextField propSpecial;
+	/**
 	 * Properties dialog.
 	 */
 	private JDialog propDialog;
@@ -319,7 +323,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader("blocks.txt"));
 			String line, texSrc, geoSrc, name; StringTokenizer str; double z;
-			category.clear(); Element element;
+			category.clear(); Element element; int sp;
 			List<Element> list = new ArrayList<Element>(32);
 			category.put("No category", list);
 			while ((line = br.readLine()) != null) {
@@ -341,7 +345,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 					geoSrc = str.nextToken().trim();
 					name = str.nextToken().trim();
 					z = Double.parseDouble(str.nextToken().trim());
-					element = new Element(texSrc, geoSrc, name, z);
+					if (str.hasMoreTokens())
+						sp = Integer.parseInt(str.nextToken().trim());
+					else
+						sp = 0;
+					element = new Element(texSrc, geoSrc, name, z, sp);
 					addElement(element);
 					list.add(element);
 				}
@@ -501,15 +509,22 @@ public class EditorUI extends JFrame implements GLEventListener {
 		propDialog.addWindowListener(events);
 		propName = new JTextField(32);
 		propName.setActionCommand("noprops");
+		propName.addActionListener(events);
 		Utils.fixShiftBackspace(propName);
 		propMotion = new JTextField(32);
 		propMotion.setActionCommand("noprops");
+		propMotion.addActionListener(events);
 		Utils.fixShiftBackspace(propMotion);
+		propSpecial = new JTextField(32);
+		propSpecial.setActionCommand("noprops");
+		propSpecial.addActionListener(events);
+		Utils.fixShiftBackspace(propSpecial);
 		Container c = propDialog.getContentPane();
 		JComponent props = new Box(BoxLayout.Y_AXIS);
 		// add rows
 		props.add(addHorizontal("Name:", propName));
 		props.add(addHorizontal("Motion:", propMotion));
+		props.add(addHorizontal("Special:", propSpecial));
 		c.add(props, BorderLayout.CENTER);
 		JPanel horiz = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
 		horiz.setOpaque(false);
@@ -580,7 +595,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		tools.setMnemonic(KeyEvent.VK_T);
 		tools.add(createMenuItem("Refresh Block List", "blocklist", 0));
 		tools.add(createMenuItem("Auto Resource Generator", "resgen", 0));
+		tools.addSeparator();
 		tools.add(createMenuItem("Move Start Point...", "translate", KeyEvent.VK_M));
+		tools.add(createMenuItem("Set Special Bits", "special", 0));
 		across.add(tools);
 		setJMenuBar(across);
 	}
@@ -658,6 +675,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		Vector3 rotVec = new Vector3(flipX ? 180 : 0, flipY ? 180 : 0, rotation);
 		GameObject newObject = new GameObject(coords.x, coords.y, dropping.getDefaultZ(),
 			rotVec, dropping);
+		newObject.putAttribute("special", Integer.toString(dropping.getDefaultSpecial()));
 		synchronized (block) {
 			block.addObject(newObject);
 			if (event == PLACE_IFNOT)
@@ -1211,6 +1229,14 @@ public class EditorUI extends JFrame implements GLEventListener {
 			selected.putAttribute("motion", null);
 		else
 			selected.putAttribute("motion", text);
+		text = propSpecial.getText();
+		if (text == null || text.length() < 1)
+			selected.putAttribute("special", "0");
+		else try {
+			selected.putAttribute("special", Integer.toString(Integer.parseInt(text)));
+		} catch (Exception e) {
+			propSpecial.setText(selected.getAttribute("special"));
+		}
 	}
 	/**
 	 * Gets the properties from the block and puts them into the window.
@@ -1227,6 +1253,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 			propMotion.setText("");
 		else
 			propMotion.setText(attrib);
+		attrib = selected.getAttribute("special");
+		if (attrib == null)
+			propSpecial.setText("0");
+		else
+			propSpecial.setText(attrib);
 	}
 	/**
 	 * Erases everything and makes a new file.
@@ -1369,6 +1400,18 @@ public class EditorUI extends JFrame implements GLEventListener {
 			canvas.requestFocus();
 		}
 	}
+	/**
+	 * Sets the special bit on ALL blocks!
+	 */
+	private void setSpecial() {
+		if (!yesNo("This will override the special bit on ALL blocks!\n\nContinue?")) return;
+		Iterator<GameObject> it = block.getElements().iterator();
+		GameObject o;
+		while (it.hasNext()) {
+			o = it.next();
+			o.putAttribute("special", Integer.toString(elements.get(o.getSource().getName()).getDefaultSpecial()));
+		}
+	}
 
 	/**
 	 * Listens for events in the edit code text area.
@@ -1467,6 +1510,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			else if (cmd.equals("open")) open();
 			else if (cmd.equals("new")) newFile();
 			else if (cmd.equals("translate")) moveLevel();
+			else if (cmd.equals("special")) setSpecial();
 			else if (cmd.equals("blocklist") &&
 				yesNo("Regenerate block list? Will close the editor without save!!!\n" +
 					"You should probably auto resource first if you have not already.")) {

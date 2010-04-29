@@ -67,6 +67,20 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 		return attributes.get(name);
 	}
 	/**
+	 * Gets the "special" attribute bit.
+	 * 
+	 * @return the special bit (default 0)
+	 */
+	public int getSpecialBit() {
+		String sp = getAttribute("special", "0");
+		if (sp == null) return 0;
+		try {
+			return Integer.parseInt(sp);
+		} catch (Exception e) {
+			return 0;
+		}
+	}
+	/**
 	 * Gets the attribute specified by name.
 	 * 
 	 * @param name the attribute name to get
