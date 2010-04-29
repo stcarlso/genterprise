@@ -15,11 +15,12 @@ public class Player implements Constants {
 	double top;
 	double bottom;
 	
-	int jumps;
 	int wallJumps;
 	int suspicion;
 	int status;
 	
+	boolean groundJump;
+	boolean airJump;
 	boolean facingRight;
 	
 	boolean[] walls;
@@ -45,7 +46,6 @@ public class Player implements Constants {
 		top=1.75;
 		bottom=0;
 		
-		jumps=2;
 		wallJumps=1;
 		
 		suspicion=0;

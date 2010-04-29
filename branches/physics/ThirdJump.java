@@ -9,7 +9,7 @@ public class ThirdJump extends Move {
 	}
 	
 	public void initiate() {
-		player.jumps=0;
+		player.airJump=false;
 		player.vy=.5;
 		if(player.facingRight)
 			player.vx=.35;
