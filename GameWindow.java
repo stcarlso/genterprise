@@ -210,7 +210,7 @@ public class GameWindow extends JPanel implements Constants {
 								player.ax=.02;
 						}
 						
-						if(up && player.status!=LADDER && !upDone) {
+						if(up && player.status != HELPLESS && player.status != LADDER && !upDone) {
 							if(player.walls[DOWN]) {
 								if(player.groundJump) {
 									player.vy=.4;
