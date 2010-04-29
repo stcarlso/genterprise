@@ -58,7 +58,7 @@ public class GameWindow extends JPanel implements Constants {
 		add(load, BorderLayout.CENTER);
 		validate();
 	
-		LevelReader lreader = new LevelReader(res, "../branches/levels/jumplol.dat");
+		LevelReader lreader = new LevelReader(res, "../branches/levels/test-revamp.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
@@ -108,11 +108,13 @@ public class GameWindow extends JPanel implements Constants {
 		}
 		public void run() {
 			while(true) {
+				while (paused) Utils.sleep(1L);
 				time+=dt;
 				
 				//player state determination
 				if(player.walls[DOWN] && player.vy<=0) { //this condition will be obsolete after level editor, tells whether player is grounded
-					player.jumps=2;
+					player.groundJump=true;
+					player.airJump=true;
 					player.wallJumps=2;
 					if(down && player.ability==null) {
 						player.status=DUCKING;
@@ -132,8 +134,7 @@ public class GameWindow extends JPanel implements Constants {
 					if(player.status==HELPLESS)
 						player.status=NORMAL;
 				} else {
-					if(player.jumps>1)
-						player.jumps=1;
+					player.groundJump=false;
 					if(player.status==WALKING || player.status==DUCKING) {
 						player.status=NORMAL;
 						player.left=.1;
@@ -145,7 +146,7 @@ public class GameWindow extends JPanel implements Constants {
 				//refresh when touching ground, tell the player where he is
 				
 				if(player.ability==null){
-					if(act && player.status!=HELPLESS) {
+					if(act && player.status!=LADDER && player.status!=HELPLESS) {
 						if(!player.walls[DOWN]) {
 							player.ability=new AirDodge(player);
 						} else if(player.walls[DOWN]){
@@ -163,7 +164,7 @@ public class GameWindow extends JPanel implements Constants {
 						}
 
 						act=false;
-					} else if(move && player.status!=HELPLESS) {
+					} else if(move && player.status!=LADDER && player.status!=HELPLESS) {
 						if(up) {
 							player.ability=new ThirdJump(player);
 						}
@@ -173,9 +174,13 @@ public class GameWindow extends JPanel implements Constants {
 						//basic movement
 						if(left) {
 							player.facingRight=false;
-							if(player.status==DUCKING)
+							if(player.status==DUCKING) {
 								player.ax=-.04;
-							else if(player.walls[DOWN]) {
+							} else if(player.status==LADDER) {
+								player.ax=-.2;
+								player.ay=.2;
+								player.status=NORMAL;								
+							} else if(player.walls[DOWN]) {
 								player.ax=-.15;
 								if(player.status==NORMAL)
 									player.status=WALKING;
@@ -187,9 +192,13 @@ public class GameWindow extends JPanel implements Constants {
 								player.ax=-.02;
 						} else if(right) {
 							player.facingRight=true;
-							if(player.status==DUCKING)
+							if(player.status==DUCKING) {
 								player.ax=.04;
-							else if(player.walls[DOWN]) {
+							} else if(player.status==LADDER) {
+								player.ax=.2;
+								player.ay=.2;
+								player.status=NORMAL;
+							} else if(player.walls[DOWN]) {
 								player.ax=.15;
 								if(player.status==NORMAL)
 									player.status=WALKING;
@@ -201,11 +210,27 @@ public class GameWindow extends JPanel implements Constants {
 								player.ax=.02;
 						}
 						
-						if(up && !upDone && player.jumps>0) {
-							player.vy=.4;
-							player.jumps--;
+						if(up && player.status!=LADDER && !upDone) {
+							if(player.walls[DOWN]) {
+								if(player.groundJump) {
+									player.vy=.4;
+									player.groundJump=false;
+								}
+							} else {
+								if(player.airJump) {
+									player.vy=.4;
+									player.airJump=false;
+								}
+							}
 						}
 						upDone=up;
+						
+						if(player.status==LADDER) {
+							if(up)
+								player.y+=.05;
+							else if(down)
+								player.y-=.05;
+						} 
 					}
 				}
 				
@@ -252,7 +277,7 @@ public class GameWindow extends JPanel implements Constants {
 				}
 				collideTest();
 								
-				if(!(player.walls[UP] && player.vy>0) && !(player.walls[DOWN] && player.vy<=0)) {
+				if(player.status!= LADDER && !(player.walls[UP] && player.vy>0) && !(player.walls[DOWN] && player.vy<=0)) {
 					player.ay+=-gravity;
 					player.vy+=player.ay*dt;
 					player.y+=Math.signum(player.vy)*Math.min(.3,Math.abs(player.vy))*dt;
@@ -262,9 +287,9 @@ public class GameWindow extends JPanel implements Constants {
 				}
 				
 				player.vx+=player.ax*dt;
-				//move with velocity (speed limit of 1)	
-				if(!(player.walls[LEFT] && player.vx<0) && !(player.walls[RIGHT] && player.vx>0)) {
-					player.x+=Math.signum(player.vx)*Math.min(.2,Math.abs(player.vx))*dt;
+				//move with velocity (with speed limit)	
+				if(player.status!= LADDER && !(player.walls[LEFT] && player.vx<0) && !(player.walls[RIGHT] && player.vx>0)) {
+					player.x+=Math.signum(player.vx)*Math.min(.3,Math.abs(player.vx))*dt;
 				} else {					
 					player.vx=0;
 					player.ax=0;
@@ -404,24 +429,34 @@ public class GameWindow extends JPanel implements Constants {
 			
 			//interactive element detection
 			itr = interactives.iterator();
+			boolean ladder=false;
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
-				if(left > element.getX() && right < element.getX()+source.getWidth()
+				if(left > element.getX()-.2 && right < element.getX()+source.getWidth()+.2
 					&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
 					if(element.getSource().getName().indexOf("savepoint") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
 						System.out.println("You just tried to save");
 					if(element.getSource().getName().indexOf("door") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
 						System.out.println("You just tried to win. But you cannot win. I LOST!");
-					if(element.getSource().getName().indexOf("ladder") >= 0 && (up||down)) { // TODO: change this to use attributes
-						player.status = LADDER;
-						left=.1;
-						right=.9;
-						top=1.9;
-						bottom=0;
-						System.out.println("You just tried to use a ladder");
+					if(element.getSource().getName().indexOf("ladder") >= 0) { // TODO: change this to use attributes
+						ladder=true;
+						if(up||down) {
+							System.out.println("You just tried to use a ladder");
+							player.status = LADDER;
+							player.x=element.getX();
+							left=.1;
+							right=.9;
+							top=1.75;
+							bottom=0;			
+							player.groundJump=false;
+							player.airJump=true;
+						}
 					}
 				}										
+			}
+			if (!ladder && player.status==LADDER) {
+				player.status = NORMAL;
 			}
 		}
 	}
