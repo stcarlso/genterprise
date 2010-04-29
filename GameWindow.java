@@ -58,7 +58,7 @@ public class GameWindow extends JPanel implements Constants {
 		add(load, BorderLayout.CENTER);
 		validate();
 	
-		LevelReader lreader = new LevelReader(res, "../branches/levels/test-revamp.dat");
+		LevelReader lreader = new LevelReader(res, "../branches/levels/jumplol.dat");
 		level = lreader.getLevel();
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
@@ -71,14 +71,14 @@ public class GameWindow extends JPanel implements Constants {
 				element.getSource().loadGeometry(res);
 			if(element.getZ() == 0.)
 				elements.add(element);
-			else if(element.getSource().getName().indexOf("laser") >= 0)
+			else if(element.getSpecialBit() == 4 || element.getSpecialBit() == 6)
 				lasers.add(element);
-			else if(element.getSource().getName().indexOf("savepoint") >= 0 || element.getSource().getName().indexOf("door") >= 0 || element.getSource().getName().indexOf("ladder") >= 0)
+			else if(element.getSpecialBit() != 0)
 				interactives.add(element);
 		}
 
 		player= new Player();
-		GLCapabilities glcaps = new GLCapabilities(); 
+		GLCapabilities glcaps = new GLCapabilities();
 		canvas = new GLCanvas(glcaps);
 
 		GLGameListener listener= new GLGameListener(player,sync);
@@ -435,11 +435,11 @@ public class GameWindow extends JPanel implements Constants {
 				Element source = element.getSource();
 				if(left > element.getX()-.2 && right < element.getX()+source.getWidth()+.2
 					&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
-					if(element.getSource().getName().indexOf("savepoint") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
+					if(element.getSpecialBit() == 3 && player.ability instanceof Activate)
 						System.out.println("You just tried to save");
-					if(element.getSource().getName().indexOf("door") >= 0 && player.ability instanceof Activate) // TODO: change this to use attributes
+					if(element.getSpecialBit() == 2 && player.ability instanceof Activate)
 						System.out.println("You just tried to win. But you cannot win. I LOST!");
-					if(element.getSource().getName().indexOf("ladder") >= 0) { // TODO: change this to use attributes
+					if(element.getSpecialBit() == 1) {
 						ladder=true;
 						if(up||down) {
 							System.out.println("You just tried to use a ladder");
