@@ -46,6 +46,8 @@ laserbase.png, 1x1square.dat, laserbase, 1
 lasermid.png, 1x1square.dat, lasermid, 1
 laserz.png, 1x1square.dat, laserz, 1
 laserwall.png, 1x1square.dat, laserwall, 1
+laserwallbase.png, 1x1square.dat, laserwallbase, 1
+laserwallmid.png, 1x1square.dat, laserwallmid, 1
 laserend.png, 1x1square.dat, laserend, 1
 laserbaseend.png, 1x1square.dat, laserbaseend, 1
 laserdoublebase.png, 1x1square.dat, laserdoublebase, 1
