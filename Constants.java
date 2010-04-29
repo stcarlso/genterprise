@@ -10,12 +10,14 @@ public interface Constants {
 	 * 2: walking
 	 * 3: invincibility
 	 * 4: helplessness  
+	 * 5: being on a ladder
 	 */
 	public static final int NORMAL=0;
 	public static final int WALKING=1;
 	public static final int DUCKING=2;
 	public static final int INVINCIBLE=3;
 	public static final int HELPLESS=4;	
+	public static final int LADDER=5;
 	
 	//Used to store directions in an int
 	public static final int RIGHT=0;
