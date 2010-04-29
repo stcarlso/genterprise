@@ -75,11 +75,13 @@ public class GEnterprise extends JFrame implements Runnable {
 		player = new MusicThread(res);
 		setupMenus();
 		player.load("click1.wav");
+		player.load("watching.mp3");
 		frame.setVisible(false);
 		frame.dispose();
 		frame = null;
 		setScreenSize();
 		player.start();
+		player.queueMusic("watching.mp3");
 	}
 	/**
 	 * Sets the display resolution to what the graphics preferences want.
@@ -153,6 +155,7 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * Closes the program.
 	 */
 	public void close() {
+		player.stopMusic();
 		GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment()
 			.getDefaultScreenDevice();
 		setVisible(false);

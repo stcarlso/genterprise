@@ -1,5 +1,6 @@
 import java.util.*;
 import javax.sound.sampled.*;
+import javazoom.jl.player.advanced.*;
 
 /**
  * Creates a thread which plays music and sound effects.
@@ -10,7 +11,7 @@ public class MusicThread extends Thread {
 	/**
 	 * Map of loaded sounds.
 	 */
-	private Map<String, Clip> map;
+	private Map<String, Object> map;
 	/**
 	 * List of songs to play.
 	 */
@@ -19,6 +20,22 @@ public class MusicThread extends Thread {
 	 * Place to get songs.
 	 */
 	private ResourceGetter res;
+	/**
+	 * A child thread for MP3 playing.
+	 */
+	private MusicThread child;
+	/**
+	 * Whether the thread is running.
+	 */
+	private volatile boolean running;
+	/**
+	 * The method to play MP3s with JLayer.
+	 */
+	private AdvancedPlayer mp3player;
+	/**
+	 * Whether loop is on.
+	 */
+	private boolean loop;
 
 	/**
 	 * Creates a music thread that will get songs from the given place.
@@ -27,22 +44,92 @@ public class MusicThread extends Thread {
 	 */
 	public MusicThread(ResourceGetter res) {
 		super("Music Thread");
+		running = false;
 		setPriority(Thread.MIN_PRIORITY + 1);
 		setDaemon(true);
-		map = new HashMap<String, Clip>(64);
+		map = new HashMap<String, Object>(64);
 		this.res = res;
 		toPlay = new LinkedList<String>();
+		child = new MusicThread(this);
+		mp3player = null;
+		child.start();
+		loop = false;
+	}
+	/**
+	 * Used for making child music threads for MP3s.
+	 * 
+	 * @param parent the parent thread
+	 */
+	private MusicThread(MusicThread parent) {
+		super("MP3 Thread");
+		running = false;
+		setPriority(Thread.MIN_PRIORITY);
+		setDaemon(true);
+		map = new HashMap<String, Object>(64);
+		this.res = parent.res;
+		toPlay = new LinkedList<String>();
+		child = null;
+		mp3player = null;
+		loop = false;
+	}
+	/**
+	 * Gets whether this music thread is currently blocked playing a song.
+	 * 
+	 * @return whether the child thread is playing a MP3
+	 */
+	private boolean isRunning() {
+		return running;
+	}
+	/**
+	 * Checks to see if an MP3 is playing.
+	 * 
+	 * @return whether an MP3 is playing
+	 */
+	public boolean mp3Playing() {
+		return child.isRunning();
+	}
+	/**
+	 * Sets whether the sound track will loop.
+	 * 
+	 * @param loop whether the sound track will globally loop
+	 */
+	public void setLoop(boolean loop) {
+		if (child != null) child.setLoop(loop);
+		else this.loop = loop;
+	}
+	/**
+	 * Stops all sounds!
+	 */
+	public void stopMusic() {
+		toPlay.clear();
+		if (child != null) child.stopMusic();
+		else if (mp3player != null) mp3player.stop();
 	}
 	public void run() {
-		while (true) {
+		String song;
+		if (child == null) while (true) {
+			while (toPlay.size() < 1) Utils.sleep(5L);
+			synchronized (this) {
+				song = toPlay.remove(0);
+				if (loop) toPlay.add(song);
+			}
+			mp3player = (AdvancedPlayer)map.get(song);
+			if (mp3player != null) try {
+				running = true;
+				mp3player.play(0, Integer.MAX_VALUE);
+				running = false;
+				mp3player = null;
+			} catch (Exception e) { }
+		} else while (true) {
 			synchronized (this) {
 				Iterator<String> it = toPlay.iterator();
-				String song;
 				while (it.hasNext()) {
 					song = it.next();
-					if (song.endsWith(".mp3")); // no mp3s yet
+					if (song.endsWith(".mp3") && child != null)
+						// pass mp3 to child
+						child.queueMusic(song);
 					else {
-						Clip clip = map.get(song);
+						Clip clip = (Clip)map.get(song);
 						if (clip != null) {
 							// wav
 							clip.stop();
@@ -57,12 +144,19 @@ public class MusicThread extends Thread {
 		}
 	}
 	/**
-	 * Loads the given song.
+	 * Loads the given sound effect.
 	 * 
 	 * @param file the file to load
 	 */
 	public synchronized void load(String file) {
-		try {
+		if (file.endsWith(".mp3")) {
+			if (child == null) try {
+				map.put(file, new AdvancedPlayer(res.getResource("sound/" + file)));
+			} catch (Exception e) {
+				map.put(file, null);
+			} else
+				child.load(file);
+		} else try {
 			Clip clip = AudioSystem.getClip();
 			clip.open(AudioSystem.getAudioInputStream(res.getResource("sound/" + file)));
 			clip.setFramePosition(0);
@@ -73,7 +167,7 @@ public class MusicThread extends Thread {
 		}
 	}
 	/**
-	 * Queues the given music item.
+	 * Queues the given music item. Music <b>must</b> first be loaded, <i>no exceptions.</i>
 	 * 
 	 * @param song the 
 	 */
