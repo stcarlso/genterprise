@@ -32,6 +32,12 @@ public class Player implements Constants {
 	Texture duck;
 	
 	public Player() {
+		//texture loading
+		walk = new Texture[8];
+		walls = new boolean[4];
+		reset();
+	}
+	public void reset() {
 		x=0;
 		y=0;
 		vx=0;
@@ -50,14 +56,11 @@ public class Player implements Constants {
 		
 		suspicion=0;
 		facingRight=true;
-		
-		walls = new boolean [4];
+
+		walls[DOWN] = walls[UP] = walls[LEFT] = walls[RIGHT] = false;
 		ability=null;
 		color= Color.white;
 		
 		status=NORMAL;
-		
-		//texture loading
-		walk = new Texture[8];
 	}
 }

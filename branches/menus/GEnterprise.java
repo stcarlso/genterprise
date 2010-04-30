@@ -130,7 +130,7 @@ public class GEnterprise extends JFrame implements Runnable {
 		Container c = getContentPane();
 		c.setBackground(Color.BLACK);
 		c.setLayout(new BorderLayout(10, 10));
-		header = new JLabel("Gunther's Enterprise");
+		header = new JLabel(res.getIcon("title.png"));
 		header.setHorizontalAlignment(SwingConstants.CENTER);
 		header.setFont(header.getFont().deriveFont(56.f));
 		header.setBorder(BorderFactory.createEmptyBorder(50, 0, 50, 0));
