@@ -34,6 +34,7 @@ public class GameWindow extends JPanel implements Constants {
 	int height=0;
 	
 	long time=0;
+	int fade=0;
 	
 	char action='a';
 	char movement='d';
@@ -69,7 +70,7 @@ public class GameWindow extends JPanel implements Constants {
 		GLCapabilities glcaps = new GLCapabilities();
 		canvas = new GLCanvas(glcaps);
 
-		GLGameListener listener= new GLGameListener(player,sync);
+		GLGameListener listener= new GLGameListener(player);
 		canvas.addKeyListener(listener);
 		canvas.addGLEventListener(listener);   // add event listener
 		removeAll();
@@ -120,7 +121,7 @@ public class GameWindow extends JPanel implements Constants {
 		}
 		public void run() {
 			while(true) {
-				while (paused) Utils.sleep(1L);
+				while (paused || fade > 0) Utils.sleep(1L);
 				time+=dt;
 				
 				synchronized (sync) {
@@ -316,7 +317,7 @@ public class GameWindow extends JPanel implements Constants {
 				if (time % 2 == 0)
 					moveLasers();
 				//recover suspicion
-				if (time % 3 == 0)
+				if (time % 6 == 0)
 					player.suspicion=Math.max(0,player.suspicion-1);
 			
 				try {				
@@ -445,9 +446,9 @@ public class GameWindow extends JPanel implements Constants {
 					if(centerx<=right && centerx>=left && centery>=bottom && centery<=top)
 						player.suspicion += Math.min(Math.max(5, 120*Math.hypot((top+bottom)/2.0,
 							(left+right)/2.0)), 24);
-				} else if(player.status!=INVINCIBLE) {
+				} else if (player.status != INVINCIBLE) {
 					//for lasers along the X or Y axis
-					if(element.getRotation() % 180==0) {
+					if (element.getRotation() % 180 == 0) {
 						if( //floor
 							right > element.getX()+.43 && left < element.getX()+source.getWidth()-.43
 							&& bottom+.9 >= element.getY()+source.getHeight() && bottom <=
@@ -465,7 +466,10 @@ public class GameWindow extends JPanel implements Constants {
 							//right
 							top > element.getY() && bottom < element.getY()+source.getHeight()
 							&& right >= element.getX()+.43 && left <= element.getX()+.43) {
-							player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vx)),24);
+							if (element.getSpecialBit() == 6)
+								fade = 60;
+							else
+								player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vx)),24);
 						}
 					} else {
 						if(//bottom
@@ -485,11 +489,14 @@ public class GameWindow extends JPanel implements Constants {
 							//right
 							top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
 							&& right >= element.getX() && left <= element.getX()) {
-							player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vy)),24);
-						} 
+							if (element.getSpecialBit() == 6)
+								fade = 60;
+							else
+								player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vy)),24);
+						}
 					}
 				}
-			} 
+			}
 			
 			//interactive element detection
 			itr = interactives.iterator();
@@ -501,9 +508,13 @@ public class GameWindow extends JPanel implements Constants {
 					&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
 					if(element.getSpecialBit() == 3 && player.ability instanceof Activate)
 						System.out.println("You just tried to save");
-					if(element.getSpecialBit() == 2 && player.ability instanceof Activate)
-						System.out.println("You just tried to win. But you cannot win.");
-					if(element.getSpecialBit() == 1) {
+					if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
+						if (element.getAttribute("name", "").equalsIgnoreCase("end")) {
+							System.out.println("You won, but I lost!");
+							fade = 60;
+						} else
+							System.out.println("You just tried to win. But you cannot win.");
+					} if (element.getSpecialBit() == 1) {
 						ladder=true;
 						if(up||down) {
 							System.out.println("You just tried to use a ladder");
@@ -528,29 +539,45 @@ public class GameWindow extends JPanel implements Constants {
 			player.walls[RIGHT]=wallRight;
 		}
 	}
-	
+
 	public class GLGameListener implements GLEventListener, KeyListener {
 		private FloatBuffer suspicion;
 
 		private double player_x;
 		private double player_y;
 		
-		public GLGameListener(Player you, Object synch) {
+		public GLGameListener(Player you) {
 			player=you;
 		}
 		
 		public void display(GLAutoDrawable drawable) {
-			GL gl = drawable.getGL();   		
-		 	gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-		 	
-		 	gl.glLoadIdentity();
-		 	player_x = player.x;
-		 	player_y = player.y;
-		 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
-
-			renderScene(gl);
-			drawCharacter(gl);
-			drawSuspicion(gl,player.suspicion);
+			GL gl = drawable.getGL();
+			if (fade > 1) {
+				Element.clearOptions(gl);
+				gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
+				gl.glLoadIdentity();
+				gl.glColor4f(0.0f, 0.0f, 0.0f, 0.05f);
+				gl.glBegin(GL.GL_QUADS);
+				gl.glVertex3d(-30, -30, 0);
+				gl.glVertex3d(-30, 30, 0);
+				gl.glVertex3d(30, 30, 0);
+				gl.glVertex3d(30, -30, 0);
+				gl.glEnd();
+				fade--;
+				Element.setOptions(gl);
+			} else {
+				if (fade != 0) player.reset();
+			 	gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+			 	gl.glLoadIdentity();
+			 	player_x = player.x;
+			 	player_y = player.y;
+			 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
+				renderScene(gl);
+				drawCharacter(gl);
+				drawSuspicion(gl,player.suspicion);
+				fade = 0;
+			}
+			Utils.sleep(2L);
 		}
 		
 		private void renderScene(GL gl) {
