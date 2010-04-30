@@ -1,3 +1,4 @@
+import java.awt.GraphicsEnvironment;
 import java.io.*;
 import java.lang.Thread.*;
 import java.util.regex.*;
@@ -65,6 +66,8 @@ public class Errors implements UncaughtExceptionHandler {
 		try {
 			System.runFinalization();
 			System.gc();
+			GraphicsEnvironment.getLocalGraphicsEnvironment().
+				getDefaultScreenDevice().setFullScreenWindow(null);
 			StringBuilder message = new StringBuilder(512);
 			message.append("<html><body><font size=\"+2\">Oh no!</font><br>");
 			message.append("While Gunther's Enterprise is pretty close to done, a fatal error occurred.<br>");

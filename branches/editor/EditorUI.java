@@ -289,6 +289,30 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 * Properties dialog.
 	 */
 	private JDialog propDialog;
+	/**
+	 * The speeds of motion.
+	 */
+	private JRadioButton moveSlow;
+	private JRadioButton moveMed;
+	private JRadioButton moveFast;
+	/**
+	 * The types of motion.
+	 */
+	private JRadioButton moveStatic;
+	private JRadioButton moveX;
+	private JRadioButton moveY;
+	/**
+	 * The amount to move.
+	 */
+	private JTextField moveAmount;
+	/**
+	 * The amount to wait at each end.
+	 */
+	private JTextField moveWait;
+	/**
+	 * Movement wizard dialog.
+	 */
+	private JDialog moveDialog;
 
 	/**
 	 * Sets the window title.
@@ -464,6 +488,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		setupBottom();
 		setupMenus();
 		setupCode();
+		setupMove();
 		setupProps();
 		chooser = new JFileChooser();
 		chooser.setCurrentDirectory(new File(".").getAbsoluteFile().getParentFile());
@@ -523,7 +548,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 		JComponent props = new Box(BoxLayout.Y_AXIS);
 		// add rows
 		props.add(addHorizontal("Name:", propName));
+		props.add(Box.createVerticalStrut(2));
 		props.add(addHorizontal("Motion:", propMotion));
+		props.add(Box.createVerticalStrut(2));
 		props.add(addHorizontal("Special:", propSpecial));
 		c.add(props, BorderLayout.CENTER);
 		JPanel horiz = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
@@ -536,6 +563,73 @@ public class EditorUI extends JFrame implements GLEventListener {
 		c.add(horiz, BorderLayout.SOUTH);
 		propDialog.pack();
 		Utils.centerWindow(propDialog);
+	}
+	/**
+	 * Sets up the properties dialog box.
+	 */
+	private void setupMove() {
+		moveDialog = new JDialog(this, "Movement Wizard");
+		moveDialog.setModal(true);
+		moveDialog.setResizable(false);
+		moveDialog.addWindowListener(events);
+		moveAmount = new JTextField(4);
+		moveAmount.setActionCommand("nomove");
+		moveAmount.addActionListener(events);
+		Utils.fixShiftBackspace(moveAmount);
+		moveWait = new JTextField(4);
+		moveWait.setActionCommand("nomove");
+		moveWait.addActionListener(events);
+		Utils.fixShiftBackspace(moveWait);
+		Container c = moveDialog.getContentPane();
+		JComponent props = new Box(BoxLayout.Y_AXIS);
+		// types
+		moveStatic = new JRadioButton("None");
+		moveStatic.setFocusable(false);
+		moveX = new JRadioButton("Left/Right");
+		moveX.setFocusable(false);
+		moveY = new JRadioButton("Up/Down");
+		moveY.setFocusable(false);
+		ButtonGroup moveType = new ButtonGroup();
+		JComponent across = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
+		across.add(moveStatic);
+		moveType.add(moveStatic);
+		across.add(moveX);
+		moveType.add(moveX);
+		across.add(moveY);
+		moveType.add(moveY);
+		props.add(addHorizontal("Type:", across));
+		// speeds
+		moveSlow = new JRadioButton("Slow");
+		moveSlow.setFocusable(false);
+		moveMed = new JRadioButton("Medium");
+		moveMed.setFocusable(false);
+		moveFast = new JRadioButton("Fast");
+		moveFast.setFocusable(false);
+		ButtonGroup moveSpeed = new ButtonGroup();
+		across = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
+		across.add(moveSlow);
+		moveSpeed.add(moveSlow);
+		across.add(moveMed);
+		moveSpeed.add(moveMed);
+		across.add(moveFast);
+		moveSpeed.add(moveFast);
+		props.add(addHorizontal("Speed:", across));
+		// add rows
+		props.add(addHorizontal("Amount:", moveAmount));
+		props.add(Box.createVerticalStrut(2));
+		props.add(addHorizontal("Wait:", moveWait));
+		c.add(props, BorderLayout.CENTER);
+		JPanel horiz = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
+		horiz.setOpaque(false);
+		JButton cancel = new JButton("Close");
+		cancel.setFocusable(false);
+		cancel.setActionCommand("nomove");
+		cancel.addActionListener(events);
+		horiz.add(cancel);
+		c.add(horiz, BorderLayout.SOUTH);
+		moveDialog.pack();
+		Utils.centerWindow(moveDialog);
+		moveDefault();
 	}
 	/**
 	 * Creates a two-component horizontal entry box.
@@ -589,6 +683,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		edit.add(createMenuItem("Flip Y (Y)", "flipy", 0));
 		edit.addSeparator();
 		edit.add(createMenuItem("Properties", "prop", KeyEvent.VK_1));
+		edit.add(createMenuItem("Motion", "movement", KeyEvent.VK_2));
 		edit.add(createMenuItem("Code", "code", KeyEvent.VK_E));
 		across.add(edit);
 		JMenu tools = new JMenu("Tools");
@@ -671,6 +766,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 		if (event == PLACE_IFNOT) {
 			if (lastPlace != null && Math.floor(lastPlace.x) == Math.floor(coords.x) &&
 				Math.floor(lastPlace.y) == Math.floor(coords.y)) return;
+		}
+		if (!snapTo) {
+			coords.x = Math.round(1e4 * coords.x) / 10000.0;
+			coords.y = Math.round(1e4 * coords.y) / 10000.0;
 		}
 		Vector3 rotVec = new Vector3(flipX ? 180 : 0, flipY ? 180 : 0, rotation);
 		GameObject newObject = new GameObject(coords.x, coords.y, dropping.getDefaultZ(),
@@ -1239,6 +1338,47 @@ public class EditorUI extends JFrame implements GLEventListener {
 		}
 	}
 	/**
+	 * Creates a movement string and sets it.
+	 */
+	private void doMove() {
+		String text = null, inc = "";
+		if (selected == null) return;
+		int amount, wait;
+		try {
+			amount = Integer.parseInt(moveAmount.getText().trim());
+			wait = Integer.parseInt(moveWait.getText().trim());
+		} catch (Exception e) {
+			Utils.showWarning("Please enter a number for the wait and amount fields.");
+			return;
+		}
+		if (moveSlow.isSelected())
+			inc = "WW";
+		else if (moveMed.isSelected())
+			inc = "W";
+		if (moveX.isSelected()) {
+			text = "";
+			for (int i = 0; i < 4 * amount; i++)
+				text += "R" + inc;
+			for (int i = 0; i < wait; i++)
+				text += "W";
+			for (int i = 0; i < 4 * amount; i++)
+				text += "L" + inc;
+			for (int i = 0; i < wait; i++)
+				text += "W";
+		} else if (moveY.isSelected()) {
+			text = "";
+			for (int i = 0; i < 4 * amount; i++)
+				text += "U" + inc;
+			for (int i = 0; i < wait; i++)
+				text += "W";
+			for (int i = 0; i < 4 * amount; i++)
+				text += "D" + inc;
+			for (int i = 0; i < wait; i++)
+				text += "W";
+		}
+		selected.putAttribute("motion", text);
+	}
+	/**
 	 * Gets the properties from the block and puts them into the window.
 	 */
 	private void getProps() {
@@ -1412,6 +1552,21 @@ public class EditorUI extends JFrame implements GLEventListener {
 			o.putAttribute("special", Integer.toString(elements.get(o.getSource().getName()).getDefaultSpecial()));
 		}
 	}
+	/**
+	 * Sets default options in the move dialog.
+	 */
+	private void moveDefault() {
+		moveStatic.setSelected(true);
+		moveMed.setSelected(true);
+		moveWait.setText("8");
+		moveAmount.setText("4");
+	}
+	/**
+	 * Brings up a prompt for basic movement.
+	 */
+	private void moveWizard() {
+		moveDialog.setVisible(true);
+	}
 
 	/**
 	 * Listens for events in the edit code text area.
@@ -1453,6 +1608,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 				code = editCode.getText();
 			else if (e.getSource() == propDialog)
 				doProps();
+			else if (e.getSource() == moveDialog)
+				doMove();
 			else if (saveDialog()) {
 				windowClosed(e);
 				System.exit(0);
@@ -1511,6 +1668,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			else if (cmd.equals("new")) newFile();
 			else if (cmd.equals("translate")) moveLevel();
 			else if (cmd.equals("special")) setSpecial();
+			else if (cmd.equals("movement") && selected != null) moveWizard();
 			else if (cmd.equals("blocklist") &&
 				yesNo("Regenerate block list? Will close the editor without save!!!\n" +
 					"You should probably auto resource first if you have not already.")) {
@@ -1538,6 +1696,9 @@ public class EditorUI extends JFrame implements GLEventListener {
 			} else if (cmd.equals("noprops")) {
 				propDialog.setVisible(false);
 				doProps();
+			} else if (cmd.equals("nomove")) {
+				moveDialog.setVisible(false);
+				doMove();
 			}
 		}
 		public void mouseEntered(MouseEvent e) {

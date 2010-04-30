@@ -10,7 +10,7 @@ door.png, 2x1square.dat, door, -1, 2
 savepoint.png, 2x1square.dat, savepoint, -1, 3
 [Overlays]
 ceilinglighting.png, 1x1square.dat, ceilinglighting, 2
-static-spot-1.png, 2x2square.dat, static-spot-1, 2, 5
+static-spot-1.png, 2x2square.dat, static-spot-1, 2, 7
 [Statics]
 angleblock.png, 1x1square.dat, angleblock, 0
 angletransition.png, 1x1square.dat, angletransition, 0
@@ -42,10 +42,10 @@ platformsingle.png, 1x1square.dat, platformsingle, 0
 platformcorner.png, 1x1square.dat, platformcorner, 0
 platformlight.png, 1x1square.dat, platformlight, 0
 [Enemies]
-camera.png, 1x1square.dat, camera, 1, 5
+camera.png, 1x1square.dat, camera, 1, 7
 laserbase.png, 1x1square.dat, laserbase, 1, 4
 lasermid.png, 1x1square.dat, lasermid, 1, 4
-laserz.png, 1x1square.dat, laserz, 1, 4
+laserz.png, 1x1square.dat, laserz, 1, 5
 laserwall.png, 1x1square.dat, laserwall, 1, 6
 laserwallbase.png, 1x1square.dat, laserwallbase, 1, 6
 laserwallmid.png, 1x1square.dat, laserwallmid, 1, 6
