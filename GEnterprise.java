@@ -49,6 +49,18 @@ public class GEnterprise extends JFrame implements Runnable {
 	 */
 	private Menu settings;
 	/**
+	 * Actual pause menu as laid out on screen (fix layout issues)
+	 */
+	private JComponent pMenu;
+	/**
+	 * Normal menu header.
+	 */
+	private JLabel header;
+	/**
+	 * Pause menu header.
+	 */
+	private JLabel headerPause;
+	/**
 	 * The sound and sfx player for the entire game.
 	 */
 	private MusicThread player;
@@ -66,7 +78,7 @@ public class GEnterprise extends JFrame implements Runnable {
 	 */
 	public GEnterprise() {
 		super("Gunther's Enterprise");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setUndecorated(true);
 	}
 	/**
@@ -79,8 +91,9 @@ public class GEnterprise extends JFrame implements Runnable {
 		player = new MusicThread(res);
 		setupMenus();
 		player.load("click1.wav");
+		player.load("aoogahorn.wav");
 		player.load("watching.mp3");
-		gameWindow = new GameWindow();
+		gameWindow = new GameWindow(player);
 		frame.setVisible(false);
 		frame.dispose();
 		frame = null;
@@ -117,12 +130,17 @@ public class GEnterprise extends JFrame implements Runnable {
 		Container c = getContentPane();
 		c.setBackground(Color.BLACK);
 		c.setLayout(new BorderLayout(10, 10));
-		JLabel header = new JLabel("Gunther's Enterprise");
+		header = new JLabel("Gunther's Enterprise");
 		header.setHorizontalAlignment(SwingConstants.CENTER);
 		header.setFont(header.getFont().deriveFont(56.f));
 		header.setBorder(BorderFactory.createEmptyBorder(50, 0, 50, 0));
 		header.setForeground(Color.WHITE);
 		c.add(header, BorderLayout.NORTH);
+		headerPause = new JLabel("Game Paused");
+		headerPause.setHorizontalAlignment(SwingConstants.CENTER);
+		headerPause.setFont(header.getFont());
+		headerPause.setBorder(header.getBorder());
+		headerPause.setForeground(Color.WHITE);
 		main = new Menu(new String[] {
 			"Campaign", "Single Mission", "Records", "Settings", "Exit"
 		}, new String[] {
@@ -141,6 +159,9 @@ public class GEnterprise extends JFrame implements Runnable {
 			"unpause", "keyboard", "sound", "menu", "exit"
 		});
 		pause.setActionListener(events);
+		pMenu = new Box(BoxLayout.Y_AXIS);
+		pMenu.add(pause.layout());
+		pMenu.add(Box.createVerticalStrut(200));
 		setMenu(main);
 	}
 	/**
@@ -184,14 +205,16 @@ public class GEnterprise extends JFrame implements Runnable {
 		gameWindow.start();
 		gameWindow.canvas.requestFocus();
 		while (true) {
+			// pause / un pause
 			while (!gameWindow.paused) Utils.sleep(50L);
 			gameWindow.setVisible(false);
-			current = pause.layout();
 			pause.deselectAll();
-			c.add(current, BorderLayout.NORTH);
+			c.add(headerPause, BorderLayout.NORTH);
+			c.add(pMenu, BorderLayout.SOUTH);
 			c.validate();
 			while (gameWindow.paused) Utils.sleep(50L);
-			c.remove(current);
+			c.remove(headerPause);
+			c.remove(pMenu);
 			c.validate();
 			gameWindow.setVisible(true);
 			gameWindow.canvas.requestFocus();
