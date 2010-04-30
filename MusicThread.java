@@ -103,13 +103,13 @@ public class MusicThread extends Thread {
 	public void stopMusic() {
 		toPlay.clear();
 		if (child != null) child.stopMusic();
-		else if (mp3player != null) mp3player.stop();
+		else if (mp3player != null && running) mp3player.close();
 	}
 	public void run() {
 		String song;
 		if (child == null) while (true) {
 			while (toPlay.size() < 1) Utils.sleep(5L);
-			synchronized (this) {
+			synchronized (toPlay) {
 				song = toPlay.remove(0);
 				if (loop) toPlay.add(song);
 			}
@@ -122,7 +122,7 @@ public class MusicThread extends Thread {
 				mp3player = null;
 			} catch (Exception e) { }
 		} else while (true) {
-			synchronized (this) {
+			synchronized (toPlay) {
 				Iterator<String> it = toPlay.iterator();
 				while (it.hasNext()) {
 					song = it.next();
@@ -172,8 +172,10 @@ public class MusicThread extends Thread {
 	 * 
 	 * @param song the 
 	 */
-	public synchronized void queueMusic(String song) {
-		toPlay.add(song);
+	public void queueMusic(String song) {
+		synchronized (toPlay) {
+			toPlay.add(song);
+		}
 	}
 	/**
 	 * Starts the given sound effect.
@@ -181,9 +183,11 @@ public class MusicThread extends Thread {
 	 * 
 	 * @param name the sound file name to play
 	 */
-	public synchronized void startSFX(String name) {
+	public void startSFX(String name) {
 		if (!map.containsKey(name))
 			load(name);
-		toPlay.add(name);
+		synchronized (toPlay) {
+			toPlay.add(name);
+		}
 	}
 }
