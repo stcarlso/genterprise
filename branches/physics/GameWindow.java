@@ -19,6 +19,7 @@ public class GameWindow extends JPanel implements Constants {
 	Block block;
 	List<GameObject> elements;
 	List<GameObject> lasers;
+	List<GameObject> cameras;
 	List<GameObject> interactives;
 	
 	boolean up;
@@ -98,6 +99,7 @@ public class GameWindow extends JPanel implements Constants {
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
 		lasers = new ArrayList<GameObject>(block.getElements().size());
+		cameras = new ArrayList<GameObject>(block.getElements().size());
 		interactives = new ArrayList<GameObject>(block.getElements().size());
 		Iterator<GameObject> itr = block.getElements().iterator();
 		while(itr.hasNext()) {
@@ -108,6 +110,8 @@ public class GameWindow extends JPanel implements Constants {
 				elements.add(element);
 			else if(element.getSpecialBit() > 3 && element.getSpecialBit() < 7)
 				lasers.add(element);
+			else if(element.getSpecialBit() == 7)
+				cameras.add(element);
 			else if(element.getSpecialBit() != 0)
 				interactives.add(element);
 		}
@@ -463,7 +467,9 @@ public class GameWindow extends JPanel implements Constants {
 			}
 
 			boolean busted = false;
-			//laser detection
+			/**laser detection
+			 * 
+			 */
 			itr = lasers.iterator();
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
@@ -477,7 +483,7 @@ public class GameWindow extends JPanel implements Constants {
 							(left+right)/2.0)), 24);
 						busted = true;
 					}
-				} else if (player.status != INVINCIBLE) {
+				} else {
 					//for lasers along the X or Y axis
 					if (element.getRotation() % 180 == 0) {
 						if( //floor
@@ -501,7 +507,7 @@ public class GameWindow extends JPanel implements Constants {
 								fade = 60;
 								player.reset();
 								playSound("shutdown.wav");
-							} else {
+							} else if (player.status != INVINCIBLE) {
 								player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vx)),24);
 								busted = true;
 							}
@@ -528,7 +534,7 @@ public class GameWindow extends JPanel implements Constants {
 								fade = 60;
 								player.reset();
 								playSound("shutdown.wav");
-							} else {
+							} else if (player.status != INVINCIBLE) {
 								busted = true;
 								player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vy)),24);
 							}
@@ -538,8 +544,23 @@ public class GameWindow extends JPanel implements Constants {
 			}
 			if (busted)
 				playSound("intruderalert.wav");
+			/**
+			 * camera detection
+			 */
+			itr = cameras.iterator();
+			while(itr.hasNext()) {
+				GameObject element = itr.next();
+				Element source = element.getSource();
+				if(Math.hypot((left+right)/2.0-(element.getX()+source.getWidth()/2.0), (bottom+top)/2.0-(element.getY()+source.getHeight()/2.0))<3
+					&& 180.0/Math.PI*(Math.abs(Math.atan2((bottom+top)/2.0-(element.getY()+source.getHeight()/2.0),(left+right)/2.0-(element.getX()+source.getWidth()/2.0))-(element.getRotation()-90)))<=15) {
+					//System.out.println((left+right)/2.0 + " " + (bottom+top)/2.0 + " " + (element.getX()+source.getWidth()/2.0) + " " +(bottom+top)/2.0-(element.getY()+source.getHeight()/2.0));
+					player.suspicion += Math.min(Math.max(3,110*Math.hypot(player.vx,player.vy)),24);
+				}					
+			}
 			
-			//interactive element detection
+			/**interactive element detection
+			 * 
+			 */
 			itr = interactives.iterator();
 			boolean ladder=false;
 			while(itr.hasNext()) {
@@ -917,6 +938,8 @@ public class GameWindow extends JPanel implements Constants {
 				move=true;
 			if(e.getKeyChar()==pause)
 				paused^=true;
+			if(e.getKeyChar()=='q')
+				player.suspicion=0;
 		}
 		
 	}
