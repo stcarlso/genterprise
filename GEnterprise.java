@@ -1,5 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+
 import javax.swing.*;
 
 /**
@@ -72,6 +74,10 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * The game window for actual playing.
 	 */
 	private GameWindow gameWindow;
+	/**
+	 * The credits.
+	 */
+	private Credits comp;
 
 	/**
 	 * Sets the title and window parameters.
@@ -90,10 +96,15 @@ public class GEnterprise extends JFrame implements Runnable {
 		events = new EventListener();
 		player = new MusicThread(res);
 		setupMenus();
+		Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
+			new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB), new Point(8, 8), "blank");
 		player.load("click1.wav");
-		player.load("aoogahorn.wav");
 		player.load("watching.mp3");
+		setIconImage(res.getImage("gunther.png"));
 		gameWindow = new GameWindow(player);
+		gameWindow.setCursor(blankCursor);
+		comp = new Credits(this);
+		comp.setCursor(blankCursor);
 		frame.setVisible(false);
 		frame.dispose();
 		frame = null;
@@ -142,9 +153,9 @@ public class GEnterprise extends JFrame implements Runnable {
 		headerPause.setBorder(header.getBorder());
 		headerPause.setForeground(Color.WHITE);
 		main = new Menu(new String[] {
-			"Campaign", "Single Mission", "Records", "Settings", "Exit"
+			"Campaign", "Single Mission", "Credits", "Settings", "Exit"
 		}, new String[] {
-			"map", "game", "rec", "settings", "exit"
+			"map", "game", "credits", "settings", "exit"
 		});
 		main.setActionListener(events);
 		settings = new Menu(new String[] {
@@ -175,6 +186,18 @@ public class GEnterprise extends JFrame implements Runnable {
 		menu.deselectAll();
 		current = menu.layout();
 		getContentPane().add(current, BorderLayout.CENTER);
+		validate();
+		repaint();
+	}
+	/**
+	 * Resets the whole screen.
+	 */
+	public void reset() {
+		getContentPane().removeAll();
+		main.deselectAll();
+		current = main.layout();
+		getContentPane().add(current, BorderLayout.CENTER);
+		getContentPane().add(header, BorderLayout.NORTH);
 		validate();
 		repaint();
 	}
@@ -220,6 +243,22 @@ public class GEnterprise extends JFrame implements Runnable {
 			gameWindow.canvas.requestFocus();
 		}
 	}
+	/**
+	 * Returns the music player thread.
+	 * 
+	 * @return a way to play music and sound effects
+	 */
+	public MusicThread getMusicThread() {
+		return player;
+	}
+	/**
+	 * Returns the system resource getter.
+	 * 
+	 * @return the system resource location
+	 */
+	public ResourceGetter getResources() {
+		return res;
+	}
 
 	/**
 	 * Handles menu events and mouse events.
@@ -237,6 +276,8 @@ public class GEnterprise extends JFrame implements Runnable {
 				new Thread(GEnterprise.this).start();
 			else if (cmd.equals("unpause"))
 				gameWindow.paused = false;
+			else if (cmd.equals("credits"))
+				comp.start();
 			else if (cmd.equals("exit"))
 				close();
 		}
