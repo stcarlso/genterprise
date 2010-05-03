@@ -65,7 +65,7 @@ public class GameWindow extends JPanel implements Constants {
 		add(load, BorderLayout.CENTER);
 		validate();
 
-		readLevel("../needsblock.dat");
+		readLevel("../peter.dat");
 		if (music != null) {
 			music.load("aoogahorn.wav");
 			music.load("ping.wav");
