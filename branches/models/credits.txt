@@ -1,0 +1,72 @@
+
+
+
+
+Gunther's Enterprise
+SVN 100, Version 1.0.0
+Software Design, Period 6
+Mrs. Collins
+
+
+
+Group Leader
+
+Stephen Carlson
+
+
+Artistic Design
+
+Peter Gu
+
+
+Story Design
+
+Carlos Garcia
+
+
+Level Design
+
+Carlos Garcia
+
+
+Level Editor
+
+Stephen Carlson
+
+
+Physics and Skills
+
+Peter Gu
+
+
+Menus and Music/Effects Coding
+
+Stephen Carlson
+
+
+Music Selection
+
+Carlos Garcia
+
+
+Music Credits
+
+"Every Breath You Take" - The Police
+
+
+Software Used
+
+Java OpenGL bindings
+JLayer Java MP3 Library
+Eclipse Platform Galileo
+Google Code
+RapidSVN 0.12
+Adobe Photoshop CS3
+Adobe Fireworks CS3
+The GNU Image Manipulation Program
+
+
+Special Thanks To
+
+Karen Collins, Software Design Teacher
+Our Testers

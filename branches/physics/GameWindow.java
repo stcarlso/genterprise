@@ -63,8 +63,14 @@ public class GameWindow extends JPanel implements Constants {
 		load.setVerticalAlignment(SwingConstants.CENTER);
 		add(load, BorderLayout.CENTER);
 		validate();
-	
-		readLevel("../jumplol.dat");
+
+		readLevel("../needsblock.dat");
+		if (music != null) {
+			music.load("aoogahorn.wav");
+			music.load("ping.wav");
+			music.load("intruderalert.wav");
+			music.load("shutdown.wav");
+		}
 
 		player= new Player();
 		GLCapabilities glcaps = new GLCapabilities();
@@ -106,6 +112,14 @@ public class GameWindow extends JPanel implements Constants {
 				interactives.add(element);
 		}
 	}
+	private void playSound(String name) {
+		if (music != null && !music.isPlaying(name))
+			music.startSFX(name);
+	}
+	private void stopSound(String name) {
+		if (music != null)
+			music.stopSFX(name);
+	}
 	//***************************PHYSICS THREAD***********************
 	public class PhysicsThread extends Thread {
 		private double kair=.5;
@@ -130,7 +144,7 @@ public class GameWindow extends JPanel implements Constants {
 						player.groundJump=true;
 						player.airJump=true;
 						player.wallJumps=2;
-						if(down && player.ability==null) {
+						if(down && player.ability==null && Math.abs(player.vy) < 1e-5) {
 							player.status=DUCKING;
 							player.top=.9;
 							player.left=0;
@@ -163,18 +177,17 @@ public class GameWindow extends JPanel implements Constants {
 						if(act && player.status!=LADDER && player.status!=HELPLESS) {
 							if(!player.walls[DOWN]) {
 								player.ability=new AirDodge(player);
-							} else if(player.walls[DOWN]){
+							} else if(player.walls[DOWN] && player.status!=DUCKING){
 								if(down) {
 									player.ability=new Dodge(player);
-								} else if(up) {
+								} else if(up && player.status!=DUCKING) {
 									player.ability=new Dive(player);
 								} else if(left) {
 									player.ability=new Roll(player,-1);
 								} else if(right) {
 									player.ability=new Roll(player,1);
-								} else {
-									player.ability=new Activate(player);									
-								}
+								} else
+									player.ability=new Activate(player);
 							}
 	
 							act=false;
@@ -246,9 +259,13 @@ public class GameWindow extends JPanel implements Constants {
 									player.y+=.05;
 								else if(down)
 									player.y-=.05;
-							} 
+							}
 						}
 					}
+					if(player.status == WALKING && player.ax < 0 && player.walls[LEFT])
+						player.status = NORMAL;
+					if(player.status == WALKING && player.ax > 0 && player.walls[RIGHT])
+						player.status = NORMAL;
 				}
 				
 				//working with character moves
@@ -319,13 +336,22 @@ public class GameWindow extends JPanel implements Constants {
 				//recover suspicion
 				if (time % 6 == 0)
 					player.suspicion=Math.max(0,player.suspicion-1);
-			
+
+				if (time % 3 == 0) checkSounds();
+
 				try {				
 					Thread.sleep(15L);
 				} catch (InterruptedException e) {}
 			}
 		}
 
+		/**
+		 * Plays approrpriate sound effects.
+		 */
+		public void checkSounds() {
+			if (player.suspicion >= 360) playSound("aoogahorn.wav");
+			else stopSound("aoogahorn.wav");
+		}
 		/**
 		 * Moves all movable objects.
 		 */
@@ -425,15 +451,18 @@ public class GameWindow extends JPanel implements Constants {
 			}
 			xtemp = Math.round(1e4 * xtemp)/10000.0;
 			ytemp = Math.round(1e4 * ytemp)/10000.0;
-			if (wallLeft != wallRight)
+			if (wallLeft != wallRight) {
 				player.x=xtemp;
-			if(wallUp != wallDown)
+				player.vx=Math.signum(player.vx)*1e-3;
+			} if(wallUp != wallDown) {
 				player.y=ytemp;
-			if(wallUp && wallDown) {
+				player.vy=Math.signum(player.vy)*1e-3;
+			} if(wallUp && wallDown) {
 				player.status = DUCKING;
 				player.top=.9;
 			}
-			
+
+			boolean busted = false;
 			//laser detection
 			itr = lasers.iterator();
 			while(itr.hasNext()) {
@@ -443,9 +472,11 @@ public class GameWindow extends JPanel implements Constants {
 					//for lasers along the Z axis
 					double centerx=(element.getX()+source.getWidth()/2.0);
 					double centery=(element.getY()+source.getHeight()/2.0);
-					if(centerx<=right && centerx>=left && centery>=bottom && centery<=top)
+					if(centerx<=right && centerx>=left && centery>=bottom && centery<=top) {
 						player.suspicion += Math.min(Math.max(5, 120*Math.hypot((top+bottom)/2.0,
 							(left+right)/2.0)), 24);
+						busted = true;
+					}
 				} else if (player.status != INVINCIBLE) {
 					//for lasers along the X or Y axis
 					if (element.getRotation() % 180 == 0) {
@@ -466,10 +497,14 @@ public class GameWindow extends JPanel implements Constants {
 							//right
 							top > element.getY() && bottom < element.getY()+source.getHeight()
 							&& right >= element.getX()+.43 && left <= element.getX()+.43) {
-							if (element.getSpecialBit() == 6)
+							if (element.getSpecialBit() == 6) {
 								fade = 60;
-							else
+								player.reset();
+								playSound("shutdown.wav");
+							} else {
 								player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vx)),24);
+								busted = true;
+							}
 						}
 					} else {
 						if(//bottom
@@ -489,14 +524,20 @@ public class GameWindow extends JPanel implements Constants {
 							//right
 							top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
 							&& right >= element.getX() && left <= element.getX()) {
-							if (element.getSpecialBit() == 6)
+							if (element.getSpecialBit() == 6) {
 								fade = 60;
-							else
+								player.reset();
+								playSound("shutdown.wav");
+							} else {
+								busted = true;
 								player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vy)),24);
+							}
 						}
 					}
 				}
 			}
+			if (busted)
+				playSound("intruderalert.wav");
 			
 			//interactive element detection
 			itr = interactives.iterator();
@@ -506,15 +547,37 @@ public class GameWindow extends JPanel implements Constants {
 				Element source = element.getSource();
 				if(left > element.getX()-.2 && right < element.getX()+source.getWidth()+.2
 					&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
-					if(element.getSpecialBit() == 3 && player.ability instanceof Activate)
+					if(element.getSpecialBit() == 3 && player.ability instanceof Activate) {
 						System.out.println("You just tried to save");
-					if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
-						if (element.getAttribute("name", "").equalsIgnoreCase("end")) {
+						playSound("ping.wav");
+					} if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
+						String myName = element.getAttribute("name", "");
+						if (myName.equalsIgnoreCase("end")) {
 							System.out.println("You won, but I lost!");
+							playSound("ping.wav");
 							fade = 60;
-						} else
-							System.out.println("You just tried to win. But you cannot win.");
-					} if (element.getSpecialBit() == 1) {
+							player.reset();
+						} else {
+							Iterator<GameObject> it = interactives.iterator();
+							GameObject o, dest = null;
+							while (it.hasNext()) {
+								o = it.next();
+								if (o.getAttribute("name", "").equalsIgnoreCase(myName + "exit"))
+									dest = o;
+							}
+							if (dest == null)
+								System.out.println("You just tried to win. But you cannot win.");
+							else {
+								fade = 60;
+								playSound("ping.wav");
+								int suspicion = player.suspicion;
+								player.reset();
+								player.suspicion = suspicion;
+								player.x = dest.getX();
+								player.y = dest.getY();
+							}
+						}
+					} else if (element.getSpecialBit() == 1) {
 						ladder=true;
 						if(up||down) {
 							System.out.println("You just tried to use a ladder");
@@ -533,10 +596,12 @@ public class GameWindow extends JPanel implements Constants {
 			if (!ladder && player.status==LADDER) {
 				player.status = NORMAL;
 			}
-			player.walls[UP]=wallUp;
-			player.walls[DOWN]=wallDown;
-			player.walls[LEFT]=wallLeft;
-			player.walls[RIGHT]=wallRight;
+			if (fade <= 0) {
+				player.walls[UP]=wallUp;
+				player.walls[DOWN]=wallDown;
+				player.walls[LEFT]=wallLeft;
+				player.walls[RIGHT]=wallRight;
+			}
 		}
 	}
 
@@ -552,7 +617,7 @@ public class GameWindow extends JPanel implements Constants {
 		
 		public void display(GLAutoDrawable drawable) {
 			GL gl = drawable.getGL();
-			if (fade > 1) {
+			if (fade > 0) {
 				Element.clearOptions(gl);
 				gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
 				gl.glLoadIdentity();
@@ -566,7 +631,6 @@ public class GameWindow extends JPanel implements Constants {
 				fade--;
 				Element.setOptions(gl);
 			} else {
-				if (fade != 0) player.reset();
 			 	gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 			 	gl.glLoadIdentity();
 			 	player_x = player.x;
@@ -575,7 +639,6 @@ public class GameWindow extends JPanel implements Constants {
 				renderScene(gl);
 				drawCharacter(gl);
 				drawSuspicion(gl,player.suspicion);
-				fade = 0;
 			}
 			Utils.sleep(2L);
 		}

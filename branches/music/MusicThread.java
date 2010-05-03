@@ -33,6 +33,10 @@ public class MusicThread extends Thread {
 	 */
 	private AdvancedPlayer mp3player;
 	/**
+	 * The currently playing MP3.
+	 */
+	private String mp3name;
+	/**
 	 * Whether loop is on.
 	 */
 	private boolean loop;
@@ -52,6 +56,7 @@ public class MusicThread extends Thread {
 		toPlay = new LinkedList<String>();
 		child = new MusicThread(this);
 		mp3player = null;
+		mp3name = null;
 		child.start();
 		loop = false;
 	}
@@ -70,6 +75,7 @@ public class MusicThread extends Thread {
 		toPlay = new LinkedList<String>();
 		child = null;
 		mp3player = null;
+		mp3name = null;
 		loop = false;
 	}
 	/**
@@ -102,8 +108,18 @@ public class MusicThread extends Thread {
 	 */
 	public void stopMusic() {
 		toPlay.clear();
-		if (child != null) child.stopMusic();
-		else if (mp3player != null && running) mp3player.close();
+		if (child != null) {
+			child.stopMusic();
+			Iterator<Object> it = map.values().iterator();
+			Clip c;
+			while (it.hasNext()) {
+				c = (Clip)it.next();
+				if (c != null) {
+					if (c.isRunning()) c.stop();
+					c.close();
+				}
+			}
+		} else if (mp3player != null && running) mp3player.close();
 	}
 	public void run() {
 		String song;
@@ -116,8 +132,12 @@ public class MusicThread extends Thread {
 			mp3player = (AdvancedPlayer)map.get(song);
 			if (mp3player != null) try {
 				running = true;
+				mp3name = song;
+				map.remove(song);
 				load(song);
 				mp3player.play(0, Integer.MAX_VALUE);
+				mp3player.close();
+				mp3name = null;
 				running = false;
 				mp3player = null;
 			} catch (Exception e) { }
@@ -152,7 +172,8 @@ public class MusicThread extends Thread {
 	public synchronized void load(String file) {
 		if (file.endsWith(".mp3")) {
 			if (child == null) try {
-				map.put(file, new AdvancedPlayer(res.getResource("sound/" + file)));
+				if (!map.containsKey(file))
+					map.put(file, new AdvancedPlayer(res.getResource("sound/" + file)));
 			} catch (Exception e) {
 				map.put(file, null);
 			} else
@@ -178,6 +199,29 @@ public class MusicThread extends Thread {
 		}
 	}
 	/**
+	 * Checks to see if the song is in the play back queue. Only really effective for MP3s.
+	 * 
+	 * @param song the song to check
+	 * @return whether it is queued for play back
+	 */
+	public boolean inQueue(String song) {
+		synchronized (toPlay) {
+			return toPlay.contains(song);
+		}
+	}
+	/**
+	 * Checks to see if the song is currently playing.
+	 * 
+	 * @param song the song to check
+	 * @return whether it is currently playing
+	 */
+	public boolean isPlaying(String song) {
+		Object obj = map.get(song);
+		if (obj == null) return false;
+		if (child == null) return mp3name.equals(song) && running;
+		else return ((Clip)obj).isRunning();
+	}
+	/**
 	 * Starts the given sound effect.
 	 *  <b>There will be a delay if it was not loaded prior to starting!!!</b>
 	 * 
@@ -188,6 +232,18 @@ public class MusicThread extends Thread {
 			load(name);
 		synchronized (toPlay) {
 			toPlay.add(name);
+		}
+	}
+	/**
+	 * Stops the given sound effect.
+	 * 
+	 * @param name the sound file name to stop
+	 */
+	public void stopSFX(String name) {
+		if (child != null) {
+			Clip c = ((Clip)map.get(name));
+			if (c == null || !c.isRunning()) return;
+			c.stop();
 		}
 	}
 }
