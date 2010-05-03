@@ -22,6 +22,7 @@ public class AutoResource {
 		File models = new File(branches, "models");
 		File textures = new File(models, "textures");
 		File images = new File(models, "images");
+		File sounds = new File(models, "sound");
 		File resModels = new File(res, "models");
 		if (!resModels.exists() && !resModels.mkdir())
 			die("No res/models directory.");
@@ -34,6 +35,9 @@ public class AutoResource {
 		if (!resImages.exists() && !resImages.mkdir())
 			die("No res/images directory.");
 		emptyDir(resImages);
+		File resSounds = new File(res, "sound");
+		if (!resSounds.exists() && !resSounds.mkdir())
+			die("No res/sounds directory.");
 		File defaultJava = new File(res, "default.java");
 		try {
 			if (!defaultJava.exists() && !defaultJava.createNewFile())
@@ -41,11 +45,13 @@ public class AutoResource {
 		} catch (IOException e) {
 			die("No res/default.java file (it can be empty).");
 		}
-		if (!models.exists() || !textures.exists())
-			die("Could not find models or textures. Please SVN Update.");
+		if (!models.exists() || !textures.exists() || !sounds.exists())
+			die("Could not find models, sounds, or textures. Please SVN Update.");
 		FileFilter ifilter = new ExtensionFilter(".png");
 		File[] modelList = models.listFiles(new ExtensionFilter(".dat"));
 		File[] textureList = textures.listFiles(ifilter);
+		File[] soundList = sounds.listFiles(new ExtensionFilter(".wav"));
+		File[] mp3List = sounds.listFiles(new ExtensionFilter(".mp3"));
 		File[] imageList = null;
 		if (images.canRead())
 			imageList = images.listFiles(ifilter);
@@ -80,6 +86,17 @@ public class AutoResource {
 			}
 			System.out.println("wrote res/images/" + resource.getName().toLowerCase());
 		}
+		for (File sound : mp3List) {
+			o1 = new File(resSounds, sound.getName().toLowerCase());
+			if (!o1.exists()) copyFile(sound, o1);
+			System.out.println("wrote res/sound/" + o1.getName());
+		}
+		for (File sound : soundList) {
+			o1 = new File(resSounds, sound.getName().toLowerCase());
+			if (!o1.exists()) copyFile(sound, o1);
+			System.out.println("wrote res/sound/" + o1.getName());
+		}
+		copyFile(new File(models, "credits.txt"), new File(res, "credits.txt"));
 	}
 	private static void emptyDir(File dir) {
 		File[] files = dir.listFiles();

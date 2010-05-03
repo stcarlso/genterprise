@@ -404,6 +404,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		setBackground(Color.WHITE);
 		setResizable(true);
 		setSize(1024, 768);
+		setIconImage(root.getImage("gunther.png"));
 		getContentPane().setLayout(new BorderLayout());
 		setupGL();
 		setupUI();
@@ -465,6 +466,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 		categoryList = new JList(model);
 		categoryList.setFocusable(false);
 		categoryList.addMouseListener(model);
+		categoryList.setOpaque(false);
 		categoryList.setPrototypeCellValue("000000000000000000000000000");
 		JScrollPane sp = new JScrollPane(categoryList);
 		sp.setOpaque(false);
@@ -1549,7 +1551,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		GameObject o;
 		while (it.hasNext()) {
 			o = it.next();
-			o.putAttribute("special", Integer.toString(elements.get(o.getSource().getName()).getDefaultSpecial()));
+			try {
+				o.putAttribute("special", Integer.toString(elements.get(o.getSource().getName()).getDefaultSpecial()));
+			} catch (Exception e) {
+				System.out.println("failed on element " + o.getSource().getName());
+			}
 		}
 	}
 	/**
@@ -1827,6 +1833,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 			selected = null;
 			dropping = element;
 			rotation = 0;
+			lastPlace = null;
 			flipX = flipY = false;
 			setSelected(true);
 			deselect = this;
