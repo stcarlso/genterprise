@@ -46,6 +46,8 @@ public class Errors implements UncaughtExceptionHandler {
 	 * @param message the error message
 	 */
 	public static void userError(String message) {
+		GraphicsEnvironment.getLocalGraphicsEnvironment().
+			getDefaultScreenDevice().setFullScreenWindow(null);
 		StringBuilder text = new StringBuilder(512);
 		text.append("<html><body><b>A fatal error occurred:</b><br>");
 		text.append(message);
