@@ -28,13 +28,14 @@ public class Player implements Constants {
 	Color color; //may be deprecated as soon as player models are available
 	Texture stand;
 	Texture[] walk;
+	Texture[] ladder;
 	Texture air;
 	Texture duck;
-	Texture[] ladder;
 	
 	public Player() {
 		//texture loading
 		walk = new Texture[8];
+		ladder = new Texture[2];
 		walls = new boolean[4];
 		reset();
 	}
