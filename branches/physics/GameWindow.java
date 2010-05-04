@@ -30,6 +30,7 @@ public class GameWindow extends JPanel implements Constants {
 	boolean act;
 	boolean move;
 	boolean paused;
+	boolean key;
 	
 	int width=0;
 	int height=0;
@@ -42,6 +43,7 @@ public class GameWindow extends JPanel implements Constants {
 	char pause='g';
 	
 	Object sync= new Object();
+	Object mSyn= new Object();
 	Player player;	
 	PhysicsThread physics;
 	Animator anim;
@@ -58,14 +60,32 @@ public class GameWindow extends JPanel implements Constants {
 		music = t;
 	}
 	public void start() {
+		key = false;
 		res = new FilesystemResources(null, new File("res/"));
 		JLabel load = new JLabel(res.getIcon("genterprise.png"));
 		load.setHorizontalAlignment(SwingConstants.CENTER);
 		load.setVerticalAlignment(SwingConstants.CENTER);
+		load.setForeground(Color.WHITE);
+		load.setFont(load.getFont().deriveFont(24.f));
 		add(load, BorderLayout.CENTER);
+		JLabel keys = new JLabel(res.getIcon("keys.png"));
+		keys.setText("G: Pause");
+		keys.setHorizontalAlignment(SwingConstants.CENTER);
+		keys.setVerticalAlignment(SwingConstants.CENTER);
+		keys.setBorder(BorderFactory.createEmptyBorder(0, 0, 50, 0));
+		keys.setForeground(Color.WHITE);
+		keys.setFont(load.getFont());
+		keys.setVerticalTextPosition(SwingConstants.TOP);
+		keys.setHorizontalTextPosition(SwingConstants.CENTER);
+		add(keys, BorderLayout.SOUTH);
+		JLabel info = new JLabel(res.getIcon("info.png"));
+		info.setHorizontalAlignment(SwingConstants.CENTER);
+		info.setVerticalAlignment(SwingConstants.CENTER);
+		info.setBorder(BorderFactory.createEmptyBorder(0, 0, 50, 0));
+		add(info, BorderLayout.NORTH);
 		validate();
 
-		readLevel("../level1.dat");
+		readLevel("../thecave.dat");
 		if (music != null) {
 			music.load("aoogahorn.wav");
 			music.load("ping.wav");
@@ -78,6 +98,21 @@ public class GameWindow extends JPanel implements Constants {
 		canvas = new GLCanvas(glcaps);
 
 		GLGameListener listener= new GLGameListener(player);
+		load.setIcon(null);
+		load.setText("Press any key to start");
+		addKeyListener(listener);
+		requestFocus();
+		while (!key) Utils.sleep(50L);
+		removeKeyListener(listener);
+
+		load.setText("Game begins in 3");
+		Utils.sleep(990L);
+		load.setText("Game begins in 2");
+		Utils.sleep(990L);
+		load.setText("Game begins in 1...");
+		Utils.sleep(990L);
+		load.setText("Starting!");
+
 		canvas.addKeyListener(listener);
 		canvas.addGLEventListener(listener);   // add event listener
 		removeAll();
@@ -335,69 +370,102 @@ public class GameWindow extends JPanel implements Constants {
 				player.ax=0;
 				player.ay=0;
 
-				if (time % 2 == 0)
-					moveLasers();
+				if (time % 2 == 0) synchronized (mSyn) {
+					moveObjects();
+				}
 				//recover suspicion
 				if (time % 6 == 0)
 					player.suspicion=Math.max(0,player.suspicion-1);
 
 				if (time % 3 == 0) checkSounds();
+				// catch the player?
+				if ((time % 1000 == 0 && player.suspicion > 360) ||
+					(time % 300 == 0 && player.suspicion > 540) || player.suspicion > 720) {
+					playSound("shutdown.wav");
+					reset();
+					fade = 60;
+				}
 
 				try {				
 					Thread.sleep(15L);
 				} catch (InterruptedException e) {}
 			}
 		}
-
 		/**
-		 * Plays approrpriate sound effects.
+		 * Plays appropriate sound effects.
 		 */
 		public void checkSounds() {
 			if (player.suspicion >= 360) playSound("aoogahorn.wav");
 			else stopSound("aoogahorn.wav");
 		}
 		/**
+		 * Returns the current movement character for the specified element.
+		 * 
+		 * @param element the element to look at
+		 * @param inc whether the pointer should seek ahead
+		 */
+		public char getMovement(GameObject element, boolean inc) {
+			String attrib = element.getAttribute("motion");
+			char ret = 'W';
+			if (attrib != null && attrib.length() > 0) {
+				int current = element.getIteration();
+				if (current < 0 || current >= attrib.length()) current = 0;
+				ret = attrib.charAt(current);
+				if (inc) {
+					current = (current + 1) % attrib.length();
+					element.setIteration(current);
+				}
+			}
+			return ret;
+		}
+		/**
 		 * Moves all movable objects.
 		 */
-		public void moveLasers() {
+		public void moveObjects() {
 			Iterator<GameObject> itr = block.getElements().iterator();
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
-				String attrib = element.getAttribute("motion");
-				if (attrib != null && attrib.length() > 0) try {
-					int current = Integer.parseInt(element.getAttribute("current", "0"));
-					char dir = attrib.charAt(current);
-					double nx, ny;
-					switch (dir) {
-					case 'l':
-					case 'L':
-						nx = element.getX() - 0.125;
-						nx = Math.round(1e4 * nx) / 10000.0;
-						element.getLocation().setX(nx);
-						break;
-					case 'r':
-					case 'R':
-						nx = element.getX() + 0.125;
-						nx = Math.round(1e4 * nx) / 10000.0;
-						element.getLocation().setX(nx);
-						break;
-					case 'u':
-					case 'U':
-						ny = element.getY() + 0.125;
-						ny = Math.round(1e4 * ny) / 10000.0;
-						element.getLocation().setY(ny);
-						break;
-					case 'd':
-					case 'D':
-						ny = element.getY() - 0.125;
-						ny = Math.round(1e4 * ny) / 10000.0;
-						element.getLocation().setY(ny);
-						break;
-					default:
-					}
-					current = (current + 1) % attrib.length();
-					element.putAttribute("current", Integer.toString(current));
-				} catch (Exception e) { }
+				char dir = getMovement(element, true);
+				double nx, ny, nr;
+				switch (dir) {
+				case 'l':
+				case 'L':
+					nx = element.getX() - INC;
+					nx = Math.round(1e4 * nx) / 10000.0;
+					element.getLocation().setX(nx);
+					break;
+				case 'r':
+				case 'R':
+					nx = element.getX() + INC;
+					nx = Math.round(1e4 * nx) / 10000.0;
+					element.getLocation().setX(nx);
+					break;
+				case 'u':
+				case 'U':
+					ny = element.getY() + INC;
+					ny = Math.round(1e4 * ny) / 10000.0;
+					element.getLocation().setY(ny);
+					break;
+				case 'd':
+				case 'D':
+					ny = element.getY() - INC;
+					ny = Math.round(1e4 * ny) / 10000.0;
+					element.getLocation().setY(ny);
+					break;
+				case '<':
+					nr = element.getRotation() - 5;
+					nr = Math.round(1e4 * nr) / 10000.0;
+					element.getRotFlip().setZ(nr);
+					break;
+				case '>':
+					nr = element.getRotation() + 5;
+					nr = Math.round(1e4 * nr) / 10000.0;
+					element.getRotFlip().setZ(nr);
+					break;
+				case 'w':
+				case 'W':
+				default:
+				}
 			}
 		}
 		/**
@@ -416,7 +484,7 @@ public class GameWindow extends JPanel implements Constants {
 			player.vx = Math.round(1e4 * player.vx)/10000.0;
 			player.vy = Math.round(1e4 * player.vy)/10000.0;
 			Iterator<GameObject> itr = elements.iterator();
-			boolean wallUp=false,wallDown=false,wallLeft=false,wallRight=false;
+			boolean wallUp=false,wallDown=false,wallLeft=false,wallRight=false,guideX=false,guideY=false;
 			double xtemp = player.x;
 			double ytemp = player.y;
 			while(itr.hasNext()) {
@@ -429,6 +497,38 @@ public class GameWindow extends JPanel implements Constants {
 					element.getY()+source.getHeight()) {
 					wallDown=true;
 					ytemp=element.getY()+source.getHeight()+player.bottom;
+					if (time % 2 == 0) {
+						char dir = getMovement(element, false);
+						switch (dir) {
+						case 'L':
+						case 'l':
+							guideX = true;
+							xtemp -= INC;
+							break;
+						case 'R':
+						case 'r':
+							guideX = true;
+							xtemp += INC;
+							break;
+						case 'U':
+						case 'u':
+							guideY = true;
+							ytemp += INC;
+							break;
+						case 'D':
+						case 'd':
+							guideY = true;
+							ytemp -= INC;
+							break;
+						case '>':
+						case '<':
+							System.out.println("Oh no! Player standing on rotating block!");
+							break;
+						case 'W':
+						case 'w':
+						default:
+						}
+					}
 				}
 				//ceiling detection
 				if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
@@ -455,11 +555,13 @@ public class GameWindow extends JPanel implements Constants {
 			}
 			xtemp = Math.round(1e4 * xtemp)/10000.0;
 			ytemp = Math.round(1e4 * ytemp)/10000.0;
-			if (wallLeft != wallRight) {
+			if (wallLeft != wallRight || guideX) {
 				player.x=xtemp;
+				// anti earthquake?
 				player.vx=Math.signum(player.vx)*1e-3;
-			} if(wallUp != wallDown) {
+			} if(wallUp != wallDown || guideY) {
 				player.y=ytemp;
+				// anti earthquake?
 				player.vy=Math.signum(player.vy)*1e-3;
 			} if(wallUp && wallDown) {
 				player.status = DUCKING;
@@ -505,7 +607,7 @@ public class GameWindow extends JPanel implements Constants {
 							&& right >= element.getX()+.43 && left <= element.getX()+.43) {
 							if (element.getSpecialBit() == 6) {
 								fade = 60;
-								player.reset();
+								reset();
 								playSound("shutdown.wav");
 							} else if (player.status != INVINCIBLE) {
 								player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vx)),24);
@@ -532,7 +634,7 @@ public class GameWindow extends JPanel implements Constants {
 							&& right >= element.getX() && left <= element.getX()) {
 							if (element.getSpecialBit() == 6) {
 								fade = 60;
-								player.reset();
+								reset();
 								playSound("shutdown.wav");
 							} else if (player.status != INVINCIBLE) {
 								busted = true;
@@ -542,8 +644,6 @@ public class GameWindow extends JPanel implements Constants {
 					}
 				}
 			}
-			if (busted)
-				playSound("intruderalert.wav");
 			/**
 			 * camera detection
 			 */
@@ -555,8 +655,11 @@ public class GameWindow extends JPanel implements Constants {
 					&& 180.0/Math.PI*(Math.abs(Math.atan2((bottom+top)/2.0-(element.getY()+source.getHeight()/2.0),(left+right)/2.0-(element.getX()+source.getWidth()/2.0))-(element.getRotation()-90)))<=15) {
 					//System.out.println((left+right)/2.0 + " " + (bottom+top)/2.0 + " " + (element.getX()+source.getWidth()/2.0) + " " +(bottom+top)/2.0-(element.getY()+source.getHeight()/2.0));
 					player.suspicion += Math.min(Math.max(3,110*Math.hypot(player.vx,player.vy)),24);
+					busted = true;
 				}					
 			}
+			if (busted)
+				playSound("intruderalert.wav");
 			
 			/**interactive element detection
 			 * 
@@ -577,7 +680,7 @@ public class GameWindow extends JPanel implements Constants {
 							System.out.println("You won, but I lost!");
 							playSound("ping.wav");
 							fade = 60;
-							player.reset();
+							reset();
 						} else {
 							Iterator<GameObject> it = interactives.iterator();
 							GameObject o, dest = null;
@@ -592,7 +695,7 @@ public class GameWindow extends JPanel implements Constants {
 								fade = 60;
 								playSound("ping.wav");
 								int suspicion = player.suspicion;
-								player.reset();
+								reset();
 								player.suspicion = suspicion;
 								player.x = dest.getX();
 								player.y = dest.getY();
@@ -601,7 +704,6 @@ public class GameWindow extends JPanel implements Constants {
 					} else if (element.getSpecialBit() == 1) {
 						ladder=true;
 						if(up||down) {
-							System.out.println("You just tried to use a ladder");
 							player.status = LADDER;
 							player.x=element.getX();
 							left=.1;
@@ -614,9 +716,8 @@ public class GameWindow extends JPanel implements Constants {
 					}
 				}										
 			}
-			if (!ladder && player.status==LADDER) {
+			if (!ladder && player.status==LADDER)
 				player.status = NORMAL;
-			}
 			if (fade <= 0) {
 				player.walls[UP]=wallUp;
 				player.walls[DOWN]=wallDown;
@@ -624,6 +725,18 @@ public class GameWindow extends JPanel implements Constants {
 				player.walls[RIGHT]=wallRight;
 			}
 		}
+	}
+	/**
+	 * Resets the player and all objects to defaults.
+	 */
+	public void reset() {
+		player.reset();
+		// will fail until positions are also reset
+		/*Iterator<GameObject> it = block.getElements().iterator();
+		while (it.hasNext()) {
+			GameObject o = it.next();
+			o.setIteration(0);
+		}*/
 	}
 
 	public class GLGameListener implements GLEventListener, KeyListener {
@@ -654,10 +767,12 @@ public class GameWindow extends JPanel implements Constants {
 			} else {
 			 	gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 			 	gl.glLoadIdentity();
-			 	player_x = player.x;
-			 	player_y = player.y;
-			 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
-				renderScene(gl);
+			 	synchronized (mSyn) {
+				 	player_x = player.x;
+				 	player_y = player.y;
+				 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
+					renderScene(gl);
+				}
 				drawCharacter(gl);
 				drawSuspicion(gl,player.suspicion);
 			}
@@ -934,6 +1049,7 @@ public class GameWindow extends JPanel implements Constants {
 				up=false;
 			if(e.getKeyCode()==KeyEvent.VK_DOWN)
 				down=false;
+			if (!key) key = true;
 		}
 		public void keyTyped(KeyEvent e) {
 			if(e.getKeyChar()==action)
@@ -945,6 +1061,5 @@ public class GameWindow extends JPanel implements Constants {
 			if(e.getKeyChar()=='q')
 				player.suspicion=0;
 		}
-		
 	}
 }
