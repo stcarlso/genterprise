@@ -1,4 +1,5 @@
 import java.util.*;
+import java.io.*;
 
 /**
  * A class representing an instance of an element placed on the screen.
@@ -24,6 +25,14 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	 * Arbitrary attributes.
 	 */
 	private Map<String, String> attributes;
+	/**
+	 * Special bit read from file.
+	 */
+	private transient int special;
+	/**
+	 * Iteration counter.
+	 */
+	private transient int iter;
 
 	/**
 	 * For serialization.
@@ -45,6 +54,7 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 		this.src = src;
 		this.rotation = rotation;
 		attributes = null;
+		special = iter = 0;
 	}
 	/**
 	 * Compares this game object on depth. <b>Assumes the models are flat at z=0.</b>
@@ -72,13 +82,7 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	 * @return the special bit (default 0)
 	 */
 	public int getSpecialBit() {
-		String sp = getAttribute("special", "0");
-		if (sp == null) return 0;
-		try {
-			return Integer.parseInt(sp);
-		} catch (Exception e) {
-			return 0;
-		}
+		return special;
 	}
 	/**
 	 * Gets the attribute specified by name.
@@ -160,6 +164,36 @@ public class GameObject implements java.io.Serializable, Comparable<GameObject> 
 	 */
 	public Point3 getLocation() {
 		return coords;
+	}
+	/**
+	 * Gets the current iteration counter.
+	 * 
+	 * @return the iteration counter
+	 */
+	public int getIteration() {
+		return iter;
+	}
+	/**
+	 * Changes the iteration counter.
+	 * 
+	 * @param iteration the new iteration value
+	 */
+	public void setIteration(int iteration) {
+		iter = iteration;
+	}
+	/**
+	 * Serialization helper to set special bit.
+	 */
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+		in.defaultReadObject();
+		String attrib = getAttribute("special", "0");
+		if (attrib == null || attrib.length() < 1)
+			special = 0;
+		else try {
+			special = Integer.parseInt(attrib);
+		} catch (Exception e) {
+			special = 0;
+		}
 	}
 	public String toString() {
 		return src.toString() + "@" + coords.toString();
