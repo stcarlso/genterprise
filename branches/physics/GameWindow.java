@@ -128,7 +128,7 @@ public class GameWindow extends JPanel implements Constants {
 	public class PhysicsThread extends Thread {
 		private double kair=.5;
 		private double muk=6;
-		private double gravity=.03;
+		private double gravity=.025;
 		private long dt;
 		private long effectStart=0;
 		private long effectEnd=0;
@@ -737,12 +737,12 @@ public class GameWindow extends JPanel implements Constants {
 					gl.glColor3f(1f,1f,1f);
 				if(player.status==WALKING) {
 					player.walk[((int)(time*.1))%8].bind();
+				} else if(player.status==LADDER) {
+					player.ladder[((int)Math.abs(player.y))%2].bind();
 				} else if(!player.walls[DOWN]) {
 					player.air.bind();
 				} else if(player.status==DUCKING) {
-					player.duck.bind();
-				} else if(player.status==LADDER) {
-					player.ladder[((int)(time*.02))%2].bind();
+					player.duck.bind(); 
 				} else
 					player.stand.bind();
 				gl.glBegin(GL.GL_QUADS);
