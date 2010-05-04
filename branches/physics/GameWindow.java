@@ -65,7 +65,7 @@ public class GameWindow extends JPanel implements Constants {
 		add(load, BorderLayout.CENTER);
 		validate();
 
-		readLevel("../peter.dat");
+		readLevel("../level1.dat");
 		if (music != null) {
 			music.load("aoogahorn.wav");
 			music.load("ping.wav");
@@ -741,6 +741,8 @@ public class GameWindow extends JPanel implements Constants {
 					player.air.bind();
 				} else if(player.status==DUCKING) {
 					player.duck.bind();
+				} else if(player.status==LADDER) {
+					player.ladder[((int)(time*.02))%2].bind();
 				} else
 					player.stand.bind();
 				gl.glBegin(GL.GL_QUADS);
@@ -867,6 +869,8 @@ public class GameWindow extends JPanel implements Constants {
 			player.walk[5]= res.getTexture("guntherwalk5.png");
 			player.walk[6]= res.getTexture("guntherwalk6.png");
 			player.walk[7]= res.getTexture("guntherwalk7.png");
+			player.ladder[0]= res.getTexture("guntherladder1.png");
+			player.ladder[1]= res.getTexture("guntherladder2.png");
 			player.air= res.getTexture("guntherair.png");
 			player.duck = res.getTexture("guntherduck.png");
 		}
