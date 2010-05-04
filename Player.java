@@ -30,6 +30,7 @@ public class Player implements Constants {
 	Texture[] walk;
 	Texture air;
 	Texture duck;
+	Texture[] ladder;
 	
 	public Player() {
 		//texture loading
