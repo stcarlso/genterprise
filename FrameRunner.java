@@ -17,8 +17,8 @@ public class FrameRunner extends JFrame {
 		setSize(800,800);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		getContentPane().add(game);
-		game.start();
 		setVisible(true);
+		game.start();
 		game.canvas.requestFocus();
 	}
 	public static void main(String[] args) {
