@@ -92,7 +92,7 @@ public class GameWindow extends JPanel implements Constants {
 		add(info, BorderLayout.NORTH);
 		validate();
 
-		readLevel("../instr.dat");
+		readLevel("../thecave.dat");
 		if (music != null) {
 			music.load("aoogahorn.wav");
 			music.load("ping.wav");
