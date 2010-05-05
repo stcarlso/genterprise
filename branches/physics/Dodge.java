@@ -19,5 +19,5 @@ public class Dodge extends Move {
 		player.status = NORMAL;
 	}	
 	public void linger() {}
-	public void continuous() {}
+	public void continuous(GameWindow win) {}
 }

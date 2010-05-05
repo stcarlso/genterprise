@@ -226,7 +226,6 @@ public class GEnterprise extends JFrame implements Runnable {
 		c.add(gameWindow, BorderLayout.CENTER);
 		c.validate();
 		gameWindow.start();
-		gameWindow.canvas.requestFocus();
 		while (true) {
 			// pause / un pause
 			while (!gameWindow.paused) Utils.sleep(50L);

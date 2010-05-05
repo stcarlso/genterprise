@@ -9,10 +9,9 @@ public class Activate extends Move {
 		duration=1;
 	}
 
-
 	public void endEffect() {}
 	public void initiate() {}
 	public void linger() {}
 	public void startEffect() {}
-	public void continuous() {}
+	public void continuous(GameWindow win) {}
 }

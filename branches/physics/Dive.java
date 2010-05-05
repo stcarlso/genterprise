@@ -25,7 +25,7 @@ public class Dive extends Move {
 	}
 	public void linger() {}
 	public void startEffect() {}
-	public void continuous() {
+	public void continuous(GameWindow win) {
 		if(player.facingRight)
 			player.vx=.6;
 		else

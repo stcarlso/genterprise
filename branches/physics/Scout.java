@@ -2,6 +2,8 @@
  * Allows the player to look around the map without moving.
  */
 public class Scout extends Move {
+	private static final double SCOUT = .1;
+
 	public Scout(Player player) {
 		super(player);
 		start=5;
@@ -18,6 +20,17 @@ public class Scout extends Move {
 		player.status = HELPLESS;
 	}
 	public void linger() {}
-	public void continuous() {
+	public void continuous(GameWindow win) {
+		if(win.left)
+			player.scoutx-=SCOUT;
+		if(win.right)
+			player.scoutx+=SCOUT;
+		if(win.down)
+			player.scouty-=SCOUT;
+		if(win.up)
+			player.scouty+=SCOUT;
+	}
+	public boolean causesSuspicion() {
+		return false;
 	}
 }
