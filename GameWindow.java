@@ -7,6 +7,7 @@ import java.util.*;
 
 import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
+import javax.sound.midi.SysexMessage;
 import javax.swing.*;
 
 import com.sun.opengl.util.*;
@@ -29,6 +30,7 @@ public class GameWindow extends JPanel implements Constants {
 	boolean down;
 	boolean act;
 	boolean move;
+	boolean sneak;
 	boolean paused;
 	boolean key;
 	
@@ -36,9 +38,13 @@ public class GameWindow extends JPanel implements Constants {
 	int height=0;
 	
 	long time=0;
+	private long effectStart=0;
+	private long effectEnd=0;
+	private long stop=0;
 	int fade=0;
 	
 	char action='a';
+	char stealth='s';
 	char movement='d';
 	char pause='g';
 	
@@ -163,11 +169,8 @@ public class GameWindow extends JPanel implements Constants {
 	public class PhysicsThread extends Thread {
 		private double kair=.5;
 		private double muk=6;
-		private double gravity=.025;
+		private double gravity=.03;
 		private long dt;
-		private long effectStart=0;
-		private long effectEnd=0;
-		private long stop=0;
 		
 		public PhysicsThread() {			
 			dt=1;
@@ -179,34 +182,36 @@ public class GameWindow extends JPanel implements Constants {
 				
 				synchronized (sync) {
 					//player state determination
-					if(player.walls[DOWN] && player.vy<=0) {
-						player.groundJump=true;
-						player.airJump=true;
-						player.wallJumps=2;
-						if(down && player.ability==null && Math.abs(player.vy) < 1e-5) {
-							player.status=DUCKING;
-							player.top=.9;
-							player.left=0;
-							player.right=1.9;
+					if(player.status!=INVINCIBLE) {
+						if(player.walls[DOWN] && player.vy<=0) {
+							player.groundJump=true;
+							player.airJump=true;
+							player.wallJumps=2;
+							if(down && player.ability==null && Math.abs(player.vy) < 1e-5) {
+								player.status=DUCKING;
+								player.top=.9;
+								player.left=0;
+								player.right=1.7;
+							} else {
+								player.status=NORMAL;
+								player.left=.1;
+								player.right=.9;
+								player.top=1.75;
+							}
+							if(player.ability!=null && player.ability instanceof AirDodge) {
+								player.status=NORMAL;
+								player.ability=null;
+							}
+							if(player.status==HELPLESS)
+								player.status=NORMAL;
 						} else {
-							player.status=NORMAL;
-							player.left=.1;
-							player.right=.9;
-							player.top=1.75;
-						}
-						if(player.ability!=null && player.ability instanceof AirDodge) {
-							player.status=NORMAL;
-							player.ability=null;
-						}
-						if(player.status==HELPLESS)
-							player.status=NORMAL;
-					} else {
-						player.groundJump=false;
-						if(player.status==WALKING || player.status==DUCKING) {
-							player.status=NORMAL;
-							player.left=.1;
-							player.right=.9;
-							player.top=1.75;
+							player.groundJump=false;
+							if(player.status==WALKING || player.status==DUCKING) {
+								player.status=NORMAL;
+								player.left=.1;
+								player.right=.9;
+								player.top=1.75;
+							}
 						}
 					}
 					//****************KEY RESPONSE*******************
@@ -216,25 +221,35 @@ public class GameWindow extends JPanel implements Constants {
 						if(act && player.status!=LADDER && player.status!=HELPLESS) {
 							if(!player.walls[DOWN]) {
 								player.ability=new AirDodge(player);
-							} else if(player.walls[DOWN] && player.status!=DUCKING){
+							} else if(player.walls[DOWN]){
 								if(down) {
 									player.ability=new Dodge(player);
 								} else if(up && player.status!=DUCKING) {
 									player.ability=new Dive(player);
-								} else if(left) {
-									player.ability=new Roll(player,-1);
-								} else if(right) {
-									player.ability=new Roll(player,1);
+								} else if(left && player.status!=DUCKING) {
+									player.ability=new Roll(player,LEFT);
+								} else if(right && player.status!=DUCKING) {
+									player.ability=new Roll(player,RIGHT);
 								} else
 									player.ability=new Activate(player);
-							}
-	
+							}	
 							act=false;
 						} else if(move && player.status!=LADDER && player.status!=HELPLESS) {
 							if(up) {
 								player.ability=new ThirdJump(player);
+							} else if(right && player.walls[DOWN]) {
+								player.ability=new Dash(player,RIGHT);
+							} else if(left && player.walls[DOWN]) {
+								player.ability=new Dash(player,LEFT);
 							}
 							move=false;
+						} else if(sneak && player.status!=LADDER && player.status!=HELPLESS) {
+							if(down) {
+								if(player.walls[DOWN])
+									player.ability=new Hide(player);
+							} else
+								player.ability=new Scout(player);
+							sneak=false;
 						} else {
 							
 							//basic movement
@@ -310,7 +325,8 @@ public class GameWindow extends JPanel implements Constants {
 				//working with character moves
 				if(player.ability!=null) {
 					if(player.ability.started) {
-						player.suspicion+=player.ability.duration;
+						if(!(player.ability instanceof Scout || player.ability instanceof Hide))
+							player.suspicion+=player.ability.duration;
 						effectStart= time+player.ability.start;
 						effectEnd= time+player.ability.end;
 						stop= time+player.ability.duration;
@@ -321,6 +337,24 @@ public class GameWindow extends JPanel implements Constants {
 					//any move effect should be invoked here
 					if(time==effectStart) {
 						player.ability.startEffect();
+					}
+					
+					if(time>=effectStart && time<=effectEnd) {
+						player.ability.continuous();
+						if(player.ability instanceof Scout) {
+							if(left) {
+								player.scoutx-=.05;
+							} 
+							if(right) {
+								player.scoutx+=.05;
+							} 
+							if(down) {
+								player.scouty-=.05;
+							} 
+							if(up) {
+								player.scouty+=.05;
+							}
+						}
 					}
 					
 					//end move effect at its end frame
@@ -349,7 +383,7 @@ public class GameWindow extends JPanel implements Constants {
 				collideTest();
 								
 				if(player.status!= LADDER && !(player.walls[UP] && player.vy>0) &&
-						!(player.walls[DOWN] && player.vy<=0)) {
+					!(player.walls[DOWN] && player.vy<=0)) {
 					player.ay+=-gravity;
 					player.vy+=player.ay*dt;
 					player.y+=Math.signum(player.vy)*Math.min(.3,Math.abs(player.vy))*dt;
@@ -480,7 +514,6 @@ public class GameWindow extends JPanel implements Constants {
 			double rightFuture = Math.round(1e4 * (player.x + player.vx*dt + player.right))/10000.0;
 			double bottomFuture = Math.round(1e4 * (player.y + player.vy*dt + player.bottom))/10000.0;
 			double topFuture = Math.round(1e4 * (player.y + player.vy*dt + player.top))/10000.0;
-			//System.out.println(right + " " + bottom);
 			player.vx = Math.round(1e4 * player.vx)/10000.0;
 			player.vy = Math.round(1e4 * player.vy)/10000.0;
 			Iterator<GameObject> itr = elements.iterator();
@@ -581,8 +614,8 @@ public class GameWindow extends JPanel implements Constants {
 					double centerx=(element.getX()+source.getWidth()/2.0);
 					double centery=(element.getY()+source.getHeight()/2.0);
 					if(centerx<=right && centerx>=left && centery>=bottom && centery<=top) {
-						player.suspicion += Math.min(Math.max(5, 120*Math.hypot((top+bottom)/2.0,
-							(left+right)/2.0)), 24);
+						player.suspicion += Math.min(Math.max(4, 90*Math.hypot(player.vx,
+							player.vy)), 24);
 						busted = true;
 					}
 				} else {
@@ -651,9 +684,8 @@ public class GameWindow extends JPanel implements Constants {
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
-				if(Math.hypot((left+right)/2.0-(element.getX()+source.getWidth()/2.0), (bottom+top)/2.0-(element.getY()+source.getHeight()/2.0))<3
-					&& 180.0/Math.PI*(Math.abs(Math.atan2((bottom+top)/2.0-(element.getY()+source.getHeight()/2.0),(left+right)/2.0-(element.getX()+source.getWidth()/2.0))-(element.getRotation()-90)))<=15) {
-					//System.out.println((left+right)/2.0 + " " + (bottom+top)/2.0 + " " + (element.getX()+source.getWidth()/2.0) + " " +(bottom+top)/2.0-(element.getY()+source.getHeight()/2.0));
+				if(Math.hypot((left+right)/2.0-(element.getX()+source.getWidth()/2.0), (bottom+top)/2.0-(element.getY()+source.getHeight()/2.0))<2
+					&& Math.abs(180.0/Math.PI*Math.atan2((bottom+top)/2.0-(element.getY()+source.getHeight()/2.0),(left+right)/2.0-(element.getX()+source.getWidth()/2.0))-(element.getRotation()-90))<=30) {
 					player.suspicion += Math.min(Math.max(3,110*Math.hypot(player.vx,player.vy)),24);
 					busted = true;
 				}					
@@ -770,9 +802,15 @@ public class GameWindow extends JPanel implements Constants {
 			 	synchronized (mSyn) {
 				 	player_x = player.x;
 				 	player_y = player.y;
-				 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
+				 	if(player.ability!=null && player.ability instanceof Scout) {
+					 	glu.gluLookAt(player.scoutx, player.scouty, 10, player.scoutx, player.scouty, -10, 0, 1, 0);
+				 	} else {
+					 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
+				 	}
 					renderScene(gl);
+
 				}
+
 				drawCharacter(gl);
 				drawSuspicion(gl,player.suspicion);
 			}
@@ -835,7 +873,7 @@ public class GameWindow extends JPanel implements Constants {
 				if(player.status==HELPLESS)
 					gl.glColor3f(.5f,.5f,.5f);	
 				else if(player.status==INVINCIBLE)
-					gl.glColor3f(1f,1f,0f);
+					gl.glColor3f(0f,0f,0f);
 				else if(player.ability instanceof Dodge)
 					gl.glColor3f(0f,1f,0f);
 				else if(player.ability instanceof Roll)
@@ -848,17 +886,24 @@ public class GameWindow extends JPanel implements Constants {
 					gl.glColor3f(0f,0f,1f);
 				else if(player.ability instanceof ThirdJump)
 					gl.glColor3f(1f,0f,0f);	
+				else if(player.ability instanceof Scout)
+					gl.glColor3f(0,0,1f);
+				else if(player.ability instanceof Hide)
+					gl.glColor3f(1f,.5f,.3f);
 				else
 					gl.glColor3f(1f,1f,1f);
 				if(player.status==WALKING) {
-					player.walk[((int)(time*.1))%8].bind();
+					player.walk[((int)(Math.abs(player.x)))%8].bind();
 				} else if(player.status==LADDER) {
 					player.ladder[((int)Math.abs(player.y))%2].bind();
+				} else if(player.status==DUCKING) {
+					if(player.vx!=0 && (left || right)) {
+						player.crawl[((int)(Math.abs(player.x)))%4].bind();
+					} else
+						player.duck.bind(); 
 				} else if(!player.walls[DOWN]) {
 					player.air.bind();
-				} else if(player.status==DUCKING) {
-					player.duck.bind(); 
-				} else
+				}else
 					player.stand.bind();
 				gl.glBegin(GL.GL_QUADS);
 				if(player.status==DUCKING) {
@@ -988,6 +1033,11 @@ public class GameWindow extends JPanel implements Constants {
 			player.ladder[1]= res.getTexture("guntherladder2.png");
 			player.air= res.getTexture("guntherair.png");
 			player.duck = res.getTexture("guntherduck.png");
+			player.crawl[0]= res.getTexture("guntherduck.png");
+			player.crawl[1]= res.getTexture("gunthercrawl1.png");
+			player.crawl[2]= res.getTexture("gunthercrawl2.png");
+			player.crawl[3]= res.getTexture("gunthercrawl3.png");
+			
 		}
 		/**
 		 * Creates a vertex array for the suspicion meter
@@ -1025,7 +1075,7 @@ public class GameWindow extends JPanel implements Constants {
 		}
 		
 		//**************KEY LISTENER********************
-		public void keyPressed(KeyEvent e) {		
+		public void keyPressed(KeyEvent e) {
 			if(e.getKeyCode()==KeyEvent.VK_LEFT) {
 				left=true;
 				right=false;
@@ -1056,6 +1106,13 @@ public class GameWindow extends JPanel implements Constants {
 				act=true;
 			if(e.getKeyChar()==movement)
 				move=true;
+			if(e.getKeyChar()==stealth) {
+				if(player.ability!=null && (player.ability instanceof Scout || player.ability instanceof Hide)) {
+					effectEnd=time;
+					stop=time+player.ability.duration-player.ability.end;
+				} else
+					sneak=true;
+			}
 			if(e.getKeyChar()==pause)
 				paused^=true;
 			if(e.getKeyChar()=='q')
