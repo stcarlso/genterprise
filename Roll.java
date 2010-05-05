@@ -27,5 +27,5 @@ public class Roll extends Move {
 		player.vy=.1;
 	}
 	public void linger() {}
-	public void continuous() {}
+	public void continuous(GameWindow win) {}
 }

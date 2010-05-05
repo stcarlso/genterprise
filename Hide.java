@@ -18,7 +18,11 @@ public class Hide extends Move {
 		player.status = HELPLESS;
 	}
 	public void linger() {}
-	public void continuous() {
-		player.suspicion=Math.max(0,player.suspicion-1);
+	public void continuous(GameWindow win) {
+		//if (win.time % 1 == 0)
+			player.suspicion=Math.max(0,player.suspicion-1);
+	}
+	public boolean causesSuspicion() {
+		return false;
 	}
 }

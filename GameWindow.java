@@ -7,7 +7,6 @@ import java.util.*;
 
 import javax.media.opengl.*;
 import javax.media.opengl.glu.*;
-import javax.sound.midi.SysexMessage;
 import javax.swing.*;
 
 import com.sun.opengl.util.*;
@@ -33,6 +32,7 @@ public class GameWindow extends JPanel implements Constants {
 	boolean sneak;
 	boolean paused;
 	boolean key;
+	volatile boolean respawn;
 	
 	int width=0;
 	int height=0;
@@ -50,7 +50,8 @@ public class GameWindow extends JPanel implements Constants {
 	
 	Object sync= new Object();
 	Object mSyn= new Object();
-	Player player;	
+	Player player;
+	Player savedPlayer;
 	PhysicsThread physics;
 	Animator anim;
 	GLU glu;
@@ -91,7 +92,7 @@ public class GameWindow extends JPanel implements Constants {
 		add(info, BorderLayout.NORTH);
 		validate();
 
-		readLevel("../thecave.dat");
+		readLevel("../instr.dat");
 		if (music != null) {
 			music.load("aoogahorn.wav");
 			music.load("ping.wav");
@@ -111,13 +112,8 @@ public class GameWindow extends JPanel implements Constants {
 		while (!key) Utils.sleep(50L);
 		removeKeyListener(listener);
 
-		load.setText("Game begins in 3");
-		Utils.sleep(990L);
-		load.setText("Game begins in 2");
-		Utils.sleep(990L);
-		load.setText("Game begins in 1...");
-		Utils.sleep(990L);
 		load.setText("Starting!");
+		Utils.sleep(990L);
 
 		canvas.addKeyListener(listener);
 		canvas.addGLEventListener(listener);   // add event listener
@@ -129,6 +125,7 @@ public class GameWindow extends JPanel implements Constants {
 		physics.start();
 		anim=new Animator(canvas);
 		anim.start();
+		canvas.requestFocus();
 	}
 	public void readLevel(String levelName) {
 		try {
@@ -181,6 +178,7 @@ public class GameWindow extends JPanel implements Constants {
 				time+=dt;
 				
 				synchronized (sync) {
+					respawn = false;
 					//player state determination
 					if(player.status!=INVINCIBLE) {
 						if(player.walls[DOWN] && player.vy<=0) {
@@ -325,7 +323,7 @@ public class GameWindow extends JPanel implements Constants {
 				//working with character moves
 				if(player.ability!=null) {
 					if(player.ability.started) {
-						if(!(player.ability instanceof Scout || player.ability instanceof Hide))
+						if (player.ability.causesSuspicion())
 							player.suspicion+=player.ability.duration;
 						effectStart= time+player.ability.start;
 						effectEnd= time+player.ability.end;
@@ -339,23 +337,8 @@ public class GameWindow extends JPanel implements Constants {
 						player.ability.startEffect();
 					}
 					
-					if(time>=effectStart && time<=effectEnd) {
-						player.ability.continuous();
-						if(player.ability instanceof Scout) {
-							if(left) {
-								player.scoutx-=.05;
-							} 
-							if(right) {
-								player.scoutx+=.05;
-							} 
-							if(down) {
-								player.scouty-=.05;
-							} 
-							if(up) {
-								player.scouty+=.05;
-							}
-						}
-					}
+					if(time>=effectStart && time<=effectEnd)
+						player.ability.continuous(GameWindow.this);
 					
 					//end move effect at its end frame
 					if(time==effectEnd) {
@@ -417,6 +400,7 @@ public class GameWindow extends JPanel implements Constants {
 					(time % 300 == 0 && player.suspicion > 540) || player.suspicion > 720) {
 					playSound("shutdown.wav");
 					reset();
+					respawn = true;
 					fade = 60;
 				}
 
@@ -641,6 +625,7 @@ public class GameWindow extends JPanel implements Constants {
 							if (element.getSpecialBit() == 6) {
 								fade = 60;
 								reset();
+								respawn = true;
 								playSound("shutdown.wav");
 							} else if (player.status != INVINCIBLE) {
 								player.suspicion += Math.min(Math.max(3,Math.abs(90*player.vx)),24);
@@ -668,6 +653,7 @@ public class GameWindow extends JPanel implements Constants {
 							if (element.getSpecialBit() == 6) {
 								fade = 60;
 								reset();
+								respawn = true;
 								playSound("shutdown.wav");
 							} else if (player.status != INVINCIBLE) {
 								busted = true;
@@ -704,14 +690,15 @@ public class GameWindow extends JPanel implements Constants {
 				if(left > element.getX()-.2 && right < element.getX()+source.getWidth()+.2
 					&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
 					if(element.getSpecialBit() == 3 && player.ability instanceof Activate) {
-						System.out.println("You just tried to save");
 						playSound("ping.wav");
+						save();
 					} if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
 						String myName = element.getAttribute("name", "");
 						if (myName.equalsIgnoreCase("end")) {
 							System.out.println("You won, but I lost!");
 							playSound("ping.wav");
 							fade = 60;
+							savedPlayer = null;
 							reset();
 						} else {
 							Iterator<GameObject> it = interactives.iterator();
@@ -770,6 +757,40 @@ public class GameWindow extends JPanel implements Constants {
 			o.setIteration(0);
 		}*/
 	}
+	/**
+	 * Saves the game (check point).
+	 */
+	public void save() {
+		if (savedPlayer == null)
+			savedPlayer = new Player();
+		savedPlayer.suspicion = player.suspicion;
+		savedPlayer.x = player.x;
+		savedPlayer.y = player.y;
+		savedPlayer.vx = player.vx;
+		savedPlayer.vy = player.vy;
+		savedPlayer.status = player.status;
+		savedPlayer.airJump = player.airJump;
+		savedPlayer.facingRight = player.facingRight;
+		savedPlayer.wallJumps = player.wallJumps;
+		savedPlayer.groundJump = player.groundJump;
+	}
+	/**
+	 * Loads the game from save.
+	 */
+	public void load() {
+		reset();
+		if (savedPlayer == null) return;
+		player.suspicion = savedPlayer.suspicion;
+		player.x = savedPlayer.x;
+		player.y = savedPlayer.y;
+		player.vx = savedPlayer.vx;
+		player.vy = savedPlayer.vy;
+		player.status = savedPlayer.status;
+		player.airJump = savedPlayer.airJump;
+		player.facingRight = savedPlayer.facingRight;
+		player.wallJumps = savedPlayer.wallJumps;
+		player.groundJump = savedPlayer.groundJump;
+	}
 
 	public class GLGameListener implements GLEventListener, KeyListener {
 		private FloatBuffer suspicion;
@@ -795,6 +816,7 @@ public class GameWindow extends JPanel implements Constants {
 				gl.glVertex3d(30, -30, 0);
 				gl.glEnd();
 				fade--;
+				if (fade == 0 && respawn) load();
 				Element.setOptions(gl);
 			} else {
 			 	gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
@@ -808,9 +830,7 @@ public class GameWindow extends JPanel implements Constants {
 					 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
 				 	}
 					renderScene(gl);
-
 				}
-
 				drawCharacter(gl);
 				drawSuspicion(gl,player.suspicion);
 			}
@@ -871,9 +891,9 @@ public class GameWindow extends JPanel implements Constants {
 			gl.glDisable(GL.GL_DEPTH_TEST);
 			synchronized (sync) {
 				if(player.status==HELPLESS)
-					gl.glColor3f(.5f,.5f,.5f);	
+					gl.glColor3f(.5f,.5f,.5f);
 				else if(player.status==INVINCIBLE)
-					gl.glColor3f(0f,0f,0f);
+					gl.glColor3f(.2f,.2f,.2f);
 				else if(player.ability instanceof Dodge)
 					gl.glColor3f(0f,1f,0f);
 				else if(player.ability instanceof Roll)
@@ -885,7 +905,7 @@ public class GameWindow extends JPanel implements Constants {
 				else if(player.ability instanceof Activate)
 					gl.glColor3f(0f,0f,1f);
 				else if(player.ability instanceof ThirdJump)
-					gl.glColor3f(1f,0f,0f);	
+					gl.glColor3f(1f,0f,0f);
 				else if(player.ability instanceof Scout)
 					gl.glColor3f(0,0,1f);
 				else if(player.ability instanceof Hide)
@@ -1107,7 +1127,7 @@ public class GameWindow extends JPanel implements Constants {
 			if(e.getKeyChar()==movement)
 				move=true;
 			if(e.getKeyChar()==stealth) {
-				if(player.ability!=null && (player.ability instanceof Scout || player.ability instanceof Hide)) {
+				if(player.ability!=null && !player.ability.causesSuspicion()) {
 					effectEnd=time;
 					stop=time+player.ability.duration-player.ability.end;
 				} else

@@ -18,7 +18,7 @@ public class Dash extends Move {
 	public void initiate() {
 	}
 	public void linger() {}
-	public void continuous() {
+	public void continuous(GameWindow win) {
 		if(dir==LEFT)
 			player.vx=-0.6;
 		else

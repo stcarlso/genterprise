@@ -19,7 +19,6 @@ public class FrameRunner extends JFrame {
 		getContentPane().add(game);
 		setVisible(true);
 		game.start();
-		game.canvas.requestFocus();
 	}
 	public static void main(String[] args) {
 		Utils.staticInit();

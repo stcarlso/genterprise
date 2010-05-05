@@ -21,5 +21,5 @@ public class ThirdJump extends Move {
 	}
 	public void endEffect() {}
 	public void startEffect() {}
-	public void continuous() {}
+	public void continuous(GameWindow win) {}
 }

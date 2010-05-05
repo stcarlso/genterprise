@@ -18,5 +18,5 @@ public class AirDodge extends Move {
 		player.status=INVINCIBLE;
 		player.vy+=.2;
 	}
-	public void continuous() {}
+	public void continuous(GameWindow win) {}
 }
