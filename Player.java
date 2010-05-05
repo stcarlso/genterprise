@@ -9,6 +9,8 @@ public class Player implements Constants {
 	double vy;
 	double ax;
 	double ay;
+	double scoutx;
+	double scouty;
 	double m;
 	double left;
 	double right;
@@ -31,11 +33,13 @@ public class Player implements Constants {
 	Texture[] ladder;
 	Texture air;
 	Texture duck;
+	Texture[] crawl;
 	
 	public Player() {
 		//texture loading
 		walk = new Texture[8];
 		ladder = new Texture[2];
+		crawl = new Texture[4];
 		walls = new boolean[4];
 		reset();
 	}

@@ -14,4 +14,5 @@ public class Activate extends Move {
 	public void initiate() {}
 	public void linger() {}
 	public void startEffect() {}
+	public void continuous() {}
 }

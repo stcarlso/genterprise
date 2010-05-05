@@ -20,6 +20,7 @@ public abstract class Move implements Constants{
 	
 	public abstract void initiate();
 	public abstract void startEffect();
+	public abstract void continuous();
 	public abstract void endEffect();
 	public abstract void linger();
 }

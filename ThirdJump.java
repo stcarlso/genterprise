@@ -19,8 +19,7 @@ public class ThirdJump extends Move {
 	public void linger() {
 		player.status = HELPLESS;
 	}
-
-
 	public void endEffect() {}
 	public void startEffect() {}
+	public void continuous() {}
 }

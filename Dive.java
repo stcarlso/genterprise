@@ -11,13 +11,14 @@ public class Dive extends Move {
 	
 	public void initiate() {
 		if(player.facingRight)
-			player.vx=.8;
+			player.vx=.9;
 		else
-			player.vx=-.8;
-		player.vy=.4;
+			player.vx=-.9;
+		player.vy=.3;
 	}
 
 	public void endEffect() {}
 	public void linger() {}
 	public void startEffect() {}
+	public void continuous() {}
 }
