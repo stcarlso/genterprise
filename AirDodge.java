@@ -5,8 +5,8 @@ public class AirDodge extends Move {
 	public AirDodge(Player player) {
 		super(player);
 		start=2;
-		end=16;
-		duration=18;
+		end=19;
+		duration=20;
 	}
 
 	public void endEffect() {

@@ -215,7 +215,7 @@ public class GameWindow extends JPanel implements Constants {
 					//****************KEY RESPONSE*******************
 					//refresh when touching ground, tell the player where (s)he is
 					
-					if(player.ability==null){
+					if(player.ability==null) {
 						if(act && player.status!=LADDER && player.status!=HELPLESS) {
 							if(!player.walls[DOWN]) {
 								player.ability=new AirDodge(player);
@@ -235,83 +235,94 @@ public class GameWindow extends JPanel implements Constants {
 						} else if(move && player.status!=LADDER && player.status!=HELPLESS) {
 							if(up) {
 								player.ability=new ThirdJump(player);
-							} else if(right && player.walls[DOWN]) {
-								player.ability=new Dash(player,RIGHT);
-							} else if(left && player.walls[DOWN]) {
-								player.ability=new Dash(player,LEFT);
+							} else if(right) {
+								if(player.walls[DOWN])
+									player.ability=new Dash(player,RIGHT);
+							} else if(left) {
+								if(player.walls[DOWN])
+									player.ability=new Dash(player,LEFT);
+							} else {
+								if(!player.walls[DOWN])
+									player.ability=new Glide(player);
 							}
 							move=false;
 						} else if(sneak && player.status!=LADDER && player.status!=HELPLESS) {
 							if(down) {
 								if(player.walls[DOWN])
 									player.ability=new Hide(player);
-							} else
-								player.ability=new Scout(player);
-							sneak=false;
-						} else {
-							
-							//basic movement
-							if(left) {
-								player.facingRight=false;
-								if(player.status==DUCKING) {
-									player.ax=-.04;
-								} else if(player.status==LADDER) {
-									player.ax=-.2;
-									player.ay=.2;
-									player.status=NORMAL;								
-								} else if(player.walls[DOWN]) {
-									player.ax=-.15;
-									if(player.status==NORMAL)
-										player.status=WALKING;
-								} else if(player.status!=HELPLESS && player.walls[RIGHT] &&
-										(player.wallJumps==-1 || player.wallJumps==2)) {
-									player.wallJumps=1;
-									player.vy=.4;
-									player.ax=-.1;
-								} else if(!player.walls[DOWN])
-									player.ax=-.02;
+							} else if(left) {
+								if(!player.walls[DOWN])
+									player.ability=new MovingAirDodge(player,LEFT);
 							} else if(right) {
-								player.facingRight=true;
-								if(player.status==DUCKING) {
-									player.ax=.04;
-								} else if(player.status==LADDER) {
-									player.ax=.2;
-									player.ay=.2;
-									player.status=NORMAL;
-								} else if(player.walls[DOWN]) {
-									player.ax=.15;
-									if(player.status==NORMAL)
-										player.status=WALKING;
-								} else if(player.status!=HELPLESS && player.walls[LEFT] &&
-										(player.wallJumps==1 || player.wallJumps==2)) {
-									player.wallJumps=-1;
+								if(!player.walls[DOWN])
+									player.ability=new MovingAirDodge(player,RIGHT);
+							} else
+								player.ability=new Scout(player);								
+							sneak=false;
+						}
+					}
+					if(player.ability==null || player.ability instanceof Glide) {
+						//basic movement
+						if(left) {
+							player.facingRight=false;
+							if(player.status==DUCKING) {
+								player.ax=-.04;
+							} else if(player.status==LADDER) {
+								player.ax=-.2;
+								player.ay=.2;
+								player.status=NORMAL;								
+							} else if(player.walls[DOWN]) {
+								player.ax=-.15;
+								if(player.status==NORMAL)
+									player.status=WALKING;
+							} else if(player.status!=HELPLESS && player.walls[RIGHT] &&
+									(player.wallJumps==-1 || player.wallJumps==2)) {
+								player.wallJumps=1;
+								player.vy=.4;
+								player.ax=-.1;
+							} else if(!player.walls[DOWN])
+								player.ax=-.02;
+						} else if(right) {
+							player.facingRight=true;
+							if(player.status==DUCKING) {
+								player.ax=.04;
+							} else if(player.status==LADDER) {
+								player.ax=.2;
+								player.ay=.2;
+								player.status=NORMAL;
+							} else if(player.walls[DOWN]) {
+								player.ax=.15;
+								if(player.status==NORMAL)
+									player.status=WALKING;
+							} else if(player.status!=HELPLESS && player.walls[LEFT] &&
+									(player.wallJumps==1 || player.wallJumps==2)) {
+								player.wallJumps=-1;
+								player.vy=.4;
+								player.ax=.1;
+							} else if(!player.walls[DOWN])
+								player.ax=.02;
+						}
+						
+						if(up && player.status != HELPLESS && player.status != LADDER && !upDone) {
+							if(player.walls[DOWN]) {
+								if(player.groundJump) {
 									player.vy=.4;
-									player.ax=.1;
-								} else if(!player.walls[DOWN])
-									player.ax=.02;
-							}
-							
-							if(up && player.status != HELPLESS && player.status != LADDER && !upDone) {
-								if(player.walls[DOWN]) {
-									if(player.groundJump) {
-										player.vy=.4;
-										player.groundJump=false;
-									}
-								} else {
-									if(player.airJump) {
-										player.vy=.4;
-										player.airJump=false;
-									}
+									player.groundJump=false;
+								}
+							} else {
+								if(player.airJump) {
+									player.vy=.4;
+									player.airJump=false;
 								}
 							}
-							upDone=up;
-							
-							if(player.status==LADDER) {
-								if(up)
-									player.y+=.05;
-								else if(down)
-									player.y-=.05;
-							}
+						}
+						upDone=up;
+						
+						if(player.status==LADDER) {
+							if(up)
+								player.y+=.05;
+							else if(down)
+								player.y-=.05;
 						}
 					}
 					if(player.status == WALKING && player.ax < 0 && player.walls[LEFT])
@@ -682,67 +693,71 @@ public class GameWindow extends JPanel implements Constants {
 			/**interactive element detection
 			 * 
 			 */
-			itr = interactives.iterator();
-			boolean ladder=false;
-			while(itr.hasNext()) {
-				GameObject element = itr.next();
-				Element source = element.getSource();
-				if(left > element.getX()-.2 && right < element.getX()+source.getWidth()+.2
-					&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
-					if(element.getSpecialBit() == 3 && player.ability instanceof Activate) {
-						playSound("ping.wav");
-						save();
-					} if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
-						String myName = element.getAttribute("name", "");
-						if (myName.equalsIgnoreCase("end")) {
-							System.out.println("You won, but I lost!");
+			if(player.ability==null) {
+				itr = interactives.iterator();
+				boolean ladder=false;
+				while(itr.hasNext()) {
+					GameObject element = itr.next();
+					Element source = element.getSource();
+					if(left > element.getX()-.2 && right < element.getX()+source.getWidth()+.2
+						&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
+						if(element.getSpecialBit() == 3 && player.ability instanceof Activate) {
 							playSound("ping.wav");
-							fade = 60;
-							savedPlayer = null;
-							reset();
-						} else {
-							Iterator<GameObject> it = interactives.iterator();
-							GameObject o, dest = null;
-							while (it.hasNext()) {
-								o = it.next();
-								if (o.getAttribute("name", "").equalsIgnoreCase(myName + "exit"))
-									dest = o;
-							}
-							if (dest == null)
-								System.out.println("You just tried to win. But you cannot win.");
-							else {
-								fade = 60;
+							save();
+						} if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
+							String myName = element.getAttribute("name", "");
+							if (myName.equalsIgnoreCase("end")) {
+								System.out.println("You won, but I lost!");
 								playSound("ping.wav");
-								int suspicion = player.suspicion;
+								fade = 60;
+								savedPlayer = null;
 								reset();
-								player.suspicion = suspicion;
-								player.x = dest.getX();
-								player.y = dest.getY();
+							} else {
+								Iterator<GameObject> it = interactives.iterator();
+								GameObject o, dest = null;
+								while (it.hasNext()) {
+									o = it.next();
+									if (o.getAttribute("name", "").equalsIgnoreCase(myName + "exit"))
+										dest = o;
+								}
+								if (dest == null)
+									System.out.println("You just tried to win. But you cannot win.");
+								else {
+									fade = 60;
+									playSound("ping.wav");
+									int suspicion = player.suspicion;
+									reset();
+									player.suspicion = suspicion;
+									player.x = dest.getX();
+									player.y = dest.getY();
+								}
+							}
+						} else if (element.getSpecialBit() == 1) {
+							ladder=true;
+							if(up||down) {
+								player.status = LADDER;
+								player.x=element.getX();
+								left=.1;
+								right=.9;
+								top=1.75;
+								bottom=0;			
+								player.groundJump=false;
+								player.airJump=true;
 							}
 						}
-					} else if (element.getSpecialBit() == 1) {
-						ladder=true;
-						if(up||down) {
-							player.status = LADDER;
-							player.x=element.getX();
-							left=.1;
-							right=.9;
-							top=1.75;
-							bottom=0;			
-							player.groundJump=false;
-							player.airJump=true;
-						}
-					}
-				}										
+					}										
+				}
+				
+				if (!ladder && player.status==LADDER)
+					player.status = NORMAL;
 			}
-			if (!ladder && player.status==LADDER)
-				player.status = NORMAL;
 			if (fade <= 0) {
 				player.walls[UP]=wallUp;
 				player.walls[DOWN]=wallDown;
 				player.walls[LEFT]=wallLeft;
 				player.walls[RIGHT]=wallRight;
 			}
+			
 		}
 	}
 	/**
@@ -893,7 +908,7 @@ public class GameWindow extends JPanel implements Constants {
 				if(player.status==HELPLESS)
 					gl.glColor3f(.5f,.5f,.5f);
 				else if(player.status==INVINCIBLE)
-					gl.glColor3f(.2f,.2f,.2f);
+					gl.glColor3f(1f,1f,0f);
 				else if(player.ability instanceof Dodge)
 					gl.glColor3f(0f,1f,0f);
 				else if(player.ability instanceof Roll)
@@ -907,9 +922,13 @@ public class GameWindow extends JPanel implements Constants {
 				else if(player.ability instanceof ThirdJump)
 					gl.glColor3f(1f,0f,0f);
 				else if(player.ability instanceof Scout)
-					gl.glColor3f(0,0,1f);
+					gl.glColor3f(0f,0f,0f);
 				else if(player.ability instanceof Hide)
 					gl.glColor3f(1f,.5f,.3f);
+				else if(player.ability instanceof Glide)
+					gl.glColor3f(0f,1f,1f);
+				else if(player.ability instanceof MovingAirDodge)
+					gl.glColor3f(1f,.1f,1f);
 				else
 					gl.glColor3f(1f,1f,1f);
 				if(player.status==WALKING) {
@@ -1119,24 +1138,27 @@ public class GameWindow extends JPanel implements Constants {
 				up=false;
 			if(e.getKeyCode()==KeyEvent.VK_DOWN)
 				down=false;
+			if(e.getKeyChar()==movement && player.ability!=null && !player.ability.causesSuspicion()) {
+				effectEnd=time;
+				stop=time+player.ability.duration-player.ability.end;
+			}
+				
 			if (!key) key = true;
 		}
-		public void keyTyped(KeyEvent e) {
+		public void keyTyped(KeyEvent e) {			
 			if(e.getKeyChar()==action)
 				act=true;
-			if(e.getKeyChar()==movement)
-				move=true;
-			if(e.getKeyChar()==stealth) {
+			if(e.getKeyChar()==movement)			
+					move=true;
+			if(e.getKeyChar()==stealth)
+				//moves that can be cancelled by pressing the button again
 				if(player.ability!=null && !player.ability.causesSuspicion()) {
 					effectEnd=time;
 					stop=time+player.ability.duration-player.ability.end;
 				} else
 					sneak=true;
-			}
 			if(e.getKeyChar()==pause)
 				paused^=true;
-			if(e.getKeyChar()=='q')
-				player.suspicion=0;
 		}
 	}
 }

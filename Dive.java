@@ -18,6 +18,7 @@ public class Dive extends Move {
 	}
 
 	public void endEffect() {
+		player.vx=0;
 		player.status=NORMAL;
 		player.left=.1;
 		player.right=.9;
