@@ -4,10 +4,17 @@ checkerboard.png, 1x1square.dat, checkerboard, -2
 darkcheck.png, 1x1dark.dat, darkcheck, -2
 grass.png, 1x1square.dat, grass, -2
 null, 1x1dark.dat, gray, -2
+stone.png, 1x1square.dat, stone, -2
+wayout-up.png, 1x1square.dat, wayout-up, -1
+wayout-down.png, 1x1square.dat, wayout-down, -1
 [Elements]
 ladder.png, 1x1square.dat, ladder, -1, 1
 door.png, 2x1square.dat, door, -1, 2
 savepoint.png, 2x1square.dat, savepoint, -1, 3
+instr1.png, instr.dat, instr1, -1
+instr2.png, instr.dat, instr2, -1
+instr3.png, instr.dat, instr3, -1
+instr4.png, instr.dat, instr4, -1
 [Overlays]
 ceilinglighting.png, 1x1square.dat, ceilinglighting, 2
 static-spot-1.png, 2x2square.dat, static-spot-1, 2, 7
