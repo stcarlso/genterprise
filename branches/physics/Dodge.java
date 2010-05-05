@@ -4,9 +4,9 @@
 public class Dodge extends Move {
 	public Dodge(Player player) {
 		super(player);
-		start=1;
-		end=9;
-		duration=11;
+		start=2;
+		end=13;
+		duration=15;
 	}
 	
 	public void initiate() {
@@ -17,7 +17,7 @@ public class Dodge extends Move {
 	}
 	public void endEffect() {
 		player.status = NORMAL;
-	}
-	
+	}	
 	public void linger() {}
+	public void continuous() {}
 }
