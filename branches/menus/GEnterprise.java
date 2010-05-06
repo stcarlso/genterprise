@@ -229,6 +229,7 @@ public class GEnterprise extends JFrame implements Runnable {
 		while (true) {
 			// pause / un pause
 			while (!gameWindow.paused) Utils.sleep(50L);
+			player.startSFX("ping.wav");
 			gameWindow.setVisible(false);
 			pause.deselectAll();
 			c.add(headerPause, BorderLayout.NORTH);
