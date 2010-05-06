@@ -92,7 +92,10 @@ public class MusicThread extends Thread {
 	 * @return whether an MP3 is playing
 	 */
 	public boolean mp3Playing() {
-		return child.isRunning();
+		if (child != null)
+			return child.isRunning();
+		else
+			return isRunning();
 	}
 	/**
 	 * Sets whether the sound track will loop.
@@ -114,12 +117,10 @@ public class MusicThread extends Thread {
 			Clip c;
 			while (it.hasNext()) {
 				c = (Clip)it.next();
-				if (c != null) {
+				if (c != null)
 					if (c.isRunning()) c.stop();
-					c.close();
-				}
 			}
-		} else if (mp3player != null && running) mp3player.close();
+		} else if (mp3player != null) mp3player.close();
 	}
 	public void run() {
 		String song;
@@ -205,7 +206,8 @@ public class MusicThread extends Thread {
 	 * @return whether it is queued for play back
 	 */
 	public boolean inQueue(String song) {
-		synchronized (toPlay) {
+		if (child != null) return child.inQueue(song);
+		else synchronized (toPlay) {
 			return toPlay.contains(song);
 		}
 	}
