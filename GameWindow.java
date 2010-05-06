@@ -121,6 +121,8 @@ public class GameWindow extends JPanel implements Constants {
 		add(canvas);
 		validate();
 		
+		if (music != null)
+			music.stopMusic();
 		physics= new PhysicsThread();
 		physics.start();
 		anim=new Animator(canvas);
@@ -150,13 +152,25 @@ public class GameWindow extends JPanel implements Constants {
 				lasers.add(element);
 			else if(element.getSpecialBit() == 7)
 				cameras.add(element);
-			else if(element.getSpecialBit() != 0)
+			else if(element.getSpecialBit() == 8) {
+				String song = element.getAttribute("name", "");
+				if (song != null && song.length() > 0)
+					music.load(song);
+				interactives.add(element);
+			} else if(element.getSpecialBit() != 0)
 				interactives.add(element);
 		}
 	}
 	private void playSound(String name) {
-		if (music != null && !music.isPlaying(name))
+		if (music != null && !music.isPlaying(name)) {
 			music.startSFX(name);
+		}
+	}
+	private void playSoundtrack(String name) {
+		if (music != null && !music.inQueue(name) && time % 10 == 0) {
+			music.stopMusic();
+			music.queueMusic(name);
+		}
 	}
 	private void stopSound(String name) {
 		if (music != null)
@@ -685,7 +699,7 @@ public class GameWindow extends JPanel implements Constants {
 					&& Math.abs(180.0/Math.PI*Math.atan2((bottom+top)/2.0-(element.getY()+source.getHeight()/2.0),(left+right)/2.0-(element.getX()+source.getWidth()/2.0))-(element.getRotation()-90))<=30) {
 					player.suspicion += Math.min(Math.max(3,110*Math.hypot(player.vx,player.vy)),24);
 					busted = true;
-				}					
+				}
 			}
 			if (busted)
 				playSound("intruderalert.wav");
@@ -693,7 +707,7 @@ public class GameWindow extends JPanel implements Constants {
 			/**interactive element detection
 			 * 
 			 */
-			if(player.ability==null) {
+			//if(player.ability==null) {
 				itr = interactives.iterator();
 				boolean ladder=false;
 				while(itr.hasNext()) {
@@ -745,12 +759,21 @@ public class GameWindow extends JPanel implements Constants {
 								player.airJump=true;
 							}
 						}
-					}										
+					}
+					if (element.getSpecialBit() == 8) {
+						String music = element.getAttribute("name");
+						double ratio = (double)width / (double)height;
+						if (music != null && music.length() > 1 && element.getX() > player.x - 6*ratio &&
+								element.getX() + source.getWidth() < player.x + 6*ratio &&
+								element.getY() > player.y - 6 && element.getY() + source.getHeight() < player.y + 6) {
+							playSoundtrack(music);
+						}
+					}
 				}
 				
 				if (!ladder && player.status==LADDER)
 					player.status = NORMAL;
-			}
+			//}
 			if (fade <= 0) {
 				player.walls[UP]=wallUp;
 				player.walls[DOWN]=wallDown;
