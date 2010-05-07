@@ -32,6 +32,7 @@ public class GameWindow extends JPanel implements Constants {
 	boolean sneak;
 	boolean paused;
 	boolean key;
+	volatile boolean KILL;
 	volatile boolean respawn;
 	
 	int width=0;
@@ -192,7 +193,7 @@ public class GameWindow extends JPanel implements Constants {
 		private double gravity=.03;
 		private long dt;
 		
-		public PhysicsThread() {			
+		public PhysicsThread() {
 			dt=1;
 		}
 		public void run() {
@@ -704,8 +705,10 @@ public class GameWindow extends JPanel implements Constants {
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
-				if(Math.hypot((left+right)/2.0-(element.getX()+source.getWidth()/2.0), (bottom+top)/2.0-(element.getY()+source.getHeight()/2.0))<2
-					&& Math.abs(180.0/Math.PI*Math.atan2((bottom+top)/2.0-(element.getY()+source.getHeight()/2.0),(left+right)/2.0-(element.getX()+source.getWidth()/2.0))-(element.getRotation()-90))<=30) {
+				if(Math.hypot((left+right)/2.0-(element.getX()+source.getWidth()/2.0),
+					(bottom+top)/2.0-(element.getY()+source.getHeight()/2.0))<2
+					&& Math.abs(180.0/Math.PI*Math.atan2((bottom+top)/2.0-(element.getY()+source.getHeight()/2.0),
+					(left+right)/2.0-(element.getX()+source.getWidth()/2.0))-(element.getRotation()-90))<=30) {
 					player.suspicion += Math.min(Math.max(3,110*Math.hypot(player.vx,player.vy)),24);
 					busted = true;
 				}
@@ -736,11 +739,12 @@ public class GameWindow extends JPanel implements Constants {
 								savedPlayer = null;
 								reset();
 							} else {
+								String target = element.getAttribute("target", myName + "exit");
 								Iterator<GameObject> it = interactives.iterator();
 								GameObject o, dest = null;
 								while (it.hasNext()) {
 									o = it.next();
-									if (o.getAttribute("name", "").equalsIgnoreCase(myName + "exit"))
+									if (o.getAttribute("name", "").equalsIgnoreCase(target))
 										dest = o;
 								}
 								if (dest == null)
@@ -1044,6 +1048,10 @@ public class GameWindow extends JPanel implements Constants {
 			gl.glColor4f(0.7f, 0f, 0f, 0.3f);
 			gl.glVertexPointer(3, GL.GL_FLOAT, 0, this.suspicion);
 			gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 2 * (Math.min(360, suspicion) / 5) + 3);
+			if (suspicion > 360) {
+				gl.glColor4f(0f, 0f, 0.7f, 0.3f);
+				gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 2 * (Math.min(360, suspicion - 360) / 5) + 3);
+			}
 			gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
 			gl.glEnableClientState(GL.GL_COLOR_ARRAY);
 			gl.glEnable(GL.GL_DEPTH_TEST);
