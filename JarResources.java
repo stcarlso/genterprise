@@ -34,13 +34,17 @@ public class JarResources extends ResourceGetter {
 	 * @param parent the parent resource getter
 	 * @param fileName the level file
 	 */
-	public JarResources(ResourceGetter parent, File fileName) throws IOException {
+	public JarResources(ResourceGetter parent, File fileName) {
 		super(parent);
-		file = new JarFile(fileName);
+		try {
+			file = new JarFile(fileName);
+		} catch (Exception e) {
+			Utils.fatalError("No jar file " + fileName);
+		}
 	}
 	protected InputStream openResource(String src) throws IOException {
 		try {
-			return file.getInputStream(new JarEntry("res/" + src));
+			return file.getInputStream(new JarEntry(src));
 		} catch (Exception e) {
 			if (parent == null)
 				return null;
