@@ -278,6 +278,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	private JTextField propName;
 	/**
+	 * Refers to the target of an interactive.
+	 */
+	private JTextField propTarget;
+	/**
 	 * The motion path information.
 	 */
 	private JTextField propMotion;
@@ -546,6 +550,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 		propSpecial.setActionCommand("noprops");
 		propSpecial.addActionListener(events);
 		Utils.fixShiftBackspace(propSpecial);
+		propTarget = new JTextField(32);
+		propTarget.setActionCommand("noprops");
+		propTarget.addActionListener(events);
+		Utils.fixShiftBackspace(propTarget);
 		Container c = propDialog.getContentPane();
 		JComponent props = new Box(BoxLayout.Y_AXIS);
 		// add rows
@@ -554,6 +562,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 		props.add(addHorizontal("Motion:", propMotion));
 		props.add(Box.createVerticalStrut(2));
 		props.add(addHorizontal("Special:", propSpecial));
+		props.add(Box.createVerticalStrut(2));
+		props.add(addHorizontal("Target:", propTarget));
 		c.add(props, BorderLayout.CENTER);
 		JPanel horiz = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
 		horiz.setOpaque(false);
@@ -1338,6 +1348,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 		} catch (Exception e) {
 			propSpecial.setText(selected.getAttribute("special"));
 		}
+		text = propTarget.getText();
+		if (text == null || text.length() < 1)
+			selected.putAttribute("target", null);
+		else
+			selected.putAttribute("target", text);
 	}
 	/**
 	 * Creates a movement string and sets it.
@@ -1400,6 +1415,11 @@ public class EditorUI extends JFrame implements GLEventListener {
 			propSpecial.setText("0");
 		else
 			propSpecial.setText(attrib);
+		attrib = selected.getAttribute("target");
+		if (attrib == null)
+			propTarget.setText("");
+		else
+			propTarget.setText(attrib);
 	}
 	/**
 	 * Erases everything and makes a new file.
