@@ -92,7 +92,7 @@ public class GameWindow extends JPanel implements Constants {
 		add(info, BorderLayout.NORTH);
 		validate();
 
-		readLevel("../thecave.dat");
+		readLevel("../peter.dat");
 		if (music != null) {
 			music.load("aoogahorn.wav");
 			music.load("ping.wav");
@@ -146,6 +146,15 @@ public class GameWindow extends JPanel implements Constants {
 			GameObject element = itr.next();
 			if (element.getSource().getVertexArray() == null)
 				element.getSource().loadGeometry(res);
+			String attrib = element.getAttribute("motion", "");
+			if (attrib != null && attrib.length() > 0) {
+				StringBuilder newAttrib = new StringBuilder(attrib.length() * 2);
+				for (int i = 0; i < attrib.length(); i++) {
+					newAttrib.append(attrib.charAt(i));
+					newAttrib.append(attrib.charAt(i));
+				}
+				element.putAttribute("motion", newAttrib.toString());
+			}
 			if(element.getZ() == 0.)
 				elements.add(element);
 			else if(element.getSpecialBit() > 3 && element.getSpecialBit() < 7)
@@ -412,7 +421,7 @@ public class GameWindow extends JPanel implements Constants {
 				player.ax=0;
 				player.ay=0;
 
-				if (time % 2 == 0) synchronized (mSyn) {
+				synchronized (mSyn) {
 					moveObjects();
 				}
 				//recover suspicion
@@ -496,12 +505,12 @@ public class GameWindow extends JPanel implements Constants {
 					element.getLocation().setY(ny);
 					break;
 				case '<':
-					nr = element.getRotation() - 5;
+					nr = element.getRotation() - 2.5;
 					nr = Math.round(1e4 * nr) / 10000.0;
 					element.getRotFlip().setZ(nr);
 					break;
 				case '>':
-					nr = element.getRotation() + 5;
+					nr = element.getRotation() + 2.5;
 					nr = Math.round(1e4 * nr) / 10000.0;
 					element.getRotFlip().setZ(nr);
 					break;
@@ -539,7 +548,7 @@ public class GameWindow extends JPanel implements Constants {
 					element.getY()+source.getHeight()) {
 					wallDown=true;
 					ytemp=element.getY()+source.getHeight()+player.bottom;
-					if (time % 2 == 0) {
+					//if (time % 2 == 0) {
 						char dir = getMovement(element, false);
 						switch (dir) {
 						case 'L':
@@ -570,7 +579,7 @@ public class GameWindow extends JPanel implements Constants {
 						case 'w':
 						default:
 						}
-					}
+					//}
 				}
 				//ceiling detection
 				if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
