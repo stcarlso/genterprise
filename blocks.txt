@@ -5,6 +5,7 @@ darkcheck.png, 1x1dark.dat, darkcheck, -2
 grass.png, 1x1square.dat, grass, -2
 null, 1x1dark.dat, gray, -2
 stone.png, 1x1square.dat, stone, -2
+java-texture.png, 1x1square.dat, java-texture, -2
 wayout-up.png, 1x1square.dat, wayout-up, -1
 wayout-down.png, 1x1square.dat, wayout-down, -1
 [Elements]
@@ -15,6 +16,9 @@ instr1.png, instr.dat, instr1, -1
 instr2.png, instr.dat, instr2, -1
 instr3.png, instr.dat, instr3, -1
 instr4.png, instr.dat, instr4, -1
+instr5.png, instr.dat, instr5, -1
+instr6.png, instr.dat, instr6, -1
+null, 1x1black.dat, music, -4, 8
 [Overlays]
 ceilinglighting.png, 1x1square.dat, ceilinglighting, 2
 static-spot-1.png, 2x2square.dat, static-spot-1, 2, 7
