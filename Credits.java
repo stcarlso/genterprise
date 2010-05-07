@@ -103,6 +103,9 @@ public class Credits extends JComponent implements Runnable, KeyListener {
 		}
 		g2.dispose();
 	}
+	public void update(Graphics g) {
+		paint(g);
+	}
 	/**
 	 * Draws the given lines of text.
 	 * 
