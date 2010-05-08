@@ -26,7 +26,11 @@ public class Menu {
 	 */
 	public static final Border PBORDER = BorderFactory.createCompoundBorder(
 		BorderFactory.createLineBorder(BUT_PRESS), BorderFactory.createEmptyBorder(5, 20, 5, 20));
-
+	/**
+	 * A shared event listener for generic buttons.
+	 */
+	public static final EventListener SHARED = new EventListener(null);
+	
 	/**
 	 * Listens for mouse button events.
 	 */
@@ -55,8 +59,10 @@ public class Menu {
 			throw new NullPointerException("commands and choices cannot be null");
 		if (choices.length != commands.length)
 			throw new IndexOutOfBoundsException("lengths of arrays do not match");
-		events = new EventListener();
-		menu = new Box(BoxLayout.Y_AXIS);
+		events = new EventListener(this);
+		menu = new JPanel();
+		menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
+		menu.setBackground(Color.BLACK);
 		// add all choices
 		int n = choices.length;
 		menuButtons = new JButton[n];
@@ -100,6 +106,31 @@ public class Menu {
 	 * @return the button
 	 */
 	protected JButton getMenuItem(String text, String code) { 
+		JButton myButton = getButtonImpl(text, code);
+		myButton.addMouseListener(events);
+		myButton.addActionListener(events);
+		return myButton;
+	}
+	/**
+	 * Creates a menu-like button using the shared listener.
+	 * 
+	 * @param text the text on the button
+	 * @param code the action code
+	 * @return the button
+	 */
+	public static JButton getButton(String text, String code) {
+		JButton myButton = getButtonImpl(text, code);
+		myButton.addMouseListener(SHARED);
+		return myButton;
+	}
+	/**
+	 * Creates a menu-like button.
+	 * 
+	 * @param text the text on the button
+	 * @param code the action code
+	 * @return the button
+	 */
+	private static JButton getButtonImpl(String text, String code) {
 		JButton myButton = new JButton(text);
 		myButton.setUI(new ButtonUI());
 		myButton.setBorder(BORDER);
@@ -113,14 +144,17 @@ public class Menu {
 		myButton.setPreferredSize(new Dimension(300, myButton.getPreferredSize().height));
 		myButton.setMinimumSize(myButton.getPreferredSize());
 		myButton.setMaximumSize(myButton.getPreferredSize());
-		myButton.addMouseListener(events);
-		myButton.addActionListener(events);
 		myButton.setHorizontalTextPosition(SwingConstants.CENTER);
 		myButton.setVerticalTextPosition(SwingConstants.CENTER);
 		return myButton;
 	}
 
-	private class EventListener extends MouseAdapter implements ActionListener {
+	private static class EventListener extends MouseAdapter implements ActionListener {
+		private Menu menu;
+
+		public EventListener(Menu menu) {
+			this.menu = menu;
+		}
 		public void mouseEntered(MouseEvent e) {
 			JButton src = (JButton)e.getSource();
 			src.setBorder(PBORDER);
@@ -134,7 +168,10 @@ public class Menu {
 		public void mouseReleased(MouseEvent e) {
 		}
 		public void actionPerformed(ActionEvent e) {
-			if (listener != null) listener.actionPerformed(e);
+			if (menu != null) {
+				ActionListener listener = menu.listener;
+				if (listener != null) listener.actionPerformed(e);
+			}
 		}
 	}
 }

@@ -1,8 +1,10 @@
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
-
+import java.awt.image.*;
+import java.io.*;
 import javax.swing.*;
+import java.util.*;
+import java.util.List;
 
 /**
  * Main runner for the entire program in a frame.
@@ -10,7 +12,7 @@ import javax.swing.*;
  * 
  * @author Stephen
  */
-public class GEnterprise extends JFrame implements Runnable {
+public class GEnterprise extends JFrame implements Runnable, MouseListener {
 	private static final long serialVersionUID = 0L;
 
 	/**
@@ -21,6 +23,10 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * Default game window height if not chosen in graphics preferences.
 	 */
 	public static final int HEIGHT = 768;
+	/**
+	 * Filters out level files.
+	 */
+	public static final LevelFilter LEVEL_FILTER = new LevelFilter();
 
 	/**
 	 * Called when the program is first run.
@@ -78,6 +84,22 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * The credits.
 	 */
 	private Credits comp;
+	/**
+	 * This level will be loaded when the game starts.
+	 */
+	private String level;
+	/**
+	 * Available levels.
+	 */
+	private List<String> levels;
+	/**
+	 * List of available levels.
+	 */
+	private JList levelList;
+	/**
+	 * Level select screen.
+	 */
+	private JComponent levelSelect;
 
 	/**
 	 * Sets the title and window parameters.
@@ -86,6 +108,7 @@ public class GEnterprise extends JFrame implements Runnable {
 		super("Gunther's Enterprise");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setUndecorated(true);
+		levels = new ArrayList<String>(32);
 	}
 	/**
 	 * Creates the game window.
@@ -95,7 +118,9 @@ public class GEnterprise extends JFrame implements Runnable {
 		LoadFrame frame = new LoadFrame(res);
 		events = new EventListener();
 		player = new MusicThread(res);
+		setupUI();
 		setupMenus();
+		readLevels();
 		Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
 			new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB), new Point(8, 8), "blank");
 		player.load("click1.wav");
@@ -138,24 +163,10 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * Builds the menus on the screen.
 	 */
 	private void setupMenus() {
-		Container c = getContentPane();
-		c.setBackground(Color.BLACK);
-		c.setLayout(new BorderLayout(10, 10));
-		header = new JLabel(res.getIcon("title.png"));
-		header.setHorizontalAlignment(SwingConstants.CENTER);
-		header.setFont(header.getFont().deriveFont(56.f));
-		header.setBorder(BorderFactory.createEmptyBorder(50, 0, 50, 0));
-		header.setForeground(Color.WHITE);
-		c.add(header, BorderLayout.NORTH);
-		headerPause = new JLabel("Game Paused");
-		headerPause.setHorizontalAlignment(SwingConstants.CENTER);
-		headerPause.setFont(header.getFont());
-		headerPause.setBorder(header.getBorder());
-		headerPause.setForeground(Color.WHITE);
 		main = new Menu(new String[] {
 			"Campaign", "Single Mission", "Credits", "Settings", "Exit"
 		}, new String[] {
-			"map", "game", "credits", "settings", "exit"
+			"map", "single", "credits", "settings", "exit"
 		});
 		main.setActionListener(events);
 		settings = new Menu(new String[] {
@@ -176,6 +187,66 @@ public class GEnterprise extends JFrame implements Runnable {
 		setMenu(main);
 	}
 	/**
+	 * Initializes other UI components.
+	 */
+	private void setupUI() {
+		// headers and layout
+		Container c = getContentPane();
+		c.setBackground(Color.BLACK);
+		c.setLayout(new BorderLayout(10, 10));
+		header = new JLabel(res.getIcon("title.png"));
+		header.setHorizontalAlignment(SwingConstants.CENTER);
+		header.setBorder(BorderFactory.createEmptyBorder(50, 0, 50, 0));
+		header.setForeground(Color.WHITE);
+		c.add(header, BorderLayout.NORTH);
+		headerPause = new JLabel("Game Paused");
+		headerPause.setHorizontalAlignment(SwingConstants.CENTER);
+		headerPause.setFont(headerPause.getFont().deriveFont(56.f));
+		headerPause.setBorder(header.getBorder());
+		headerPause.setForeground(Color.WHITE);
+		// list of levels
+		levelList = new JList(new LevelListModel());
+		levelList.setBackground(Color.BLACK);
+		levelList.setForeground(Color.WHITE);
+		levelList.setFont(levelList.getFont().deriveFont(18.f));
+		levelList.setFocusable(false);
+		levelList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		levelList.addMouseListener(this);
+		levelList.setSelectionBackground(Color.WHITE);
+		levelList.setSelectionForeground(Color.BLACK);
+		levelList.setPrototypeCellValue("00000000000000000000000000000000");
+		JScrollPane sp = new JScrollPane(levelList);
+		sp.setOpaque(false);
+		sp.getViewport().setOpaque(false);
+		sp.setBorder(BorderFactory.createLineBorder(Color.WHITE));
+		sp.setAlignmentX(JComponent.CENTER_ALIGNMENT);
+		sp.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		JScrollBar bar = sp.getVerticalScrollBar();
+		bar.setUI(new ScrollbarUI());
+		// level select
+		JLabel head = new JLabel("Select Level");
+		head.setHorizontalAlignment(SwingConstants.CENTER);
+		head.setFont(head.getFont().deriveFont(32.f));
+		head.setForeground(Color.WHITE);
+		head.setAlignmentX(JComponent.CENTER_ALIGNMENT);
+		JComponent vert = new Box(BoxLayout.Y_AXIS);
+		vert.setOpaque(false);
+		vert.add(head);
+		vert.add(Box.createVerticalStrut(20));
+		vert.add(sp);
+		vert.add(Box.createVerticalStrut(20));
+		JButton start = Menu.getButton("Start Game", "game");
+		start.addActionListener(events);
+		JButton back = Menu.getButton("Main Menu", "main");
+		back.addActionListener(events);
+		vert.add(start);
+		vert.add(Box.createVerticalStrut(10));
+		vert.add(back);
+		levelSelect = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+		levelSelect.setOpaque(false);
+		levelSelect.add(vert);
+	}
+	/**
 	 * Sets the current menu.
 	 * 
 	 * @param menu the new menu
@@ -190,10 +261,21 @@ public class GEnterprise extends JFrame implements Runnable {
 		repaint();
 	}
 	/**
+	 * Sets the screen to the level list.
+	 */
+	public void selectLevel() {
+		levelList.setSelectedIndex(0);
+		if (current != null)
+			getContentPane().remove(current);
+		current = levelSelect;
+		getContentPane().add(levelSelect, BorderLayout.CENTER);
+		validate();
+		repaint();
+	}
+	/**
 	 * Resets the whole screen.
 	 */
 	public void reset() {
-		getContentPane().removeAll();
 		main.deselectAll();
 		current = main.layout();
 		getContentPane().add(current, BorderLayout.CENTER);
@@ -209,10 +291,6 @@ public class GEnterprise extends JFrame implements Runnable {
 		GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment()
 			.getDefaultScreenDevice();
 		setVisible(false);
-		// looks unnecessary for now
-		/*try {
-			dev.setDisplayMode(originalMode);
-		} catch (Exception ex) { }*/
 		dev.setFullScreenWindow(null);
 		System.exit(0);
 	}
@@ -220,12 +298,13 @@ public class GEnterprise extends JFrame implements Runnable {
 	 * Runs the game!!!
 	 */
 	public void run() {
+		if (level == null) level = "instr.dat";
 		Container c = getContentPane();
 		Utils.sleep(100L);
 		c.removeAll();
 		c.add(gameWindow, BorderLayout.CENTER);
 		c.validate();
-		gameWindow.start();
+		gameWindow.start(level);
 		while (true) {
 			// pause / un pause
 			while (!gameWindow.paused) Utils.sleep(50L);
@@ -235,13 +314,56 @@ public class GEnterprise extends JFrame implements Runnable {
 			c.add(headerPause, BorderLayout.NORTH);
 			c.add(pMenu, BorderLayout.SOUTH);
 			c.validate();
-			while (gameWindow.paused) Utils.sleep(50L);
+			while (gameWindow.paused) {
+				Utils.sleep(5L);
+				if (gameWindow.KILL) {
+					// close game
+					c.remove(headerPause);
+					c.remove(pMenu);
+					c.validate();
+					gameWindow.paused = false;
+					gameWindow.setVisible(true);
+					// give it a chance to dump textures
+					while (!gameWindow.killed) Utils.sleep(50L);
+					current = null;
+					gameWindow.clear();
+					// set up for the main window
+					c.remove(gameWindow);
+					c.validate();
+					if (gameWindow.done)
+						comp.start();
+					else {
+						reset();
+						player.stopMusic();
+						player.queueMusic("watching.mp3");
+					}
+					return;
+				}
+			}
 			c.remove(headerPause);
 			c.remove(pMenu);
 			c.validate();
 			gameWindow.setVisible(true);
 			gameWindow.canvas.requestFocus();
 		}
+	}
+	/**
+	 * Unloads the game cleanly.
+	 */
+	private void unloadGame() {
+		gameWindow.KILL = true;
+	}
+	/**
+	 * Loads up the game in a new thread.
+	 */
+	private void playGame() {
+		int index = levelList.getSelectedIndex();
+		if (index < 0) return;
+		level = levels.get(index);
+		Thread t = new Thread(GEnterprise.this);
+		t.setName("Pause and Menu Handler");
+		t.setPriority(Thread.MIN_PRIORITY + 1);
+		t.start();
 	}
 	/**
 	 * Returns the music player thread.
@@ -259,6 +381,29 @@ public class GEnterprise extends JFrame implements Runnable {
 	public ResourceGetter getResources() {
 		return res;
 	}
+	/**
+	 * Reads the list of available levels. No SVN levels just yet.
+	 */
+	public void readLevels() {
+		File svn = new File("branches/levels");
+		if (!svn.exists()) {
+			svn = new File("code/branches/levels");
+			if (!svn.exists()) svn = null;
+		}
+		if (svn != null) svn = svn.getAbsoluteFile();
+		File local = new File(".").getAbsoluteFile();
+		levels.clear();
+		if (svn != null) {
+			//File[] svnLevels = svn.listFiles(LEVEL_FILTER);
+			/*for (int i = 0; i < svnLevels.length; i++)
+				levels.add("SVN " + svnLevels[i].getName());*/
+			// no svn support yet //
+		}
+		File[] localLevels = local.listFiles(LEVEL_FILTER);
+		for (int i = 0; i < localLevels.length; i++)
+			levels.add(localLevels[i].getName());
+		Collections.sort(levels);
+	}
 
 	/**
 	 * Handles menu events and mouse events.
@@ -270,10 +415,14 @@ public class GEnterprise extends JFrame implements Runnable {
 			player.startSFX("click1.wav");
 			if (cmd.equals("main"))
 				setMenu(main);
+			else if (cmd.equals("menu"))
+				unloadGame();
 			else if (cmd.equals("settings"))
 				setMenu(settings);
+			else if (cmd.equals("single"))
+				selectLevel();
 			else if (cmd.equals("game"))
-				new Thread(GEnterprise.this).start();
+				playGame();
 			else if (cmd.equals("unpause"))
 				gameWindow.paused = false;
 			else if (cmd.equals("credits"))
@@ -282,4 +431,37 @@ public class GEnterprise extends JFrame implements Runnable {
 				close();
 		}
 	}
+
+	/**
+	 * A list model based on the loaded list of levels.
+	 */ 
+	private class LevelListModel extends AbstractListModel {
+		private static final long serialVersionUID = 0L;
+
+		public Object getElementAt(int index) {
+			return levels.get(index);
+		}
+		public int getSize() {
+			return levels.size();
+		}
+	}
+
+	/**
+	 * A class that filters only level (.dat) files.
+	 */
+	private static final class LevelFilter implements FileFilter {
+		public boolean accept(File pathname) {
+			String name = pathname.getName();
+			return pathname.canRead() && !pathname.isHidden() && !pathname.isDirectory() &&
+				!name.startsWith(".") && name.toLowerCase().endsWith(".dat");
+		}
+	}
+
+	public void mouseClicked(MouseEvent e) {
+		if (e.getClickCount() == 2) playGame();
+	}
+	public void mouseEntered(MouseEvent e) {}
+	public void mouseExited(MouseEvent e) {}
+	public void mousePressed(MouseEvent e) {}
+	public void mouseReleased(MouseEvent e) {}
 }
