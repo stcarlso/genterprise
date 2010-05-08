@@ -310,10 +310,12 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 			while (!gameWindow.paused) Utils.sleep(50L);
 			player.startSFX("ping.wav");
 			gameWindow.setVisible(false);
-			pause.deselectAll();
-			c.add(headerPause, BorderLayout.NORTH);
-			c.add(pMenu, BorderLayout.SOUTH);
-			c.validate();
+			if (!gameWindow.KILL && !gameWindow.done) {
+				pause.deselectAll();
+				c.add(headerPause, BorderLayout.NORTH);
+				c.add(pMenu, BorderLayout.SOUTH);
+				c.validate();
+			}
 			while (gameWindow.paused) {
 				Utils.sleep(5L);
 				if (gameWindow.KILL) {
