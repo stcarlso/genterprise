@@ -180,6 +180,7 @@ public class MusicThread extends Thread {
 			} else
 				child.load(file);
 		} else try {
+			if (map.containsKey(file)) return;
 			Clip clip = AudioSystem.getClip();
 			clip.open(AudioSystem.getAudioInputStream(res.getResource("sound/" + file)));
 			clip.setFramePosition(0);
