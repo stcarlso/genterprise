@@ -18,7 +18,7 @@ public class FrameRunner extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		getContentPane().add(game);
 		setVisible(true);
-		game.start();
+		game.start("peter.dat");
 	}
 	public static void main(String[] args) {
 		Utils.staticInit();

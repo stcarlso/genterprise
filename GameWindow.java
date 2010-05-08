@@ -15,6 +15,7 @@ public class GameWindow extends JPanel implements Constants {
 	private static final long serialVersionUID = 0L;
 
 	ResourceGetter res;
+	GLGameListener listener;
 	Level level;
 	Block block;
 	List<GameObject> elements;
@@ -33,12 +34,14 @@ public class GameWindow extends JPanel implements Constants {
 	boolean paused;
 	boolean key;
 	volatile boolean KILL;
+	volatile boolean killed;
 	volatile boolean respawn;
+	volatile boolean done;
 	
 	int width=0;
 	int height=0;
 	
-	long time=0;
+	private long time=0;
 	private long effectStart=0;
 	private long effectEnd=0;
 	private long stop=0;
@@ -56,27 +59,29 @@ public class GameWindow extends JPanel implements Constants {
 	PhysicsThread physics;
 	Animator anim;
 	GLU glu;
+	GLCapabilities glcaps;
 	GLCanvas canvas;
 	MusicThread music;
+	JLabel load, keys, info;
 	
 	public GameWindow() {
 		super(new BorderLayout());
 		setBackground(Color.BLACK);
+		KILL = killed = false;
+		setupUI();
 	}
 	public GameWindow(MusicThread t) {
 		this();
 		music = t;
 	}
-	public void start() {
-		key = false;
+	public void setupUI() {
 		res = new FilesystemResources(null, new File("res/"));
-		JLabel load = new JLabel(res.getIcon("genterprise.png"));
+		load = new JLabel(res.getIcon("genterprise.png"));
 		load.setHorizontalAlignment(SwingConstants.CENTER);
 		load.setVerticalAlignment(SwingConstants.CENTER);
 		load.setForeground(Color.WHITE);
 		load.setFont(load.getFont().deriveFont(24.f));
-		add(load, BorderLayout.CENTER);
-		JLabel keys = new JLabel(res.getIcon("keys.png"));
+		keys = new JLabel(res.getIcon("keys.png"));
 		keys.setText("G: Pause");
 		keys.setHorizontalAlignment(SwingConstants.CENTER);
 		keys.setVerticalAlignment(SwingConstants.CENTER);
@@ -85,15 +90,23 @@ public class GameWindow extends JPanel implements Constants {
 		keys.setFont(load.getFont());
 		keys.setVerticalTextPosition(SwingConstants.TOP);
 		keys.setHorizontalTextPosition(SwingConstants.CENTER);
-		add(keys, BorderLayout.SOUTH);
-		JLabel info = new JLabel(res.getIcon("info.png"));
+		info = new JLabel(res.getIcon("info.png"));
 		info.setHorizontalAlignment(SwingConstants.CENTER);
 		info.setVerticalAlignment(SwingConstants.CENTER);
 		info.setBorder(BorderFactory.createEmptyBorder(0, 0, 50, 0));
+		glcaps = new GLCapabilities();
+	}
+	public void start(String level) {
+		key = paused = done = KILL = killed = false;
+
+		removeAll();
+		add(load, BorderLayout.CENTER);
+		add(keys, BorderLayout.SOUTH);
 		add(info, BorderLayout.NORTH);
 		validate();
+		repaint();
 
-		readLevel("../thecave.dat");
+		readLevel("../" + level);
 		if (music != null) {
 			music.load("aoogahorn.wav");
 			music.load("ping.wav");
@@ -102,33 +115,33 @@ public class GameWindow extends JPanel implements Constants {
 		}
 
 		player= new Player();
-		GLCapabilities glcaps = new GLCapabilities();
-		canvas = new GLCanvas(glcaps);
 
-		GLGameListener listener= new GLGameListener(player);
+		listener= new GLGameListener(player);
+		canvas = new GLCanvas(glcaps);
+		canvas.addKeyListener(listener);
+		canvas.addGLEventListener(listener);   // add event listener
 		load.setIcon(null);
 		load.setText("Press any key to start");
 		addKeyListener(listener);
 		requestFocus();
+		requestFocus();
 		while (!key) Utils.sleep(50L);
 		removeKeyListener(listener);
-
 		load.setText("Starting!");
-		Utils.sleep(990L);
 
-		canvas.addKeyListener(listener);
-		canvas.addGLEventListener(listener);   // add event listener
-		removeAll();
-		add(canvas);
-		validate();
+		time = stop = effectEnd = effectStart = 0;
+		fade = 0;
 		
 		if (music != null)
 			music.stopMusic();
 		physics= new PhysicsThread();
-		physics.start();
 		anim=new Animator(canvas);
-		anim.start();
+		removeAll();
+		add(canvas, BorderLayout.CENTER);
+		validate();
 		canvas.requestFocus();
+		physics.start();
+		anim.start();
 	}
 	public void readLevel(String levelName) {
 		try {
@@ -194,11 +207,17 @@ public class GameWindow extends JPanel implements Constants {
 		private long dt;
 		
 		public PhysicsThread() {
+			super("Physics and Simulation");
+			setPriority(Thread.MAX_PRIORITY);
 			dt=1;
 		}
 		public void run() {
 			while(true) {
-				while (paused || fade > 0) Utils.sleep(1L);
+				while (paused || fade > 0) {
+					Utils.sleep(1L);
+					if (KILL || killed) return;
+				}
+				if (KILL || killed) return;
 				time+=dt;
 				
 				synchronized (sync) {
@@ -733,11 +752,13 @@ public class GameWindow extends JPanel implements Constants {
 						} if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
 							String myName = element.getAttribute("name", "");
 							if (myName.equalsIgnoreCase("end")) {
-								System.out.println("You won, but I lost!");
 								playSound("ping.wav");
 								fade = 60;
 								savedPlayer = null;
 								reset();
+								paused = true;
+								done = true;
+								KILL = true;
 							} else {
 								String target = element.getAttribute("target", myName + "exit");
 								Iterator<GameObject> it = interactives.iterator();
@@ -797,6 +818,17 @@ public class GameWindow extends JPanel implements Constants {
 		}
 	}
 	/**
+	 * Reload helper.
+	 */
+	public void clear() {
+		try {
+			anim.stop();
+		} catch (Exception e) { }
+		requestFocus();
+		removeAll();
+		validate();
+	}
+	/**
 	 * Resets the player and all objects to defaults.
 	 */
 	public void reset() {
@@ -854,7 +886,18 @@ public class GameWindow extends JPanel implements Constants {
 		}
 		
 		public void display(GLAutoDrawable drawable) {
+			if (killed) return;
 			GL gl = drawable.getGL();
+			if (KILL) {
+				Iterator<GameObject> itr = block.getElements().iterator();
+				while(itr.hasNext()) {
+					GameObject element = itr.next();
+					element.getSource().releaseGeometry();
+					element.getSource().releaseTexture();
+				}
+				killed = true;
+				return;
+			}
 			if (fade > 0) {
 				Element.clearOptions(gl);
 				gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
@@ -875,11 +918,10 @@ public class GameWindow extends JPanel implements Constants {
 			 	synchronized (mSyn) {
 				 	player_x = player.x;
 				 	player_y = player.y;
-				 	if(player.ability!=null && player.ability instanceof Scout) {
+				 	if(player.ability!=null && player.ability instanceof Scout)
 					 	glu.gluLookAt(player.scoutx, player.scouty, 10, player.scoutx, player.scouty, -10, 0, 1, 0);
-				 	} else {
+				 	else
 					 	glu.gluLookAt(player_x, player_y, 10, player_x, player_y, -10, 0, 1, 0);
-				 	}
 					renderScene(gl);
 				}
 				drawCharacter(gl);
@@ -1090,6 +1132,7 @@ public class GameWindow extends JPanel implements Constants {
 			Element el;
 			for (GameObject o : block.getElements()) {
 				el = o.getSource();
+				// emergency check
 				if (el.getVertexArray() == null)
 					el.loadGeometry(res);
 				if (!el.hasTexture())
