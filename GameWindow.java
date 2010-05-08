@@ -212,6 +212,7 @@ public class GameWindow extends JPanel implements Constants {
 			dt=1;
 		}
 		public void run() {
+			double dx, dy;
 			while(true) {
 				while (paused || fade > 0) {
 					Utils.sleep(1L);
@@ -404,6 +405,7 @@ public class GameWindow extends JPanel implements Constants {
 						player.ability=null;
 					}
 				}
+				collideTest();
 				
 				//acceleration calculations
 				if(!player.walls[DOWN]) {		//air friction
@@ -417,27 +419,37 @@ public class GameWindow extends JPanel implements Constants {
 					else if(player.vx<0)
 						player.ax+= Math.min(-player.vx/dt,muk*gravity);
 				}
-				collideTest();
-								
+
 				if(player.status!= LADDER && !(player.walls[UP] && player.vy>0) &&
 					!(player.walls[DOWN] && player.vy<=0)) {
 					player.ay+=-gravity;
 					player.vy+=player.ay*dt;
-					player.y+=Math.signum(player.vy)*Math.min(.3,Math.abs(player.vy))*dt;
+					// attempted platform slide fix?
+					dy = Math.signum(player.vy)*Math.min(.3,Math.abs(player.vy))*dt;
+					if (Math.abs(dy) > Math.abs(player.guideY))
+						player.y+=dy-player.guideY;
+					else
+						player.y+=dy;
 				} else {
 					player.vy=0;
 					player.ay=0;
 				}
 				
 				player.vx+=player.ax*dt;
-				//move with velocity (with speed limit)	
+				//move with velocity (with speed limit)
 				if(player.status!= LADDER && !(player.walls[LEFT] && player.vx<0) &&
 						!(player.walls[RIGHT] && player.vx>0)) {
-					player.x+=Math.signum(player.vx)*Math.min(.3,Math.abs(player.vx))*dt;
-				} else {					
+					dx = Math.signum(player.vx)*Math.min(.3,Math.abs(player.vx))*dt;
+					// attempted platform slide fix?
+					if (Math.abs(dx) > Math.abs(player.guideX))
+						player.x+=dx-player.guideX;
+					else
+						player.x+=dx;
+				} else {
 					player.vx=0;
 					player.ax=0;
 				}
+
 				player.ax=0;
 				player.ay=0;
 
@@ -556,8 +568,8 @@ public class GameWindow extends JPanel implements Constants {
 			player.vy = Math.round(1e4 * player.vy)/10000.0;
 			Iterator<GameObject> itr = elements.iterator();
 			boolean wallUp=false,wallDown=false,wallLeft=false,wallRight=false,guideX=false,guideY=false;
-			double xtemp = player.x;
-			double ytemp = player.y;
+			double xtemp = player.x, dx = 0;
+			double ytemp = player.y, dy = 0;
 			while(itr.hasNext()) {
 				GameObject element = itr.next();
 				Element source = element.getSource();
@@ -574,22 +586,22 @@ public class GameWindow extends JPanel implements Constants {
 						case 'L':
 						case 'l':
 							guideX = true;
-							xtemp -= INC;
+							dx -= INC;
 							break;
 						case 'R':
 						case 'r':
 							guideX = true;
-							xtemp += INC;
+							dx += INC;
 							break;
 						case 'U':
 						case 'u':
 							guideY = true;
-							ytemp += INC;
+							dy += INC;
 							break;
 						case 'D':
 						case 'd':
 							guideY = true;
-							ytemp -= INC;
+							dy -= INC;
 							break;
 						case '>':
 						case '<':
@@ -624,6 +636,10 @@ public class GameWindow extends JPanel implements Constants {
 					xtemp=element.getX()+(1-player.right)-1;
 				}
 			}
+			xtemp += dx;
+			ytemp += dy;
+			player.guideX = Math.round(1e4 * dx)/10000.0;
+			player.guideY = Math.round(1e4 * dy)/10000.0;
 			xtemp = Math.round(1e4 * xtemp)/10000.0;
 			ytemp = Math.round(1e4 * ytemp)/10000.0;
 			if (wallLeft != wallRight || guideX) {
@@ -756,8 +772,8 @@ public class GameWindow extends JPanel implements Constants {
 								fade = 60;
 								savedPlayer = null;
 								reset();
-								paused = true;
 								done = true;
+								paused = true;
 								KILL = true;
 							} else {
 								String target = element.getAttribute("target", myName + "exit");
@@ -833,6 +849,7 @@ public class GameWindow extends JPanel implements Constants {
 	 */
 	public void reset() {
 		player.reset();
+		act = move = sneak = false;
 		// will fail until positions are also reset
 		/*Iterator<GameObject> it = block.getElements().iterator();
 		while (it.hasNext()) {
@@ -873,6 +890,7 @@ public class GameWindow extends JPanel implements Constants {
 		player.facingRight = savedPlayer.facingRight;
 		player.wallJumps = savedPlayer.wallJumps;
 		player.groundJump = savedPlayer.groundJump;
+		player.guideX = player.guideY = 0.0;
 	}
 
 	public class GLGameListener implements GLEventListener, KeyListener {
