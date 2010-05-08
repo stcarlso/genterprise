@@ -16,10 +16,6 @@ public abstract class ResourceGetter {
 	 */
 	private transient Map<String, Image> imageCache;
 	/**
-	 * Cache of JOGL images (textures).
-	 */
-	private transient Map<String, Texture> textureCache;
-	/**
 	 * The parent resource getter.
 	 */
 	protected transient ResourceGetter parent;
@@ -30,7 +26,6 @@ public abstract class ResourceGetter {
 	protected ResourceGetter(ResourceGetter parent) {
 		this.parent = parent;
 		imageCache = new HashMap<String, Image>(256);
-		textureCache = new HashMap<String, Texture>(256);
 	}
 	/**
 	 * Subclasses will provide a stream where data can be read.
@@ -144,14 +139,10 @@ public abstract class ResourceGetter {
 	 * @return the texture
 	 */
 	public synchronized Texture getTexture(String src) {
-		if (textureCache.containsKey(src))
-			return textureCache.get(src);
 		try {
 			Texture t = loadTexture(src);
-			textureCache.put(src, t);
 			return t;
 		} catch (IOException e) {
-			textureCache.put(src, null);
 			return null;
 		}
 	}
