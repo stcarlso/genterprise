@@ -26,6 +26,8 @@ public class Player implements Constants {
 	boolean facingRight;
 	
 	boolean[] walls;
+	double guideX;
+	double guideY;
 	Move ability;
 	Color color; //may be deprecated as soon as player models are available
 	Texture stand;
@@ -51,6 +53,7 @@ public class Player implements Constants {
 		ax=0;
 		ay=0;
 		m=4;
+		guideX = guideY = 0;
 		
 		//hitbox of the player
 		left=.1;
