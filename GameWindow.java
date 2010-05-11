@@ -232,8 +232,8 @@ public class GameWindow extends JPanel implements Constants {
 							if(down && player.ability==null && Math.abs(player.vy) < 1e-5) {
 								player.status=DUCKING;
 								player.top=.9;
-								player.left=0;
-								player.right=1.7;
+								player.left=-.35;
+								player.right=1.35;
 							} else {
 								player.status=NORMAL;
 								player.left=.1;
@@ -285,7 +285,7 @@ public class GameWindow extends JPanel implements Constants {
 							} else if(left) {
 								if(player.walls[DOWN])
 									player.ability=new Dash(player,LEFT);
-							} else {
+							} else if(down) {
 								if(!player.walls[DOWN])
 									player.ability=new Glide(player);
 							}
@@ -300,7 +300,7 @@ public class GameWindow extends JPanel implements Constants {
 							} else if(right) {
 								if(!player.walls[DOWN])
 									player.ability=new MovingAirDodge(player,RIGHT);
-							} else
+							} else if(up)
 								player.ability=new Scout(player);								
 							sneak=false;
 						}
@@ -653,6 +653,8 @@ public class GameWindow extends JPanel implements Constants {
 			} if(wallUp && wallDown) {
 				player.status = DUCKING;
 				player.top=.9;
+				player.left=-.3;
+				player.right=1.4;
 			}
 
 			boolean busted = false;
@@ -754,13 +756,13 @@ public class GameWindow extends JPanel implements Constants {
 			/**interactive element detection
 			 * 
 			 */
-			//if(player.ability==null) {
+			if(player.ability==null || player.ability instanceof Activate) {
 				itr = interactives.iterator();
 				boolean ladder=false;
 				while(itr.hasNext()) {
 					GameObject element = itr.next();
 					Element source = element.getSource();
-					if(left > element.getX()-.2 && right < element.getX()+source.getWidth()+.2
+					if(left > element.getX() && right < element.getX()+source.getWidth()
 						&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
 						if(element.getSpecialBit() == 3 && player.ability instanceof Activate) {
 							playSound("ping.wav");
@@ -823,7 +825,7 @@ public class GameWindow extends JPanel implements Constants {
 				
 				if (!ladder && player.status==LADDER)
 					player.status = NORMAL;
-			//}
+			}
 			if (fade <= 0) {
 				player.walls[UP]=wallUp;
 				player.walls[DOWN]=wallDown;
@@ -1044,22 +1046,22 @@ public class GameWindow extends JPanel implements Constants {
 				if(player.status==DUCKING) {
 					if(player.facingRight) {
 						gl.glTexCoord2d(0,1);
-						gl.glVertex3d(player_x,player_y,0);
+						gl.glVertex3d(player_x-.35,player_y,0);
 						gl.glTexCoord2d(1,1);
-						gl.glVertex3d(player_x+2,player_y,0);
+						gl.glVertex3d(player_x+1.65,player_y,0);
 						gl.glTexCoord2d(1,0);
-						gl.glVertex3d(player_x+2,player_y+1,0);
+						gl.glVertex3d(player_x+1.65,player_y+1,0);
 						gl.glTexCoord2d(0,0);
-						gl.glVertex3d(player_x,player_y+1,0);
+						gl.glVertex3d(player_x-.35,player_y+1,0);
 					} else {
 						gl.glTexCoord2d(1,1);
-						gl.glVertex3d(player_x,player_y,0);
+						gl.glVertex3d(player_x-.35,player_y,0);
 						gl.glTexCoord2d(0,1);
-						gl.glVertex3d(player_x+2,player_y,0);
+						gl.glVertex3d(player_x+1.65,player_y,0);
 						gl.glTexCoord2d(0,0);
-						gl.glVertex3d(player_x+2,player_y+1,0);
+						gl.glVertex3d(player_x+1.65,player_y+1,0);
 						gl.glTexCoord2d(1,0);
-						gl.glVertex3d(player_x,player_y+1,0);
+						gl.glVertex3d(player_x-.35,player_y+1,0);
 					}
 				} else {
 					if(player.facingRight) {
