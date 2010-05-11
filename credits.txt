@@ -3,7 +3,7 @@
 
 
 Gunther's Enterprise
-SVN 100, Version 1.0.0
+SVN 104, Version 1.0.4
 Software Design, Period 6
 Mrs. Collins
 
@@ -64,9 +64,12 @@ RapidSVN 0.12
 Adobe Photoshop CS3
 Adobe Fireworks CS3
 The GNU Image Manipulation Program
+Audacity
 
 
 Special Thanks To
 
 Karen Collins, Software Design Teacher
 Our Testers
+
+Eric Van Albert
