@@ -756,13 +756,13 @@ public class GameWindow extends JPanel implements Constants {
 			/**interactive element detection
 			 * 
 			 */
+			boolean ladder=false;
 			if(player.ability==null || player.ability instanceof Activate) {
 				itr = interactives.iterator();
-				boolean ladder=false;
 				while(itr.hasNext()) {
 					GameObject element = itr.next();
 					Element source = element.getSource();
-					if(left > element.getX() && right < element.getX()+source.getWidth()
+					if(left > element.getX()-.2 && right < element.getX()+source.getWidth()+.2
 						&& top > element.getY() && bottom < element.getY()+source.getHeight()) {
 						if(element.getSpecialBit() == 3 && player.ability instanceof Activate) {
 							playSound("ping.wav");
@@ -1046,22 +1046,22 @@ public class GameWindow extends JPanel implements Constants {
 				if(player.status==DUCKING) {
 					if(player.facingRight) {
 						gl.glTexCoord2d(0,1);
-						gl.glVertex3d(player_x-.35,player_y,0);
+						gl.glVertex3d(player_x-.25,player_y,0);
 						gl.glTexCoord2d(1,1);
-						gl.glVertex3d(player_x+1.65,player_y,0);
+						gl.glVertex3d(player_x+1.75,player_y,0);
 						gl.glTexCoord2d(1,0);
-						gl.glVertex3d(player_x+1.65,player_y+1,0);
+						gl.glVertex3d(player_x+1.75,player_y+1,0);
 						gl.glTexCoord2d(0,0);
-						gl.glVertex3d(player_x-.35,player_y+1,0);
+						gl.glVertex3d(player_x-.25,player_y+1,0);
 					} else {
 						gl.glTexCoord2d(1,1);
-						gl.glVertex3d(player_x-.35,player_y,0);
+						gl.glVertex3d(player_x-.75,player_y,0);
 						gl.glTexCoord2d(0,1);
-						gl.glVertex3d(player_x+1.65,player_y,0);
+						gl.glVertex3d(player_x+1.25,player_y,0);
 						gl.glTexCoord2d(0,0);
-						gl.glVertex3d(player_x+1.65,player_y+1,0);
+						gl.glVertex3d(player_x+1.25,player_y+1,0);
 						gl.glTexCoord2d(1,0);
-						gl.glVertex3d(player_x-.35,player_y+1,0);
+						gl.glVertex3d(player_x-.75,player_y+1,0);
 					}
 				} else {
 					if(player.facingRight) {
