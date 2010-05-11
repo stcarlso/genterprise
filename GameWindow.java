@@ -312,8 +312,8 @@ public class GameWindow extends JPanel implements Constants {
 							if(player.status==DUCKING) {
 								player.ax=-.04;
 							} else if(player.status==LADDER) {
-								player.ax=-.2;
-								player.ay=.2;
+								player.ax=-.1;
+								player.ay=.1;
 								player.status=NORMAL;								
 							} else if(player.walls[DOWN]) {
 								player.ax=-.15;
@@ -331,8 +331,8 @@ public class GameWindow extends JPanel implements Constants {
 							if(player.status==DUCKING) {
 								player.ax=.04;
 							} else if(player.status==LADDER) {
-								player.ax=.2;
-								player.ay=.2;
+								player.ax=.1;
+								player.ay=.1;
 								player.status=NORMAL;
 							} else if(player.walls[DOWN]) {
 								player.ax=.15;
@@ -767,7 +767,7 @@ public class GameWindow extends JPanel implements Constants {
 						if(element.getSpecialBit() == 3 && player.ability instanceof Activate) {
 							playSound("ping.wav");
 							save();
-						} if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
+						} else if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
 							String myName = element.getAttribute("name", "");
 							if (myName.equalsIgnoreCase("end")) {
 								playSound("ping.wav");
@@ -803,10 +803,10 @@ public class GameWindow extends JPanel implements Constants {
 							if(up||down) {
 								player.status = LADDER;
 								player.x=element.getX();
-								left=.1;
-								right=.9;
-								top=1.75;
-								bottom=0;			
+								player.left = .1;
+								player.right = .9;
+								player.top = 1.75;
+								player.bottom = 0;			
 								player.groundJump=false;
 								player.airJump=true;
 							}
@@ -823,8 +823,14 @@ public class GameWindow extends JPanel implements Constants {
 					}
 				}
 				
-				if (!ladder && player.status==LADDER)
+				if (!ladder && player.status==LADDER) {
+					if(player.facingRight)
+						player.ax+=.1;
+					else
+						player.ax-=.1;
+					player.ay=.3;
 					player.status = NORMAL;
+				}
 			}
 			if (fade <= 0) {
 				player.walls[UP]=wallUp;
