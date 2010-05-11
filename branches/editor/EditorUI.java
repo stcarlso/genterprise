@@ -1028,8 +1028,8 @@ public class EditorUI extends JFrame implements GLEventListener {
 	public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) { }
 	public void init(GLAutoDrawable drawable) {
 		GL gl = drawable.getGL();
-		hitBuffer = BufferUtil.newIntBuffer(48);
-		gl.glSelectBuffer(12, hitBuffer);
+		hitBuffer = BufferUtil.newIntBuffer(1024);
+		gl.glSelectBuffer(256, hitBuffer);
 		glu = new GLU();
 		gl.glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		gl.glMatrixMode(GL.GL_MODELVIEW);

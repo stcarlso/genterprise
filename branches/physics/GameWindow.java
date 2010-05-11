@@ -121,7 +121,7 @@ public class GameWindow extends JPanel implements Constants {
 		canvas.addKeyListener(listener);
 		canvas.addGLEventListener(listener);   // add event listener
 		load.setIcon(null);
-		load.setText("Press any key to start");
+		load.setText("Press SPACE to start");
 		addKeyListener(listener);
 		requestFocus();
 		requestFocus();
@@ -1251,7 +1251,7 @@ public class GameWindow extends JPanel implements Constants {
 		public void keyTyped(KeyEvent e) {			
 			if(e.getKeyChar()==action)
 				act=true;
-			if(e.getKeyChar()==movement)			
+			if(e.getKeyChar()==movement)
 					move=true;
 			if(e.getKeyChar()==stealth)
 				//moves that can be cancelled by pressing the button again

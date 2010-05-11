@@ -164,9 +164,9 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 	 */
 	private void setupMenus() {
 		main = new Menu(new String[] {
-			"Campaign", "Single Mission", "Credits", "Settings", "Exit"
+			"Campaign", "Single Mission", "Settings", "Exit"
 		}, new String[] {
-			"map", "single", "credits", "settings", "exit"
+			"map", "single", "settings", "exit"
 		});
 		main.setActionListener(events);
 		settings = new Menu(new String[] {

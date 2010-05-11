@@ -135,6 +135,7 @@ public class Credits extends JComponent implements Runnable, KeyListener {
 		int N = 60 + 2 * INITIAL.length() + (SP + fm.getHeight()) * (allText.length + 1)
 			+ (SP + fmC.getHeight()) * (INITIAL.split("\n").length + 1);
 		Utils.sleep(50L);
+		requestFocus();
 		music.stopMusic();
 		music.setLoop(true);
 		music.queueMusic("watching.mp3");
@@ -153,7 +154,8 @@ public class Credits extends JComponent implements Runnable, KeyListener {
 	}
 	public void keyPressed(KeyEvent e) {}
 	public void keyReleased(KeyEvent e) {
-		t = Integer.MAX_VALUE;
+		if (t > 60 || t < 0)
+			t = Integer.MAX_VALUE - 10;
 	}
 	public void keyTyped(KeyEvent e) {}
 }
