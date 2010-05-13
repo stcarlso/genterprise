@@ -425,7 +425,7 @@ public class GameWindow extends JPanel implements Constants {
 					player.ay+=-gravity;
 					player.vy+=player.ay*dt;
 					// attempted platform slide fix?
-					dy = Math.signum(player.vy)*Math.min(.3,Math.abs(player.vy))*dt;
+					dy = Math.signum(player.vy)*Math.min(.22,Math.abs(player.vy))*dt;
 					if (Math.abs(dy) > Math.abs(player.guideY))
 						player.y+=dy-player.guideY;
 					else
@@ -438,8 +438,8 @@ public class GameWindow extends JPanel implements Constants {
 				player.vx+=player.ax*dt;
 				//move with velocity (with speed limit)
 				if(player.status!= LADDER && !(player.walls[LEFT] && player.vx<0) &&
-						!(player.walls[RIGHT] && player.vx>0)) {
-					dx = Math.signum(player.vx)*Math.min(.3,Math.abs(player.vx))*dt;
+					!(player.walls[RIGHT] && player.vx>0)) {
+					dx = Math.signum(player.vx)*Math.min(.22,Math.abs(player.vx))*dt;
 					// attempted platform slide fix?
 					if (Math.abs(dx) > Math.abs(player.guideX))
 						player.x+=dx-player.guideX;
