@@ -67,6 +67,7 @@ public class Credits extends JComponent implements Runnable, KeyListener {
 		setFont(new Font("Sans", Font.PLAIN, 26));
 		fm = getFontMetrics(getFont());
 		addKeyListener(this);
+		setFocusable(true);
 	}
 	/**
 	 * Starts scrolling.
@@ -135,15 +136,17 @@ public class Credits extends JComponent implements Runnable, KeyListener {
 		int N = 60 + 2 * INITIAL.length() + (SP + fm.getHeight()) * (allText.length + 1)
 			+ (SP + fmC.getHeight()) * (INITIAL.split("\n").length + 1);
 		Utils.sleep(50L);
-		requestFocus();
 		music.stopMusic();
 		music.setLoop(true);
 		music.queueMusic("watching.mp3");
 		menu.getContentPane().removeAll();
 		menu.getContentPane().add(this, BorderLayout.CENTER);
 		menu.validate();
-		requestFocus();
+		menu.repaint();
+		menu.requestFocus();
+		Utils.sleep(50L);
 		t = 0;
+		requestFocus();
 		while (t < N && t >= 0) {
 			Utils.sleep(15L);
 			t++;

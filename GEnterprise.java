@@ -114,7 +114,7 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 	 * Creates the game window.
 	 */
 	public void start() {
-		res = new FilesystemResources(null, new java.io.File("res/"));
+		res = JarResources.PARENT;
 		LoadFrame frame = new LoadFrame(res);
 		events = new EventListener();
 		player = new MusicThread(res);
@@ -170,9 +170,9 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 		});
 		main.setActionListener(events);
 		settings = new Menu(new String[] {
-			"Game", "Keyboard", "Sound", "Graphics", "Back"
+			"Game", "Keyboard", "Sound", "Graphics", "Credits", "Back"
 		}, new String[] {
-			"options", "keyboard", "sound", "graphics", "main"
+			"options", "keyboard", "sound", "graphics", "credits", "main"
 		});
 		settings.setActionListener(events);
 		pause = new Menu(new String[] {
