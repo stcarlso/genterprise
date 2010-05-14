@@ -19,7 +19,7 @@ Artistic Design
 Peter Gu
 
 
-Story Design
+Character Design
 
 Carlos Garcia
 
@@ -72,10 +72,13 @@ Special Thanks To
 Karen Collins, Software Design Teacher
 Our Testers
 
-Eric Van Albert
-Yifan Li
-Elizabeth Partan
 Allison Arai
-Kamal Ndousse
-Ben Shaya
 Roger Curley
+Julia Huynh
+Diana Jing
+Yifan Li
+Kamal Ndousse
+Elizabeth Partan
+Ben Shaya
+Eric Van Albert
+Victor Ying
