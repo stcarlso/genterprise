@@ -1,7 +1,6 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.*;
-import java.io.*;
 import java.nio.*;
 import java.util.*;
 
@@ -33,6 +32,7 @@ public class GameWindow extends JPanel implements Constants {
 	boolean sneak;
 	boolean paused;
 	boolean key;
+	boolean canHide;
 	volatile boolean KILL;
 	volatile boolean killed;
 	volatile boolean respawn;
@@ -75,7 +75,7 @@ public class GameWindow extends JPanel implements Constants {
 		music = t;
 	}
 	public void setupUI() {
-		res = new FilesystemResources(null, new File("res/"));
+		res = JarResources.PARENT;
 		load = new JLabel(res.getIcon("genterprise.png"));
 		load.setHorizontalAlignment(SwingConstants.CENTER);
 		load.setVerticalAlignment(SwingConstants.CENTER);
@@ -115,6 +115,7 @@ public class GameWindow extends JPanel implements Constants {
 		}
 
 		player= new Player();
+		savedPlayer = null;
 
 		listener= new GLGameListener(player);
 		canvas = new GLCanvas(glcaps);
@@ -145,6 +146,7 @@ public class GameWindow extends JPanel implements Constants {
 	}
 	public void readLevel(String levelName) {
 		try {
+			FilesystemResources res = new FilesystemResources(null, new java.io.File("res/"));
 			LevelReader lreader = new LevelReader(res, levelName);
 			level = lreader.getLevel();
 		} catch (Exception e) {
@@ -185,9 +187,8 @@ public class GameWindow extends JPanel implements Constants {
 		}
 	}
 	private void playSound(String name) {
-		if (music != null && !music.isPlaying(name)) {
+		if (music != null && !music.isPlaying(name))
 			music.startSFX(name);
-		}
 	}
 	private void playSoundtrack(String name) {
 		if (music != null && !music.inQueue(name) && time % 10 == 0) {
@@ -291,17 +292,17 @@ public class GameWindow extends JPanel implements Constants {
 							}
 							move=false;
 						} else if(sneak && player.status!=LADDER && player.status!=HELPLESS) {
-							if(down) {
-								if(player.walls[DOWN])
-									player.ability=new Hide(player);
-							} else if(left) {
+							if(left) {
 								if(!player.walls[DOWN])
 									player.ability=new MovingAirDodge(player,LEFT);
 							} else if(right) {
 								if(!player.walls[DOWN])
 									player.ability=new MovingAirDodge(player,RIGHT);
 							} else if(up)
-								player.ability=new Scout(player);								
+								player.ability=new Scout(player);
+							else if ((!up && !down && !left && !right) &&
+									player.walls[DOWN] && canHide)
+								player.ability=new Hide(player);
 							sneak=false;
 						}
 					}
@@ -379,7 +380,7 @@ public class GameWindow extends JPanel implements Constants {
 				if(player.ability!=null) {
 					if(player.ability.started) {
 						if (player.ability.causesSuspicion())
-							player.suspicion+=player.ability.duration;
+							player.suspicion+=player.ability.duration/4;
 						effectStart= time+player.ability.start;
 						effectEnd= time+player.ability.end;
 						stop= time+player.ability.duration;
@@ -457,8 +458,8 @@ public class GameWindow extends JPanel implements Constants {
 					moveObjects();
 				}
 				//recover suspicion
-				if (time % 6 == 0)
-					player.suspicion=Math.max(0,player.suspicion-1);
+				/*if (time % 6 == 0)
+					player.suspicion=Math.max(0,player.suspicion-1)*/;
 
 				if (time % 3 == 0) checkSounds();
 				// catch the player?
@@ -585,23 +586,31 @@ public class GameWindow extends JPanel implements Constants {
 						switch (dir) {
 						case 'L':
 						case 'l':
-							guideX = true;
-							dx -= INC;
+							if (!guideX) {
+								guideX = true;
+								dx -= INC;
+							}
 							break;
 						case 'R':
 						case 'r':
-							guideX = true;
-							dx += INC;
+							if (!guideX) {
+								guideX = true;
+								dx += INC;
+							}
 							break;
 						case 'U':
 						case 'u':
-							guideY = true;
-							dy += INC;
+							if (!guideY) {
+								guideY = true;
+								dy += INC;
+							}
 							break;
 						case 'D':
 						case 'd':
-							guideY = true;
-							dy -= INC;
+							if (!guideY) {
+								guideY = true;
+								dy -= INC;
+							}
 							break;
 						case '>':
 						case '<':
@@ -658,8 +667,8 @@ public class GameWindow extends JPanel implements Constants {
 			}
 
 			boolean busted = false;
-			/**laser detection
-			 * 
+			/**
+			 * laser detection
 			 */
 			itr = lasers.iterator();
 			while(itr.hasNext()) {
@@ -753,10 +762,11 @@ public class GameWindow extends JPanel implements Constants {
 			if (busted)
 				playSound("intruderalert.wav");
 			
-			/**interactive element detection
-			 * 
+			/**
+			 * interactive element detection
 			 */
 			boolean ladder=false;
+			canHide = false;
 			if(player.ability==null || player.ability instanceof Activate) {
 				itr = interactives.iterator();
 				while(itr.hasNext()) {
@@ -810,7 +820,8 @@ public class GameWindow extends JPanel implements Constants {
 								player.groundJump=false;
 								player.airJump=true;
 							}
-						}
+						} else if (element.getSpecialBit() == 10)
+							canHide = true;
 					}
 					if (element.getSpecialBit() == 8) {
 						String music = element.getAttribute("name");
@@ -1028,7 +1039,7 @@ public class GameWindow extends JPanel implements Constants {
 				else if(player.ability instanceof Scout)
 					gl.glColor3f(0f,0f,0f);
 				else if(player.ability instanceof Hide)
-					gl.glColor3f(1f,.5f,.3f);
+					gl.glColor4f(1f,1f,1f,0.3f);
 				else if(player.ability instanceof Glide)
 					gl.glColor3f(0f,1f,1f);
 				else if(player.ability instanceof MovingAirDodge)
@@ -1258,7 +1269,7 @@ public class GameWindow extends JPanel implements Constants {
 			if(e.getKeyChar()==action)
 				act=true;
 			if(e.getKeyChar()==movement)
-					move=true;
+				move=true;
 			if(e.getKeyChar()==stealth)
 				//moves that can be cancelled by pressing the button again
 				if(player.ability!=null && !player.ability.causesSuspicion()) {
