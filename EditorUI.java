@@ -395,7 +395,7 @@ public class EditorUI extends JFrame implements GLEventListener {
 	 */
 	public void start() {
 		// FIXME replace with the jar one
-		root = new FilesystemResources(null, new File("res/"));
+		root = JarResources.PARENT;
 		current = new FilesystemResources(root, new File("res/"));
 		LoadFrame frame = new LoadFrame(root);
 		category = new TreeMap<String, List<Element>>();
@@ -1703,10 +1703,10 @@ public class EditorUI extends JFrame implements GLEventListener {
 				MkList.main(new String[] { "-u" });
 				System.exit(0);
 			} else if (cmd.equals("resgen") &&
-				yesNo("Generate res/ folder? Will close the editor without save!!!")) {
+				yesNo("Generate resource.jar folder? Will close the editor without save!!!")) {
 				stopRun();
 				dispose();
-				AutoResource.main(null);
+				JarAutoResource.main(null);
 				System.exit(0);
 			} else if (cmd.equals("code")) {
 				codeDialog.setVisible(true);
