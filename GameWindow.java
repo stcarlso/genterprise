@@ -47,10 +47,10 @@ public class GameWindow extends JPanel implements Constants {
 	private long stop=0;
 	int fade=0;
 	
-	char action='a';
-	char stealth='s';
-	char movement='d';
-	char pause='g';
+	int action=KeyEvent.VK_A;
+	int stealth=KeyEvent.VK_S;
+	int movement = KeyEvent.VK_D;
+	int pause=KeyEvent.VK_ESCAPE;
 	
 	Object sync= new Object();
 	Object mSyn= new Object();
@@ -82,7 +82,7 @@ public class GameWindow extends JPanel implements Constants {
 		load.setForeground(Color.WHITE);
 		load.setFont(load.getFont().deriveFont(24.f));
 		keys = new JLabel(res.getIcon("keys.png"));
-		keys.setText("G: Pause");
+		keys.setText("ESC: Pause");
 		keys.setHorizontalAlignment(SwingConstants.CENTER);
 		keys.setVerticalAlignment(SwingConstants.CENTER);
 		keys.setBorder(BorderFactory.createEmptyBorder(0, 0, 50, 0));
@@ -882,7 +882,8 @@ public class GameWindow extends JPanel implements Constants {
 	public void save() {
 		if (savedPlayer == null)
 			savedPlayer = new Player();
-		savedPlayer.suspicion = player.suspicion;
+		//savedPlayer.suspicion = player.suspicion;
+		savedPlayer.suspicion = 0;
 		savedPlayer.x = player.x;
 		savedPlayer.y = player.y;
 		savedPlayer.vx = player.vx;
@@ -1248,6 +1249,12 @@ public class GameWindow extends JPanel implements Constants {
 				down=true;
 				up=false;
 			}
+			if(e.getKeyCode()==action)
+				act=true;
+			if(e.getKeyCode()==movement)
+				move=true;
+			if(e.getKeyCode()==stealth)
+				sneak=true;
 		}
 		public void keyReleased(KeyEvent e) {
 			if(e.getKeyCode()==KeyEvent.VK_LEFT)
@@ -1258,27 +1265,15 @@ public class GameWindow extends JPanel implements Constants {
 				up=false;
 			if(e.getKeyCode()==KeyEvent.VK_DOWN)
 				down=false;
-			if(e.getKeyChar()==movement && player.ability!=null && !player.ability.causesSuspicion()) {
+			if(e.getKeyCode()==stealth && player.ability!=null && !player.ability.causesSuspicion()) {
 				effectEnd=time;
 				stop=time+player.ability.duration-player.ability.end;
+				sneak=false;
 			}
-				
-			if (!key) key = true;
-		}
-		public void keyTyped(KeyEvent e) {			
-			if(e.getKeyChar()==action)
-				act=true;
-			if(e.getKeyChar()==movement)
-				move=true;
-			if(e.getKeyChar()==stealth)
-				//moves that can be cancelled by pressing the button again
-				if(player.ability!=null && !player.ability.causesSuspicion()) {
-					effectEnd=time;
-					stop=time+player.ability.duration-player.ability.end;
-				} else
-					sneak=true;
-			if(e.getKeyChar()==pause)
+			if(e.getKeyCode()==pause)
 				paused^=true;
+			if (!key && e.getKeyCode()==KeyEvent.VK_SPACE) key = true;
 		}
+		public void keyTyped(KeyEvent e) { }
 	}
 }
