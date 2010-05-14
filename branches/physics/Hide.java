@@ -5,8 +5,8 @@ public class Hide extends Move {
 	public Hide(Player player) {
 		super(player);
 		start=30;
-		end=240;
-		duration=260;
+		end=200;
+		duration=220;
 		player.scoutx=player.x;
 		player.scouty=player.y;
 	}
@@ -19,8 +19,7 @@ public class Hide extends Move {
 	}
 	public void linger() {}
 	public void continuous(GameWindow win) {
-		//if (win.time % 1 == 0)
-			player.suspicion=Math.max(0,player.suspicion-1);
+		player.suspicion=Math.max(0,player.suspicion-2);
 	}
 	public boolean causesSuspicion() {
 		return false;

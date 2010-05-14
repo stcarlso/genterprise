@@ -58,15 +58,18 @@ public class JarAutoResource {
 				die("Could not load '" + resource.getPath() + "'; try opening and re-saving with Preview or Windows Picture and Fax Viewer.");
 			o1 = resource.getName().toLowerCase();
 			try {
+				java.awt.image.RenderedImage image = Utils.imageToBuffer(img);
 				res.putNextEntry(new ZipEntry("textures/" + o1));
-				ImageIO.write(Utils.imageToBuffer(img), "png", res);
+				ImageIO.write(image, "png", res);
 				res.closeEntry();
+				System.out.println("wrote resource.jar/textures/" + o1);
+				res.putNextEntry(new ZipEntry("images/" + o1));
+				ImageIO.write(image, "png", res);
+				res.closeEntry();
+				System.out.println("wrote resource.jar/images/" + o1);
 			} catch (Exception e) {
 				die("Could not write '" + o1 + "'!");
 			}
-			System.out.println("wrote resource.jar/textures/" + o1);
-			copyFile(res, resource, "images/" + o1);
-			System.out.println("wrote resource.jar/images/" + o1);
 		}
 		if (imageList != null) for (File resource : imageList) {
 			img = new ImageIcon(resource.getPath()).getImage();
