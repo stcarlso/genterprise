@@ -43,6 +43,7 @@ floorlight.png, 1x1square.dat, floorlight, 0
 floorceiling.png, 1x1square.dat, floorceiling, 0
 [Junctions]
 junct2.png, 1x1square.dat, junct2, 0
+junct2diagonal.png, 1x1square.dat, junct2diagonal, 0
 junct2wall.png, 1x1square.dat, junct2wall, 0
 junct2corner.png, 1x1square.dat, junct2corner, 0
 junct2light.png, 1x1square.dat, junct2light, 0
