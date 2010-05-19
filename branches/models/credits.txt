@@ -70,6 +70,7 @@ Audacity
 Special Thanks To
 
 Karen Collins, Software Design Teacher
+
 Our Testers
 
 Allison Arai

@@ -100,12 +100,30 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 	 * Level select screen.
 	 */
 	private JComponent levelSelect;
+	/**
+	 * Screen resolution.
+	 */
+	private int height;
+	private int width;
+	/**
+	 * The settings for the game.
+	 */
+	private Settings set;
+	/**
+	 * Graphics options.
+	 */
+	private JComponent graphics;
+	/**
+	 * Swaps the graphics from full screen to windowed.
+	 */
+	private JButton swapGraphics;
 
 	/**
 	 * Sets the title and window parameters.
 	 */
 	public GEnterprise() {
 		super("Gunther's Enterprise");
+		set = new Settings("settings.ini");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setUndecorated(true);
 		levels = new ArrayList<String>(32);
@@ -114,6 +132,8 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 	 * Creates the game window.
 	 */
 	public void start() {
+		width = set.getInt("width", WIDTH);
+		height = set.getInt("height", HEIGHT);
 		res = JarResources.PARENT;
 		LoadFrame frame = new LoadFrame(res);
 		events = new EventListener();
@@ -142,43 +162,49 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 	 * Sets the display resolution to what the graphics preferences want.
 	 */
 	private void setScreenSize() {
-		GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment()
-			.getDefaultScreenDevice();
-		DisplayMode[] modes = dev.getDisplayModes();
-		DisplayMode curMode = dev.getDisplayMode();
-		int rate = curMode.getRefreshRate();
-		int depth = curMode.getBitDepth();
-		for (int i = 0; i < modes.length; i++)
-			if (modes[i].getRefreshRate() == rate && modes[i].getBitDepth() == depth &&
-				(modes[i].getWidth() == WIDTH || modes[i].getHeight() == HEIGHT)) {
-				curMode = modes[i];
-				break;
-			}
-		dev.setFullScreenWindow(this);
-		try {
-			dev.setDisplayMode(curMode);
-		} catch (Exception e) { }
+		if (set.getInt("fullscreen", 1) != 0) {
+			GraphicsDevice dev = GraphicsEnvironment.getLocalGraphicsEnvironment()
+				.getDefaultScreenDevice();
+			DisplayMode[] modes = dev.getDisplayModes();
+			DisplayMode curMode = dev.getDisplayMode();
+			int rate = curMode.getRefreshRate();
+			int depth = curMode.getBitDepth();
+			for (int i = 0; i < modes.length; i++)
+				if (modes[i].getRefreshRate() == rate && modes[i].getBitDepth() == depth &&
+					(modes[i].getWidth() == width || modes[i].getHeight() == height)) {
+					curMode = modes[i];
+					break;
+				}
+			dev.setFullScreenWindow(this);
+			try {
+				dev.setDisplayMode(curMode);
+			} catch (Exception e) { }
+		} else {
+			setUndecorated(false);
+			setSize(width, height);
+			setVisible(true);
+		}
 	}
 	/**
 	 * Builds the menus on the screen.
 	 */
 	private void setupMenus() {
 		main = new Menu(new String[] {
-			"Campaign", "Single Mission", "Settings", "Exit"
+			"Single Mission", "Settings", "Exit"
 		}, new String[] {
-			"map", "single", "settings", "exit"
+			"single", "settings", "exit"
 		});
 		main.setActionListener(events);
 		settings = new Menu(new String[] {
-			"Game", "Keyboard", "Sound", "Graphics", "Credits", "Back"
+			"Graphics", "Credits", "Back"
 		}, new String[] {
-			"options", "keyboard", "sound", "graphics", "credits", "main"
+			"graphics", "credits", "main"
 		});
 		settings.setActionListener(events);
 		pause = new Menu(new String[] {
-			"Return to Game", "Keyboard Settings", "Sound", "Exit to Menu", "Exit Game"
+			"Return to Game","Exit to Menu", "Exit Game"
 		}, new String[] {
-			"unpause", "keyboard", "sound", "menu", "exit"
+			"unpause", "menu", "exit"
 		});
 		pause.setActionListener(events);
 		pMenu = new Box(BoxLayout.Y_AXIS);
@@ -245,6 +271,23 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 		levelSelect = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
 		levelSelect.setOpaque(false);
 		levelSelect.add(vert);
+		// graphics options
+		graphics = new Box(BoxLayout.Y_AXIS);
+		graphics.add(Box.createVerticalStrut(50));
+		swapGraphics = Menu.getButton("Fullscreen: Yes", "fs");
+		swapGraphics.addActionListener(events);
+		graphics.add(swapGraphics);
+		setFS();
+		graphics.add(Box.createVerticalStrut(10));
+		back = Menu.getButton("Options Menu", "settings");
+		back.addActionListener(events);
+		graphics.add(back);
+		graphics.add(Box.createVerticalStrut(20));
+		JLabel lbl = new JLabel("Changes take place on restart.");
+		lbl.setForeground(Color.WHITE);
+		lbl.setAlignmentX(JComponent.CENTER_ALIGNMENT);
+		graphics.add(lbl);
+		graphics.add(Box.createVerticalStrut(50));
 	}
 	/**
 	 * Sets the current menu.
@@ -259,6 +302,37 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 		getContentPane().add(current, BorderLayout.CENTER);
 		validate();
 		repaint();
+	}
+	/**
+	 * Shows graphics options.
+	 */
+	public void showGraphics() {
+		if (current != null)
+			getContentPane().remove(current);
+		current = graphics;
+		getContentPane().add(current, BorderLayout.CENTER);
+		validate();
+		repaint();
+	}
+	/**
+	 * Sets the text on the button.
+	 */
+	private void setFS() {
+		if (set.getInt("fullscreen", 1) != 0)
+			swapGraphics.setText("Fullscreen: Yes");
+		else
+			swapGraphics.setText("Fullscreen: No");
+	}
+	/**
+	 * Swaps full screen.
+	 */
+	private void swapFS() {
+		if (set.getInt("fullscreen", 1) != 0)
+			set.put("fullscreen", "0");
+		else
+			set.put("fullscreen", "1");
+		setFS();
+		set.writeOut();
 	}
 	/**
 	 * Sets the screen to the level list.
@@ -304,6 +378,10 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 		c.removeAll();
 		c.add(gameWindow, BorderLayout.CENTER);
 		c.validate();
+		gameWindow.action = set.getInt("action", KeyEvent.VK_A);
+		gameWindow.stealth = set.getInt("stealth", KeyEvent.VK_S);
+		gameWindow.movement = set.getInt("movement", KeyEvent.VK_D);
+		gameWindow.pause = set.getInt("pause", KeyEvent.VK_ESCAPE);
 		gameWindow.start(level);
 		while (true) {
 			// pause / un pause
@@ -410,7 +488,7 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 	/**
 	 * Handles menu events and mouse events.
 	 */
-	private class EventListener implements ActionListener {
+	private class EventListener extends KeyAdapter implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			String cmd = e.getActionCommand();
 			if (cmd == null) return;
@@ -429,8 +507,15 @@ public class GEnterprise extends JFrame implements Runnable, MouseListener {
 				gameWindow.paused = false;
 			else if (cmd.equals("credits"))
 				comp.start();
+			else if (cmd.equals("fs"))
+				swapFS();
+			else if (cmd.equals("graphics"))
+				showGraphics();
 			else if (cmd.equals("exit"))
 				close();
+		}
+		public void keyReleased(KeyEvent e) {
+			
 		}
 	}
 

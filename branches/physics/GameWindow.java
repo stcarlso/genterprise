@@ -106,7 +106,7 @@ public class GameWindow extends JPanel implements Constants {
 		validate();
 		repaint();
 
-		readLevel("../" + level);
+		readLevel(level);
 		if (music != null) {
 			music.load("aoogahorn.wav");
 			music.load("ping.wav");
@@ -146,7 +146,7 @@ public class GameWindow extends JPanel implements Constants {
 	}
 	public void readLevel(String levelName) {
 		try {
-			FilesystemResources res = new FilesystemResources(null, new java.io.File("res/"));
+			FilesystemResources res = new FilesystemResources(null, new java.io.File("."));
 			LevelReader lreader = new LevelReader(res, levelName);
 			level = lreader.getLevel();
 		} catch (Exception e) {
@@ -463,7 +463,7 @@ public class GameWindow extends JPanel implements Constants {
 					playSound("shutdown.wav");
 					reset();
 					respawn = true;
-					fade = 60;
+					fade = 120;
 				}
 
 				try {				
@@ -533,12 +533,12 @@ public class GameWindow extends JPanel implements Constants {
 					element.getLocation().setY(ny);
 					break;
 				case '<':
-					nr = element.getRotation() - 2.5;
+					nr = element.getRotFlip().getZ() - 2.5;
 					nr = Math.round(1e4 * nr) / 10000.0;
 					element.getRotFlip().setZ(nr);
 					break;
 				case '>':
-					nr = element.getRotation() + 2.5;
+					nr = element.getRotFlip().getZ() + 2.5;
 					nr = Math.round(1e4 * nr) / 10000.0;
 					element.getRotFlip().setZ(nr);
 					break;
@@ -700,7 +700,7 @@ public class GameWindow extends JPanel implements Constants {
 							top > element.getY() && bottom < element.getY()+source.getHeight()
 							&& right >= element.getX()+.43 && left <= element.getX()+.43) {
 							if (element.getSpecialBit() == 6) {
-								fade = 60;
+								fade = 120;
 								reset();
 								respawn = true;
 								playSound("shutdown.wav");
@@ -728,7 +728,7 @@ public class GameWindow extends JPanel implements Constants {
 							top > element.getY()+.43 && bottom < element.getY()+source.getHeight()-.43
 							&& right >= element.getX() && left <= element.getX()) {
 							if (element.getSpecialBit() == 6) {
-								fade = 60;
+								fade = 120;
 								reset();
 								respawn = true;
 								playSound("shutdown.wav");
@@ -778,7 +778,7 @@ public class GameWindow extends JPanel implements Constants {
 							if (myName.equalsIgnoreCase("end")) {
 								//saving game
 								playSound("ping.wav");
-								fade = 60;
+								fade = 120;
 								savedPlayer = null;
 								reset();
 								done = true;
@@ -794,9 +794,7 @@ public class GameWindow extends JPanel implements Constants {
 									if (o.getAttribute("name", "").equalsIgnoreCase(target))
 										dest = o;
 								}
-								if (dest == null)
-									System.out.println("You just tried to win. But you cannot win.");
-								else {
+								if (dest != null) {
 									fade = 60;
 									playSound("ping.wav");
 									int suspicion = player.suspicion;
@@ -892,6 +890,7 @@ public class GameWindow extends JPanel implements Constants {
 		savedPlayer.facingRight = player.facingRight;
 		savedPlayer.wallJumps = player.wallJumps;
 		savedPlayer.groundJump = player.groundJump;
+		fade = 60;
 	}
 	/**
 	 * Loads the game from save.
