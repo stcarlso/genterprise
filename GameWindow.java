@@ -425,12 +425,8 @@ public class GameWindow extends JPanel implements Constants {
 					!(player.walls[DOWN] && player.vy<=0)) {
 					player.ay+=-gravity;
 					player.vy+=player.ay*dt;
-					// attempted platform slide fix?
-					dy = Math.signum(player.vy)*Math.min(.22,Math.abs(player.vy))*dt;
-					if (Math.abs(dy) > Math.abs(player.guideY))
-						player.y+=dy-player.guideY;
-					else
-						player.y+=dy;
+					dy = Math.min(.3,Math.max(-.22, player.vy))*dt;
+					player.y+=dy;
 				} else {
 					player.vy=0;
 					player.ay=0;
@@ -440,12 +436,8 @@ public class GameWindow extends JPanel implements Constants {
 				//move with velocity (with speed limit)
 				if(player.status!= LADDER && !(player.walls[LEFT] && player.vx<0) &&
 					!(player.walls[RIGHT] && player.vx>0)) {
-					dx = Math.signum(player.vx)*Math.min(.22,Math.abs(player.vx))*dt;
-					// attempted platform slide fix?
-					if (Math.abs(dx) > Math.abs(player.guideX))
-						player.x+=dx-player.guideX;
-					else
-						player.x+=dx;
+					dx = Math.signum(player.vx)*Math.min(.3,Math.abs(player.vx))*dt;
+					player.x+=dx;
 				} else {
 					player.vx=0;
 					player.ax=0;
@@ -458,13 +450,12 @@ public class GameWindow extends JPanel implements Constants {
 					moveObjects();
 				}
 				//recover suspicion
-				/*if (time % 6 == 0)
-					player.suspicion=Math.max(0,player.suspicion-1)*/;
 
 				if (time % 3 == 0) checkSounds();
+				if (player.suspicion > 360 && time % 5 == 0)
+					player.suspicion = Math.min(720, player.suspicion+(player.suspicion-270)/90);
 				// catch the player?
-				if ((time % 1000 == 0 && player.suspicion > 360) ||
-					(time % 300 == 0 && player.suspicion > 540) || player.suspicion > 720) {
+				if (player.suspicion >= 720) {
 					playSound("shutdown.wav");
 					reset();
 					respawn = true;
@@ -1236,6 +1227,7 @@ public class GameWindow extends JPanel implements Constants {
 		
 		//**************KEY LISTENER********************
 		public void keyPressed(KeyEvent e) {
+			if (paused) return;
 			if(e.getKeyCode()==KeyEvent.VK_LEFT) {
 				left=true;
 				right=false;
@@ -1257,6 +1249,10 @@ public class GameWindow extends JPanel implements Constants {
 				sneak=true;
 		}
 		public void keyReleased(KeyEvent e) {
+			if(e.getKeyCode()==pause)
+				paused^=true;
+			if (!key && e.getKeyCode()==KeyEvent.VK_SPACE) key = true;
+			if (paused) return;
 			if(e.getKeyCode()==KeyEvent.VK_LEFT)
 				left=false;
 			if(e.getKeyCode()==KeyEvent.VK_RIGHT)
@@ -1270,9 +1266,6 @@ public class GameWindow extends JPanel implements Constants {
 				stop=time+player.ability.duration-player.ability.end;
 				sneak=false;
 			}
-			if(e.getKeyCode()==pause)
-				paused^=true;
-			if (!key && e.getKeyCode()==KeyEvent.VK_SPACE) key = true;
 		}
 		public void keyTyped(KeyEvent e) { }
 	}
