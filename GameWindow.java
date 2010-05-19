@@ -152,6 +152,7 @@ public class GameWindow extends JPanel implements Constants {
 		} catch (Exception e) {
 			Errors.userError(levelName + " was not found. Try copy+paste to project folder.");
 		}
+		//identify level blocks and stores them in the correct list
 		block = level.blockIterator().next();
 		elements = new ArrayList<GameObject>(block.getElements().size());
 		lasers = new ArrayList<GameObject>(block.getElements().size());
@@ -262,6 +263,7 @@ public class GameWindow extends JPanel implements Constants {
 					
 					if(player.ability==null) {
 						if(act && player.status!=LADDER && player.status!=HELPLESS) {
+							//basic abilities
 							if(!player.walls[DOWN]) {
 								player.ability=new AirDodge(player);
 							} else if(player.walls[DOWN]){
@@ -278,6 +280,7 @@ public class GameWindow extends JPanel implements Constants {
 							}	
 							act=false;
 						} else if(move && player.status!=LADDER && player.status!=HELPLESS) {
+							//movement abilities
 							if(up) {
 								player.ability=new ThirdJump(player);
 							} else if(right) {
@@ -292,6 +295,7 @@ public class GameWindow extends JPanel implements Constants {
 							}
 							move=false;
 						} else if(sneak && player.status!=LADDER && player.status!=HELPLESS) {
+							//stealth abilities
 							if(left) {
 								if(!player.walls[DOWN])
 									player.ability=new MovingAirDodge(player,LEFT);
@@ -572,46 +576,46 @@ public class GameWindow extends JPanel implements Constants {
 					element.getY()+source.getHeight()) {
 					wallDown=true;
 					ytemp=element.getY()+source.getHeight()+player.bottom;
-					//if (time % 2 == 0) {
-						char dir = getMovement(element, false);
-						switch (dir) {
-						case 'L':
-						case 'l':
-							if (!guideX) {
-								guideX = true;
-								dx -= INC;
-							}
-							break;
-						case 'R':
-						case 'r':
-							if (!guideX) {
-								guideX = true;
-								dx += INC;
-							}
-							break;
-						case 'U':
-						case 'u':
-							if (!guideY) {
-								guideY = true;
-								dy += INC;
-							}
-							break;
-						case 'D':
-						case 'd':
-							if (!guideY) {
-								guideY = true;
-								dy -= INC;
-							}
-							break;
-						case '>':
-						case '<':
-							System.out.println("Oh no! Player standing on rotating block!");
-							break;
-						case 'W':
-						case 'w':
-						default:
+					
+					//this section keeps the player still on a moving platform
+					char dir = getMovement(element, false);
+					switch (dir) {
+					case 'L':
+					case 'l':
+						if (!guideX) {
+							guideX = true;
+							dx -= INC;
 						}
-					//}
+						break;
+					case 'R':
+					case 'r':
+						if (!guideX) {
+							guideX = true;
+							dx += INC;
+						}
+						break;
+					case 'U':
+					case 'u':
+						if (!guideY) {
+							guideY = true;
+							dy += INC;
+						}
+						break;
+					case 'D':
+					case 'd':
+						if (!guideY) {
+							guideY = true;
+							dy -= INC;
+						}
+						break;
+					case '>':
+					case '<':
+						System.out.println("Oh no! Player standing on rotating block!");
+						break;
+					case 'W':
+					case 'w':
+					default:
+					}
 				}
 				//ceiling detection
 				if(rightFuture > element.getX() && leftFuture < element.getX()+source.getWidth()
@@ -642,6 +646,7 @@ public class GameWindow extends JPanel implements Constants {
 			player.guideY = Math.round(1e4 * dy)/10000.0;
 			xtemp = Math.round(1e4 * xtemp)/10000.0;
 			ytemp = Math.round(1e4 * ytemp)/10000.0;
+			//corrects collisions by moving the player instantly
 			if (wallLeft != wallRight || guideX) {
 				player.x=xtemp;
 				// anti earthquake?
@@ -771,6 +776,7 @@ public class GameWindow extends JPanel implements Constants {
 						} else if (element.getSpecialBit() == 2 && player.ability instanceof Activate) {
 							String myName = element.getAttribute("name", "");
 							if (myName.equalsIgnoreCase("end")) {
+								//saving game
 								playSound("ping.wav");
 								fade = 60;
 								savedPlayer = null;
@@ -779,6 +785,7 @@ public class GameWindow extends JPanel implements Constants {
 								paused = true;
 								KILL = true;
 							} else {
+								//using a door
 								String target = element.getAttribute("target", myName + "exit");
 								Iterator<GameObject> it = interactives.iterator();
 								GameObject o, dest = null;
@@ -800,6 +807,7 @@ public class GameWindow extends JPanel implements Constants {
 								}
 							}
 						} else if (element.getSpecialBit() == 1) {
+							//ladders
 							ladder=true;
 							if(up||down) {
 								player.status = LADDER;
@@ -1265,6 +1273,11 @@ public class GameWindow extends JPanel implements Constants {
 				effectEnd=time;
 				stop=time+player.ability.duration-player.ability.end;
 				sneak=false;
+			}
+			if(e.getKeyCode()==movement && player.ability!=null && !player.ability.causesSuspicion()) {
+				effectEnd=time;
+				stop=time+player.ability.duration-player.ability.end;
+				move=false;
 			}
 		}
 		public void keyTyped(KeyEvent e) { }
