@@ -310,8 +310,8 @@ public class GameWindow extends JPanel implements Constants {
 							sneak=false;
 						}
 					}
+					//basic movement
 					if(player.ability==null || player.ability instanceof Glide) {
-						//basic movement
 						if(left) {
 							player.facingRight=false;
 							if(player.status==DUCKING) {
@@ -866,12 +866,6 @@ public class GameWindow extends JPanel implements Constants {
 	public void reset() {
 		player.reset();
 		act = move = sneak = false;
-		// will fail until positions are also reset
-		/*Iterator<GameObject> it = block.getElements().iterator();
-		while (it.hasNext()) {
-			GameObject o = it.next();
-			o.setIteration(0);
-		}*/
 	}
 	/**
 	 * Saves the game (check point).
@@ -1019,6 +1013,7 @@ public class GameWindow extends JPanel implements Constants {
 			Element.clearOptions(gl);
 			gl.glDisable(GL.GL_DEPTH_TEST);
 			synchronized (sync) {
+				//gives the user a different color depending on the player's status
 				if(player.status==HELPLESS)
 					gl.glColor3f(.5f,.5f,.5f);
 				else if(player.status==INVINCIBLE)
@@ -1045,6 +1040,8 @@ public class GameWindow extends JPanel implements Constants {
 					gl.glColor3f(1f,.1f,1f);
 				else
 					gl.glColor3f(1f,1f,1f);
+				
+				//for animated textures
 				if(player.status==WALKING) {
 					player.walk[((int)(Math.abs(player.x)))%8].bind();
 				} else if(player.status==LADDER) {
@@ -1058,6 +1055,8 @@ public class GameWindow extends JPanel implements Constants {
 					player.air.bind();
 				}else
 					player.stand.bind();
+				
+				//draw the player with the bound texture
 				gl.glBegin(GL.GL_QUADS);
 				if(player.status==DUCKING) {
 					if(player.facingRight) {
