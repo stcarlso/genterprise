@@ -3,7 +3,7 @@
 
 
 Gunther's Enterprise
-SVN 162, Version 1.6.2
+SVN 164, Version 1.6.4
 Software Design, Period 6
 Mrs. Collins
 
@@ -74,11 +74,15 @@ Karen Collins, Software Design Teacher
 Our Testers
 
 Allison Arai
+Rohan Bhale
 Roger Curley
 Julia Huynh
 Diana Jing
 Yifan Li
+Jonathan Lockwood
 Kamal Ndousse
+Andrea Ng
+Joseph Owen
 Elizabeth Partan
 Ben Shaya
 Eric Van Albert
