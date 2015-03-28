@@ -1,0 +1,8 @@
+# Gunther's Enterprise #
+
+This application is a side-scroller, developed by Stephen Carlson, Peter Gu, and Carlos Garcia, where the user's goal is to disable futuristic goo controlled by a real-world incarnation of hate. The main character, Gunther Garguson, is a spy who is unfortunately caught in the crossfire of an army of creatures infected by hatred, led by their leader Hatron, from a future time. Gunther must attempt to infiltrate Hatron's territory and base in order to find and disable the source of hate which fuels his army. Along the way, he must face security measures implemented by Hatron to prevent infiltration by humans; if a guard touches Gunther, he will also be infected by hate. In order to avoid suspicion and accomplish his goal, Gunther must take advantage of combination moves, clever diversions, and much more.
+
+## Project Documentation ##
+Documentation for project planning is available in the Links area to the right. The [Status Log](http://code.google.com/p/genterprise/updates/list) is updated each time code is committed to the shared project repository, with daily log messages describing who changed what. Specifications for the project's behavior can be found in the [functional spec](http://genterprise.googlecode.com/files/funcspec-021710.doc). For a more in-depth look at the project details, try the [CRC Cards](http://spreadsheets.google.com/pub?key=tA3Mi_pmc9jVZD6BwRAnHYg&single=true&gid=0&output=html) which describe the basic units that make up the project's code, or the [algorithm](http://genterprise.googlecode.com/files/algor-021910.doc) for a description of project flow.
+
+Screen shots are also available on the [Screen Shots](http://code.google.com/p/genterprise/wiki/ScreenShots) page.

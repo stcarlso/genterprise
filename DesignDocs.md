@@ -1,0 +1,6 @@
+All design documents can be found here. There are also links to these documents on the project home page.
+
+  * Functional Specification: http://genterprise.googlecode.com/files/funcspec-021710.doc
+  * CRC Cards: http://spreadsheets.google.com/pub?key=tA3Mi_pmc9jVZD6BwRAnHYg&single=true&gid=0&output=html
+  * Algorithm: http://genterprise.googlecode.com/files/algor-021910.doc
+  * Inheritance and Composition: http://genterprise.googlecode.com/files/inheritance-022310.doc
